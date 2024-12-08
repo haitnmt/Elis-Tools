@@ -59,3 +59,5 @@
 # iOS and macOS ignored files
 /bin/
 /src/**/bin/
+/obj/
+/src/**/obj/
