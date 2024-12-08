@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Haihv.Elis.Tools.ChuyenDvhc")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+fb0e8095c633b64ff66f04a0260c817765456358")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0+cbe09d0beef029835112769a7daa81d236f30d00")]
 [assembly: System.Reflection.AssemblyProductAttribute("Haihv.Elis.Tools.ChuyenDvhc")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Haihv.Elis.Tools.ChuyenDvhc")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

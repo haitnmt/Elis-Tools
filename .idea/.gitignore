@@ -3,11 +3,12 @@
 /workspace.xml
 # Rider ignored files
 /contentModel.xml
-/projectSettingsUpdater.xml
 /modules.xml
-/.idea.Haihv.Elis.Tools.iml
+/projectSettingsUpdater.xml
+/.idea.Elis-Tools.iml
 # Editor-based HTTP Client requests
 /httpRequests/
 # Datasource local storage ignored files
 /dataSources/
 /dataSources.local.xml
+*/*.dll   

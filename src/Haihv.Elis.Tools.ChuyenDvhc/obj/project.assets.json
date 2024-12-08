@@ -18951,7 +18951,6 @@
       "outputPath": "/Users/haihoang/RiderProjects/Elis-Tools/src/Haihv.Elis.Tools.ChuyenDvhc/obj/",
       "projectStyle": "PackageReference",
       "crossTargeting": true,
-      "UsingMicrosoftNETSdk": false,
       "configFilePaths": [
         "/Users/haihoang/.nuget/NuGet/NuGet.Config"
       ],
@@ -18961,6 +18960,7 @@
         "net9.0-maccatalyst"
       ],
       "sources": {
+        "/usr/local/share/dotnet/library-packs": {},
         "https://api.nuget.org/v3/index.json": {}
       },
       "frameworks": {
@@ -18986,7 +18986,8 @@
         "enableAudit": "true",
         "auditLevel": "low",
         "auditMode": "all"
-      }
+      },
+      "SdkAnalysisLevel": "9.0.100"
     },
     "frameworks": {
       "net9.0-android35.0": {
