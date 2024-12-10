@@ -1,5 +1,8 @@
-﻿using Microsoft.Extensions.Logging;
-using Microsoft.FluentUI.AspNetCore.Components;
+﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Controls.Hosting;
+using Microsoft.Maui.Hosting;
+using MudBlazor.Services;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc
 {
@@ -14,10 +17,11 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
                 {
                     fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
                 });
-
-            builder.Services.AddMauiBlazorWebView();
-            builder.Services.AddFluentUIComponents();
             builder.Services.AddMemoryCache();
+            builder.Services.AddMauiBlazorWebView();
+            builder.Services.AddMudServices();
+
+
 #if DEBUG
     		builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();

@@ -1,11 +1,12 @@
 ﻿@inherits LayoutComponentBase
 
 <main>
-    <FluentHeader>
-        Công cụ chuyển đổi đơn vị hành chính
-    </FluentHeader>
-    <FluentBodyContent>
-        @Body
-    </FluentBodyContent>
-    <FluentDialogProvider />
+    <MudLayout>
+        <MudAppBar>
+            Công cụ chuyển đổi đơn vị hành chính
+        </MudAppBar>
+        <MudMainContent>
+            @Body
+        </MudMainContent>
+    </MudLayout>
 </main>

@@ -1,12 +1,10 @@
-﻿<FluentStack Orientation="Orientation.Vertical">
-    <FluentMessageBar Title="Vui lòng xác nhận các thông tin sau:"
-                      Intent="MessageIntent.Warning"
-                      AllowDismiss="false">
-
-        <FluentDivider></FluentDivider>
-        <FluentCheckbox @bind-Value="_isBackup" Label="Đã sao lưu cơ sở dữ liệu"></FluentCheckbox>
-    </FluentMessageBar>
-</FluentStack>
+﻿<MudStack>
+    <MudAlert Severity="Severity.Warning" ShowCloseIcon="false">
+        <a>Vui lòng xác nhận các thông tin sau:</a>
+        <MudDivider></MudDivider>
+        <MudCheckBox @bind-Value="_isBackup" Label="Đã sao lưu cơ sở dữ liệu"></MudCheckBox>
+    </MudAlert>
+</MudStack>
 
 @code {
     bool _isBackup = false;

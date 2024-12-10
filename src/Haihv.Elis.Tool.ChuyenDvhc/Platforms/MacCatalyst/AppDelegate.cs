@@ -1,4 +1,6 @@
 ﻿using Foundation;
+using Microsoft.Maui;
+using Microsoft.Maui.Hosting;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc
 {

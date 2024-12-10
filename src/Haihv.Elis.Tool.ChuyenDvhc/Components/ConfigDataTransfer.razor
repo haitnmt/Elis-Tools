@@ -1,18 +1,18 @@
 ﻿@using Microsoft.Extensions.Caching.Memory
 
 @inject IMemoryCache MemoryCache
-<FluentStack Orientation="Orientation.Vertical">
+<MudStack>
     @if (IsConnected)
     {
         
     }
     else
     {
-        <FluentMessageBar Title="Cảnh báo!" Intent="MessageIntent.Warning">
+        <MudAlert Severity="Severity.Warning" ShowCloseIcon="false">
             Vui lòng cấu hình kết nối cơ sở dữ liệu ELIS SQL trước khi tiếp tục! (Quay lại bước trước)
-        </FluentMessageBar>
+        </MudAlert>
     }
-</FluentStack>
+</MudStack>
 
 @code {
     

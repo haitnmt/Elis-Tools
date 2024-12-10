@@ -4,40 +4,41 @@
 
 @inject IMemoryCache MemoryCache
 
-<FluentStack Orientation="Orientation.Vertical">
-    <FluentTextField @bind-Value="_serverAddress"
+<MudStack>
+    <MudTextField @bind-Value="_serverAddress"
                      Label="Máy chủ cơ sở dữ liệu ELIS SQL" 
-                     style="width: 100%;">
-    </FluentTextField>
-    <FluentTextField @bind-Value="_databaseName"
+                     FullWidth="true">
+    </MudTextField>
+    <MudTextField @bind-Value="_databaseName"
                      Label="Tên cơ sở dữ liệu"
-                     style="width: 100%;">
+                     FullWidth="true">
         
-    </FluentTextField>
-    <FluentTextField @bind-Value="_userName"
+    </MudTextField>
+    <MudTextField @bind-Value="_userName"
                      Label="Tên đăng nhập" 
-                     style="width: 100%;">
-    </FluentTextField>
-    <FluentTextField @bind-Value="_password"
+                     FullWidth="true">
+    </MudTextField>
+    <MudTextField @bind-Value="_password"
                      Label="Mật khẩu"
-                     TextFieldType="TextFieldType.Password"
-                     style="width: 100%;">
-    </FluentTextField>
-    <FluentCheckbox @bind-Value="_trustedConnection"
-                    Label="Sử dụng kết nối an toàn"
-                    style="width: 100%;"/>
-    <FluentButton IconStart="@(new Icons.Regular.Size16.ArrowClockwise())"
-                  Appearance="Appearance.Accent"
-                  Loading="@_isChecking"
-                  OnClick="@StartCheckConnectionAsync">
-        Kiểm tra kết nối
-    </FluentButton>
-    
+                     InputType="InputType.Password"
+                     FullWidth="true">
+    </MudTextField>
+    <MudCheckBox @bind-Value="_trustedConnection"
+                 Label="Sử dụng kết nối an toàn"/>
+    <MudButton Disabled="@_processing" OnClick="StartCheckConnectionAsync" Variant="Variant.Filled" Color="Color.Primary">
+        @if (_processing)
+        {
+            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+            <MudText Class="ms-2">Processing</MudText>
+        }
+        else
+        {
+            <MudText>Kiểm tra kết nối</MudText>
+        }
+    </MudButton>
     @if (_finishChecking)
     {
-        <FluentMessageBar Title="Trạng thái kết nối:"
-                          Intent="@(IsConnected ? MessageIntent.Success : MessageIntent.Error)"
-                          AllowDismiss="false">
+        <MudAlert Severity="@(IsConnected ? Severity.Success : Severity.Error)" ShowCloseIcon="false">
             @if (IsConnected)
             {
                 <span>Kết nối thành công</span>
@@ -48,28 +49,25 @@
                 <br/>
                 <a>@_errorMessage</a>
             }
-        </FluentMessageBar>
+        </MudAlert>
         @if(IsConnected)
         {
-            <FluentMessageBar Title="Lưu ý"
-                              Intent="MessageIntent.Warning"
-                              AllowDismiss="false">
+            <MudAlert Severity="Severity.Warning" ShowCloseIcon="false">
                 Vui lòng sao lưu dữ liệu trước khi thực hiện các bước tiếp theo!
-            </FluentMessageBar>
+            </MudAlert>
         }
     }
     else
     {
-        <FluentMessageBar Intent="MessageIntent.Warning"
-                          AllowDismiss="false">
+        <MudAlert Severity="Severity.Info" ShowCloseIcon="false">
             Vui lòng thực hiện kiểm tra kết nối trước khi tiếp tục!
-        </FluentMessageBar>
+        </MudAlert>
     }
 
-</FluentStack>
+</MudStack>
 
 @code {
-    bool _isChecking = false;
+    bool _processing = false;
     bool _finishChecking = false;
     string _serverAddress = "localhost";
     string _databaseName = "ELIS";
@@ -84,7 +82,7 @@
     string _errorMessage = string.Empty;
     async Task StartCheckConnectionAsync()
     {
-        _isChecking = true;
+        _processing = true;
         var connectionString  = $"Server={_serverAddress};" +
                                 $"Database={_databaseName};" +
                                 $"User Id={_userName};" +
@@ -106,7 +104,7 @@
         finally
         {
             await IsConnectedChanged.InvokeAsync(IsConnected);
-            _isChecking = false;
+            _processing = false;
             _finishChecking = true;
         }
     }
