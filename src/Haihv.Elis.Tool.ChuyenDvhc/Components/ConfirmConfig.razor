@@ -1,0 +1,13 @@
+﻿<FluentStack Orientation="Orientation.Vertical">
+    <FluentMessageBar Title="Vui lòng xác nhận các thông tin sau:"
+                      Intent="MessageIntent.Warning"
+                      AllowDismiss="false">
+
+        <FluentDivider></FluentDivider>
+        <FluentCheckbox @bind-Value="_isBackup" Label="Đã sao lưu cơ sở dữ liệu"></FluentCheckbox>
+    </FluentMessageBar>
+</FluentStack>
+
+@code {
+    bool _isBackup = false;
+}

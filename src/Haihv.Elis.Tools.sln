@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tools.ChuyenDvhc", "Haihv.Elis.Tools.ChuyenDvhc\Haihv.Elis.Tools.ChuyenDvhc.csproj", "{0C157A54-9FB3-49AA-A0C6-DBE4D3A891D9}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.ChuyenDvhc", "Haihv.Elis.Tool.ChuyenDvhc\Haihv.Elis.Tool.ChuyenDvhc.csproj", "{AD41591B-F6E8-4D69-82BE-E0B2058FA089}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -11,10 +11,10 @@ Global
 		Release|Any CPU = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
-		{0C157A54-9FB3-49AA-A0C6-DBE4D3A891D9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{0C157A54-9FB3-49AA-A0C6-DBE4D3A891D9}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{0C157A54-9FB3-49AA-A0C6-DBE4D3A891D9}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{0C157A54-9FB3-49AA-A0C6-DBE4D3A891D9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{AD41591B-F6E8-4D69-82BE-E0B2058FA089}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AD41591B-F6E8-4D69-82BE-E0B2058FA089}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AD41591B-F6E8-4D69-82BE-E0B2058FA089}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AD41591B-F6E8-4D69-82BE-E0B2058FA089}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

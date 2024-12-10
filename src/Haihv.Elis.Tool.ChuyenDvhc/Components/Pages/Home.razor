@@ -1,0 +1,59 @@
+﻿@page "/"
+
+@inject IDialogService DialogService
+<FluentWizard StepperPosition="StepperPosition.Top"
+              StepSequence="WizardStepSequence.Linear"
+              Border="WizardBorder.Outside"
+              StepTitleHiddenWhen="@GridItemHidden.XsAndDown"
+              Height="calc(100vh - 50px)"
+              OnFinish="@OnFinishedAsync">
+    <Steps>
+        <FluentWizardStep Label="Giới thiệu">
+            Công cụ chuyển đổi đơn vị hành chính được phát triển nhằm hỗ trợ trong việc chuyển đổi dữ liệu các thửa đất trên cơ sở dữ liệu ELIS SQL,
+            khi có các thay đổi về địa giới hành chính, bao gồm việc sát nhập, chia tách, hoặc đổi tên đơn vị hành chính.
+        </FluentWizardStep>
+        <FluentWizardStep Label="Kết nối kết nối"
+                          Summary="Cấu hình kết nối cơ sở dữ liệu ELIS SQL"
+                          IconNext="@(new Icons.Filled.Size24.DatabaseLink())"
+                          IconCurrent="@(new Icons.Filled.Size24.DatabaseLink())"
+                          OnChange="@OnStepChange">
+            <DataConnection @bind-IsConnected="_isConnected"></DataConnection>
+        </FluentWizardStep>
+        <FluentWizardStep Label="Cấu hình chuyển đổi"
+                          Summary="Cấu hình các tham số chuyển đổi"
+                          IconNext="@(new Icons.Regular.Size20.DataUsageSettings())"
+                          IconCurrent="@(new Icons.Regular.Size20.DataUsageSettings())"
+                          OnChange="@OnStepChange">
+        <ConfigDataTransfer IsConnected="_isConnected"></ConfigDataTransfer>
+        </FluentWizardStep>
+        <FluentWizardStep Label="Xác thực cấu hình"
+                          Summary="Xác thực cấu hình chuyển đổi"
+                          Disabled="!_isConnected"
+                          IconPrevious="@(new Icons.Filled.Size24.Star())"
+                          IconCurrent="@(new Icons.Filled.Size24.StarEmphasis())"
+                          IconNext="@(new Icons.Regular.Size24.Star())"
+                          DisplayStepNumber="false"
+                          OnChange="@OnStepChange">
+            <ConfirmConfig></ConfirmConfig>
+        </FluentWizardStep>
+        <FluentWizardStep Label="Quá trình thực hiện"
+                          Summary="Thực hiện chuyển đổi dữ liệu"
+                          Disabled="!_isConnected"
+                          OnChange="@OnStepChange">
+
+        </FluentWizardStep>
+    </Steps>
+</FluentWizard>
+@code
+{
+    bool _isConnected;
+    void OnStepChange(FluentWizardStepChangeEventArgs e)
+    {
+       
+    }
+
+    async Task OnFinishedAsync()
+    {
+        await DialogService.ShowInfoAsync("Wizard completed");
+    }
+}

@@ -1,0 +1,113 @@
+﻿@using Haihv.Elis.Tool.ChuyenDvhc.Data
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Caching.Memory
+
+@inject IMemoryCache MemoryCache
+
+<FluentStack Orientation="Orientation.Vertical">
+    <FluentTextField @bind-Value="_serverAddress"
+                     Label="Máy chủ cơ sở dữ liệu ELIS SQL" 
+                     style="width: 100%;">
+    </FluentTextField>
+    <FluentTextField @bind-Value="_databaseName"
+                     Label="Tên cơ sở dữ liệu"
+                     style="width: 100%;">
+        
+    </FluentTextField>
+    <FluentTextField @bind-Value="_userName"
+                     Label="Tên đăng nhập" 
+                     style="width: 100%;">
+    </FluentTextField>
+    <FluentTextField @bind-Value="_password"
+                     Label="Mật khẩu"
+                     TextFieldType="TextFieldType.Password"
+                     style="width: 100%;">
+    </FluentTextField>
+    <FluentCheckbox @bind-Value="_trustedConnection"
+                    Label="Sử dụng kết nối an toàn"
+                    style="width: 100%;"/>
+    <FluentButton IconStart="@(new Icons.Regular.Size16.ArrowClockwise())"
+                  Appearance="Appearance.Accent"
+                  Loading="@_isChecking"
+                  OnClick="@StartCheckConnectionAsync">
+        Kiểm tra kết nối
+    </FluentButton>
+    
+    @if (_finishChecking)
+    {
+        <FluentMessageBar Title="Trạng thái kết nối:"
+                          Intent="@(IsConnected ? MessageIntent.Success : MessageIntent.Error)"
+                          AllowDismiss="false">
+            @if (IsConnected)
+            {
+                <span>Kết nối thành công</span>
+            }
+            else
+            {
+                <a>Kết nối thất bại</a>
+                <br/>
+                <a>@_errorMessage</a>
+            }
+        </FluentMessageBar>
+        @if(IsConnected)
+        {
+            <FluentMessageBar Title="Lưu ý"
+                              Intent="MessageIntent.Warning"
+                              AllowDismiss="false">
+                Vui lòng sao lưu dữ liệu trước khi thực hiện các bước tiếp theo!
+            </FluentMessageBar>
+        }
+    }
+    else
+    {
+        <FluentMessageBar Intent="MessageIntent.Warning"
+                          AllowDismiss="false">
+            Vui lòng thực hiện kiểm tra kết nối trước khi tiếp tục!
+        </FluentMessageBar>
+    }
+
+</FluentStack>
+
+@code {
+    bool _isChecking = false;
+    bool _finishChecking = false;
+    string _serverAddress = "localhost";
+    string _databaseName = "ELIS";
+    string _userName = "sa";
+    string _password = "123456";
+    [Parameter]
+    public bool IsConnected { get; set; }
+
+    [Parameter]
+    public EventCallback<bool> IsConnectedChanged { get; set; }
+    bool _trustedConnection = true;
+    string _errorMessage = string.Empty;
+    async Task StartCheckConnectionAsync()
+    {
+        _isChecking = true;
+        var connectionString  = $"Server={_serverAddress};" +
+                                $"Database={_databaseName};" +
+                                $"User Id={_userName};" +
+                                $"Password={_password};" +
+                                $"TrustServerCertificate={_trustedConnection};";
+        try
+        {
+            await using var context = new ElisDataContext(connectionString);
+            await context.Database.OpenConnectionAsync();
+            MemoryCache.Set("ConnectionString", connectionString);
+            IsConnected = true;
+        }
+        catch (Exception ex)
+        {
+            IsConnected = false;
+            Console.WriteLine(ex);
+            _errorMessage = ex.Message;
+        }
+        finally
+        {
+            await IsConnectedChanged.InvokeAsync(IsConnected);
+            _isChecking = false;
+            _finishChecking = true;
+        }
+    }
+}
