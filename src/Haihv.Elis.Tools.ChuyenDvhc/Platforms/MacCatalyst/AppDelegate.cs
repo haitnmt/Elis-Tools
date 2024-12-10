@@ -1,9 +1,10 @@
 ﻿using Foundation;
 
-namespace Haihv.Elis.Tools.ChuyenDvhc;
-
-[Register("AppDelegate")]
-public class AppDelegate : MauiUIApplicationDelegate
+namespace Haihv.Elis.Tools.ChuyenDvhc
 {
-    protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+    [Register("AppDelegate")]
+    public class AppDelegate : MauiUIApplicationDelegate
+    {
+        protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
+    }
 }
