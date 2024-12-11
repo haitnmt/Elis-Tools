@@ -24,6 +24,7 @@
                      FullWidth="true">
     </MudTextField>
     <MudCheckBox @bind-Value="_trustedConnection"
+                 Dense="true"
                  Label="Sử dụng kết nối an toàn"/>
     <MudButton Disabled="@_processing" OnClick="StartCheckConnectionAsync" Variant="Variant.Filled" Color="Color.Primary">
         @if (_processing)
@@ -38,7 +39,8 @@
     </MudButton>
     @if (_finishChecking)
     {
-        <MudAlert Severity="@(IsConnected ? Severity.Success : Severity.Error)" ShowCloseIcon="false">
+        <MudAlert Severity="@(IsConnected ? Severity.Success : Severity.Error)" 
+                  Dense="true">
             @if (IsConnected)
             {
                 <span>Kết nối thành công</span>
@@ -52,14 +54,16 @@
         </MudAlert>
         @if(IsConnected)
         {
-            <MudAlert Severity="Severity.Warning" ShowCloseIcon="false">
+            <MudAlert Severity="Severity.Warning" 
+                      Dense="true">
                 Vui lòng sao lưu dữ liệu trước khi thực hiện các bước tiếp theo!
             </MudAlert>
         }
     }
     else
     {
-        <MudAlert Severity="Severity.Info" ShowCloseIcon="false">
+        <MudAlert Severity="Severity.Info" 
+                  Dense="true">
             Vui lòng thực hiện kiểm tra kết nối trước khi tiếp tục!
         </MudAlert>
     }
@@ -69,10 +73,10 @@
 @code {
     bool _processing = false;
     bool _finishChecking = false;
-    string _serverAddress = "localhost";
-    string _databaseName = "ELIS";
-    string _userName = "sa";
-    string _password = "123456";
+    string _serverAddress = "1.1.1.1";
+    string _databaseName = "elis";
+    string _userName = "";
+    string _password = "";
     [Parameter]
     public bool IsConnected { get; set; }
 
@@ -83,6 +87,7 @@
     async Task StartCheckConnectionAsync()
     {
         _processing = true;
+        StateHasChanged();
         var connectionString  = $"Server={_serverAddress};" +
                                 $"Database={_databaseName};" +
                                 $"User Id={_userName};" +

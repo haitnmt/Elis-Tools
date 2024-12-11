@@ -1,12 +1,40 @@
 ﻿@inherits LayoutComponentBase
 
-<main>
-    <MudLayout>
-        <MudAppBar>
+<MudThemeProvider @ref="_mudThemeProvider"  @bind-IsDarkMode="@_isDarkMode" />
+<MudPopoverProvider />
+<MudDialogProvider />
+
+<MudLayout>
+    <MudAppBar Dense="true" Elevation="6">
+        <MudText Typo="Typo.caption">
             Công cụ chuyển đổi đơn vị hành chính
-        </MudAppBar>
-        <MudMainContent>
-            @Body
-        </MudMainContent>
-    </MudLayout>
-</main>
+        </MudText>
+        <MudSpacer></MudSpacer>
+        <MudToggleIconButton @bind-Toggled="_isDarkMode"
+                             Icon="@Icons.Material.Filled.DarkMode"
+                             Color="@Color.Dark"
+                             ToggledIcon="@Icons.Material.Filled.LightMode"
+                             ToggledColor="@Color.Default">
+        </MudToggleIconButton>
+        <MudIconButton Color="Color.Default"
+                               Icon="@Icons.Custom.Brands.GitHub"
+                               Href="https://github.com/haitnmt/Elis-Tools/tree/main/src/Haihv.Elis.Tool.ChuyenDvhc"/>
+
+    </MudAppBar>
+    <MudMainContent>
+        @Body
+    </MudMainContent>
+</MudLayout>
+
+@code
+{
+    private bool _isDarkMode;
+    private MudThemeProvider _mudThemeProvider = default!;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+            await _mudThemeProvider.GetSystemPreference();
+    }
+    
+}

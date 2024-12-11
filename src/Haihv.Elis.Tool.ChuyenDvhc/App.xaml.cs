@@ -1,7 +1,4 @@
-﻿using Microsoft.Maui;
-using Microsoft.Maui.Controls;
-
-namespace Haihv.Elis.Tool.ChuyenDvhc
+﻿namespace Haihv.Elis.Tool.ChuyenDvhc
 {
     public partial class App
     {
@@ -15,10 +12,10 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
             return new Window(new MainPage())
             {
                 Title = "Chuyển đổi đơn vị hành chính",
-                MaximumHeight = 740,
-                MaximumWidth = 960,
-                MinimumHeight = 740,
-                MinimumWidth = 960,
+                MaximumHeight = 710,
+                MaximumWidth = 880,
+                MinimumHeight = 710,
+                MinimumWidth = 880,
                 
             };
         }

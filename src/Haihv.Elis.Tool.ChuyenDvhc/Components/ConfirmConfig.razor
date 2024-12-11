@@ -1,9 +1,14 @@
 ﻿<MudStack>
     <MudAlert Severity="Severity.Warning" ShowCloseIcon="false">
-        <a>Vui lòng xác nhận các thông tin sau:</a>
-        <MudDivider></MudDivider>
-        <MudCheckBox @bind-Value="_isBackup" Label="Đã sao lưu cơ sở dữ liệu"></MudCheckBox>
+        <MudText>
+            Vui lòng kiểm tra lại thông tin cấu hình trước khi tiếp tục!
+        </MudText>
+        <MudDivider s></MudDivider>
+        <MudCheckBox @bind-Value="_isBackup" 
+                     Dense="true"
+                     Label="Đã sao lưu cơ sở dữ liệu"></MudCheckBox>
     </MudAlert>
+    <MudSpacer></MudSpacer>
 </MudStack>
 
 @code {
