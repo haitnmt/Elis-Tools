@@ -1,26 +1,26 @@
-﻿using Haihv.Elis.Tool.ChuyenDvhc.Data;
+using Haihv.Elis.Tool.ChuyenDvhc.Data;
+using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Components;
 
-public partial class ConfigDataTransfer
+public partial class SelectDvhc : ComponentBase
 {
     [Parameter] public bool IsConnected { get; set; }
 
     [Inject] private IMemoryCache Cache { get; set; } = default!;
     private string? _connectionString = string.Empty;
     private ElisDataContext _dataContext = default!;
-    private string _tenDvhcSau = string.Empty;
-    private IEnumerable<CapTinh> _capTinhs = [];
-    private CapTinh? _capTinh;
+    private IEnumerable<DvhcRecord>? _capTinhs = [];
+    private DvhcRecord? _capTinh;
 
-    private IEnumerable<CapHuyen> _capHuyens = [];
-    private CapHuyen? _capHuyen;
+    private IEnumerable<DvhcRecord> _capHuyens = [];
+    private DvhcRecord? _capHuyen;
 
-    private IEnumerable<CapXa> _capXas = [];
-    private CapXa? _capXa;
+    private IEnumerable<DvhcRecord> _capXas = [];
+    private DvhcRecord? _capXa;
     
     protected override void OnParametersSet()
     {
@@ -32,25 +32,23 @@ public partial class ConfigDataTransfer
         }
     }
 
-    private async Task<IEnumerable<CapTinh>> GetCapTinh(string? value, CancellationToken token)
+    private async Task<IEnumerable<DvhcRecord>?> GetCapTinh(string? value, CancellationToken token)
     {
-        if (_capTinhs.Any())
+        if (_capTinhs != null &&  _capTinhs.Any())
             return string.IsNullOrWhiteSpace(value)
                 ? _capTinhs
-                : _capTinhs.Where(x => x.TenTinh.Contains(value, StringComparison.InvariantCultureIgnoreCase));
-        
-        var dvhcs = await _dataContext.Dvhcs
-            .Where(d => d.MaHuyen == 0 && d.MaXa == 0)
-            .OrderBy(d => d.MaTinh)
-            .ToListAsync(cancellationToken: token);
-        _capTinhs = dvhcs.Select(d => new CapTinh()
+                : _capTinhs.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+        _capTinhs = await Cache.GetOrCreateAsync("CapTinh", async entry =>
         {
-            MaTinh = d.MaTinh,
-            TenTinh = d.Ten
+            var dvhcs = await _dataContext.Dvhcs
+                .Where(d => d.MaHuyen == 0 && d.MaXa == 0)
+                .OrderBy(d => d.MaTinh).ToListAsync(cancellationToken: token);
+            return dvhcs.Select(d => new DvhcRecord(d.MaTinh, d.Ten));
         });
-        return string.IsNullOrWhiteSpace(value) ? 
-            _capTinhs : 
-            _capTinhs.Where(x => x.TenTinh.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+        var dvhcRecords = _capTinhs.ToList();
+        return string.IsNullOrWhiteSpace(value) && _capTinhs != null && dvhcRecords.Any()
+                ? dvhcRecords
+                : dvhcRecords.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
     }
 
     private static string? CapTinhToString(CapTinh? capTinh)
@@ -79,7 +77,7 @@ public partial class ConfigDataTransfer
     {
         return capHuyen?.TenHuyen;
     }
-    private async Task<IEnumerable<CapXa>> GetCapXa(string? value, CancellationToken token)
+    private async Task<IEnumerable<DvhcRecord>> GetCapXa(string? value, CancellationToken token)
     {
         if (_capHuyen == null) return [];
         if (_capXas.Any())
@@ -88,27 +86,18 @@ public partial class ConfigDataTransfer
                 : _capXas.Where(x => x.TenXa.Contains(value, StringComparison.InvariantCultureIgnoreCase));
         
         var dvhcs = await _dataContext.Dvhcs
-            .Where(d => d.MaHuyen == _capHuyen.MaHuyen && d.MaXa != 0)
-            .OrderBy(d => d.MaXa)
-            .ToListAsync(cancellationToken: token);
-        _capXas = dvhcs.Select(d => new CapXa(d.MaDvhc, d.MaXa, d.Ten));
+            .Where(d => d.MaHuyen == _capHuyen.MaHuyen && d.MaXa != 0).SetOrGetDvhc(token)
         return string.IsNullOrWhiteSpace(value) ? 
             _capXas : 
             _capXas.Where(x => x.TenXa.Contains(value, StringComparison.InvariantCultureIgnoreCase));
     }
-    private static string? CapXaToString(CapXa? capXa)
+    
+    private static string? DvhcToString(DvhcRecord? dvhcRecord)
     {
-        return capXa?.TenXa;
+        return dvhcRecord?.Ten;
     }
+    
+    
 }
 
-public class CapTinh
-{
-    public int MaTinh { get; init; }
-
-    public required string TenTinh { get; init;}
-};
-
-public sealed record CapHuyen(int MaHuyen, string TenHuyen);
-
-public sealed record CapXa(int MaDvhc, int MaXa, string TenXa);
+public sealed record DvhcRecord(int Ma, string Ten);

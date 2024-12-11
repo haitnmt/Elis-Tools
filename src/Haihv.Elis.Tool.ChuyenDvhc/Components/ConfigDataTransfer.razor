@@ -12,71 +12,7 @@
                                  Color="Color.Primary">
                             Thông tin trước chuyển đổi
                         </MudText>
-                        <MudAutocomplete T="CapTinh"
-                                         Label="Chọn đơn vị hành chính cấp Tỉnh"
-                                         @bind-Value="_capTinh"
-                                         SearchFunc="GetCapTinh"
-                                         ToStringFunc="CapTinhToString"
-                                         Margin="Margin.Dense"
-                                         Dense="true"
-                                         Variant="Variant.Outlined"
-                                         ShowProgressIndicator="true"
-                                         ProgressIndicatorColor="Color.Default"
-                                         OnBlur="() => { _capHuyens = []; _capHuyen = null; _capXa = null; }">
-                            <ItemTemplate Context="ct">
-                                <MudStack Row="true" StretchItems="StretchItems.All">
-                                    <MudText Typo="Typo.subtitle1">
-                                        @ct.TenTinh
-                                    </MudText>
-                                    <MudText Typo="Typo.subtitle1" Align="Align.End">
-                                        [Mã: @ct.MaTinh.ToString("00")]
-                                    </MudText>
-                                </MudStack>
-                            </ItemTemplate>
-                        </MudAutocomplete>
-                        <MudAutocomplete T="CapHuyen"
-                                         Label="Chọn đơn vị hành chính cấp Huyện"
-                                         @bind-Value="_capHuyen"
-                                         SearchFunc="GetCapHuyen"
-                                         ToStringFunc="CapHuyenToString"
-                                         Margin="Margin.Dense"
-                                         Dense="true"
-                                         Variant="Variant.Outlined"
-                                         ShowProgressIndicator="true"
-                                         ProgressIndicatorColor="Color.Default"
-                                         OnBlur="() => { _capXas = []; _capXa = null; }">
-                            <ItemTemplate Context="ch">
-                                <MudStack Row="true" StretchItems="StretchItems.All">
-                                    <MudText Typo="Typo.subtitle1">
-                                        @ch.TenHuyen
-                                    </MudText>
-                                    <MudText Typo="Typo.subtitle1" Align="Align.End">
-                                        [Mã: @ch.MaHuyen.ToString("000")]
-                                    </MudText>
-                                </MudStack>
-                            </ItemTemplate>
-                        </MudAutocomplete>
-                        <MudAutocomplete T="CapXa"
-                                         Label="Chọn đơn vị hành chính cấp Xã"
-                                         @bind-Value="_capXa"
-                                         SearchFunc="GetCapXa"
-                                         ToStringFunc="CapXaToString"
-                                         Margin="Margin.Dense"
-                                         Dense="true"
-                                         Variant="Variant.Outlined"
-                                         ShowProgressIndicator="true"
-                                         ProgressIndicatorColor="Color.Default">
-                            <ItemTemplate Context="cx">
-                                <MudStack Row="true" StretchItems="StretchItems.All">
-                                    <MudText Typo="Typo.subtitle1">
-                                        @cx.TenXa
-                                    </MudText>
-                                    <MudText Typo="Typo.subtitle1" Align="Align.End">
-                                        [Mã: @cx.MaXa.ToString("00000")]
-                                    </MudText>
-                                </MudStack>
-                            </ItemTemplate>
-                        </MudAutocomplete>
+                        
                     </MudStack>
                 </MudCardContent>
             </MudCard>
@@ -89,7 +25,7 @@
                 <MudCardContent>
                     <MudText>Chọn đơn vị hành chính</MudText>
                     <MudTextField @bind-Value="@_tenDvhcSau"
-                        Label="Tên đơn vị hành chính sau sát nhập"></MudTextField>
+                                  Label="Tên đơn vị hành chính sau sát nhập"></MudTextField>
                 </MudCardContent>
             </MudCard>
         </MudStack>
@@ -101,3 +37,9 @@
         </MudAlert>
     }
 </MudStack>
+
+@code
+{
+    [Parameter] public bool IsConnected { get; set; }
+    private string _tenDvhcSau = string.Empty;
+}

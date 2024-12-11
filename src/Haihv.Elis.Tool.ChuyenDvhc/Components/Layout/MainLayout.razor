@@ -13,14 +13,13 @@
         <MudToggleIconButton @bind-Toggled="_isDarkMode"
                              Icon="@Icons.Material.Filled.DarkMode"
                              Color="@Color.Dark"
-                             ToggledIcon="@Icons.Material.Filled.LightMode"
+                             ToggledIcon="@Icons.Material.Filled.LightMode" 
                              ToggledColor="@Color.Default">
         </MudToggleIconButton>
         <MudIconButton Color="Color.Default"
-                               Icon="@Icons.Custom.Brands.GitHub"
-                               Href="https://github.com/haitnmt/Elis-Tools/tree/main/src/Haihv.Elis.Tool.ChuyenDvhc"/>
-
-    </MudAppBar>
+                       Icon="@Icons.Custom.Brands.GitHub"
+                       Href="@UrlGitHub"/>
+        </MudAppBar>
     <MudMainContent>
         @Body
     </MudMainContent>
@@ -30,6 +29,9 @@
 {
     private bool _isDarkMode;
     private MudThemeProvider _mudThemeProvider = default!;
+
+    private const string UrlGitHub = 
+        "https://github.com/haitnmt/Elis-Tools/tree/main/src/Haihv.Elis.Tool.ChuyenDvhc";
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
