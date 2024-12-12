@@ -9,26 +9,43 @@
                 <MudCardContent>
                     <MudStack>
                         <MudText Typo="Typo.body1"
-                                 Color="Color.Primary">
-                            Thông tin trước chuyển đổi
+                        Color="Color.Primary">
+                            Đơn vị hành chính trước chuyển đổi
                         </MudText>
-                        
+                        <SelectDvhc IsConnected="IsConnected"
+                        IsBefore="true"
+                        MultiCapXa="true"
+                        CapTinhChanged="CapTinhChanged"
+                        CapHuyenChanged="CapHuyenChanged"
+                        CapXaChanged="CapXaChanged"/>
                     </MudStack>
                 </MudCardContent>
             </MudCard>
             <MudCard>
-                <MudCardHeader>
-                    <CardHeaderContent>
-                        <MudText Typo="Typo.body1">Thông tin sau chuyển đổi</MudText>
-                    </CardHeaderContent>
-                </MudCardHeader>
                 <MudCardContent>
-                    <MudText>Chọn đơn vị hành chính</MudText>
-                    <MudTextField @bind-Value="@_tenDvhcSau"
-                                  Label="Tên đơn vị hành chính sau sát nhập"></MudTextField>
+                    <MudStack>
+                        <MudText Typo="Typo.body1"
+                        Color="Color.Secondary">
+                            Đơn vị hành chính sau chuyển đổi
+                        </MudText>
+                        <SelectDvhc IsConnected="IsConnected"
+                        IsBefore="false"
+                        MultiCapXa="false"
+                        CapTinh="_capTinh"
+                                    CapTinhChanged="CapTinhSauChanged"
+                        CapHuyen="_capHuyen"
+                        CapHuyenChanged="CapHuyenChanged"
+                        CapXas="_capXa"
+                        CapXaChanged="CapXaSauChanged" />
+                        <MudTextField @bind-Value="@_tenDvhcSau"
+                        Variant="Variant.Outlined"
+                        Margin="Margin.Dense"
+                        Label="Tên đơn vị hành chính sau sát nhập"/>
+                    </MudStack>
                 </MudCardContent>
             </MudCard>
         </MudStack>
+        <ThamChieuToBanDo/>
     }
     else
     {
@@ -42,4 +59,49 @@
 {
     [Parameter] public bool IsConnected { get; set; }
     private string _tenDvhcSau = string.Empty;
+    private DvhcRecord? _capTinh;
+    private DvhcRecord? _capHuyen;
+    private List<DvhcRecord?> _capXa = [];
+
+    private void CapTinhChanged(DvhcRecord? capTinh)
+    {
+        if (capTinh == null || _capTinh != null) return;
+        _capTinh = capTinh;
+        _capHuyen = null;
+        _capXa = [];
+    }
+    private void CapTinhSauChanged(DvhcRecord? capTinh)
+    {
+        if (capTinh == null) return;
+        _capTinh = capTinh;
+        _capHuyen = null;
+        _capXa = [];
+    }
+
+    private void CapHuyenChanged(DvhcRecord? capHuyen)
+    {
+        if (capHuyen == null || _capHuyen != null) return;
+        _capHuyen = capHuyen;
+        _capXa = [];
+    }
+    private void CapHuyenSauChanged(DvhcRecord? capHuyen)
+    {
+        if (capHuyen == null) return;
+        _capHuyen = capHuyen;
+        _capXa = [];
+    }
+
+    private void CapXaChanged(IEnumerable<DvhcRecord?>? capXa)
+    {
+        if (capXa == null || _capXa.Count > 0) return;
+        _capXa = capXa.ToList();
+        if (string.IsNullOrWhiteSpace(_tenDvhcSau))
+            _tenDvhcSau = _capXa.Count > 0 ? _capXa[0]?.Ten ?? string.Empty : string.Empty;
+    }
+    private void CapXaSauChanged(IEnumerable<DvhcRecord?>? capXa)
+    {
+        if (capXa == null) return;
+        _capXa = capXa.ToList();
+        _tenDvhcSau = _capXa.Count > 0 ? _capXa[0]?.Ten ?? string.Empty : string.Empty;
+    }
 }

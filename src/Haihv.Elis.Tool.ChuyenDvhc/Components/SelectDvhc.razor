@@ -1,72 +1,69 @@
 <MudStack>
-    <MudAutocomplete T="CapTinh"
+    <MudAutocomplete T="DvhcRecord"
                      Label="Chọn đơn vị hành chính cấp Tỉnh"
-                     @bind-Value="_capTinh"
+                     @bind-Value="CapTinh"
                      SearchFunc="GetCapTinh"
-                     ToStringFunc="CapTinhToString"
+                     ToStringFunc="DvhcToString"
                      Margin="Margin.Dense"
                      Dense="true"
                      Variant="Variant.Outlined"
                      ShowProgressIndicator="true"
                      ProgressIndicatorColor="Color.Default"
-                     OnBlur="() => { _capHuyens = []; _capHuyen = null; _capXa = null; }">
+                     OnBlur="SetCapTinh">
         <ItemTemplate Context="ct">
             <MudStack Row="true" StretchItems="StretchItems.All">
                 <MudText Typo="Typo.subtitle1">
-                    @ct.TenTinh
+                    @ct.Ten
                 </MudText>
                 <MudText Typo="Typo.subtitle1" Align="Align.End">
-                    [Mã: @ct.MaTinh.ToString("00")]
+                    [Mã: @ct.Ma.ToString("00")]
                 </MudText>
             </MudStack>
         </ItemTemplate>
     </MudAutocomplete>
-    <MudAutocomplete T="CapHuyen"
+    <MudAutocomplete T="DvhcRecord"
                      Label="Chọn đơn vị hành chính cấp Huyện"
-                     @bind-Value="_capHuyen"
+                     @bind-Value="CapHuyen"
                      SearchFunc="GetCapHuyen"
-                     ToStringFunc="CapHuyenToString"
+                     ToStringFunc="DvhcToString"
                      Margin="Margin.Dense"
                      Dense="true"
                      Variant="Variant.Outlined"
                      ShowProgressIndicator="true"
                      ProgressIndicatorColor="Color.Default"
-                     OnBlur="() => { _capXas = []; _capXa = null; }">
+                     OnBlur="SetCapHuyen">
         <ItemTemplate Context="ch">
             <MudStack Row="true" StretchItems="StretchItems.All">
                 <MudText Typo="Typo.subtitle1">
-                    @ch.TenHuyen
+                    @ch.Ten
                 </MudText>
                 <MudText Typo="Typo.subtitle1" Align="Align.End">
-                    [Mã: @ch.MaHuyen.ToString("000")]
+                    [Mã: @ch.Ma.ToString("000")]
                 </MudText>
             </MudStack>
         </ItemTemplate>
     </MudAutocomplete>
-    <MudAutocomplete T="CapXa"
-                     Label="Chọn đơn vị hành chính cấp Xã"
-                     @bind-Value="_capXa"
-                     SearchFunc="GetCapXa"
-                     ToStringFunc="CapXaToString"
-                     Margin="Margin.Dense"
-                     Dense="true"
-                     Variant="Variant.Outlined"
-                     ShowProgressIndicator="true"
-                     ProgressIndicatorColor="Color.Default">
-        <ItemTemplate Context="cx">
-            <MudStack Row="true" StretchItems="StretchItems.All">
-                <MudText Typo="Typo.subtitle1">
-                    @cx.TenXa
-                </MudText>
-                <MudText Typo="Typo.subtitle1" Align="Align.End">
-                    [Mã: @cx.MaXa.ToString("00000")]
-                </MudText>
-            </MudStack>
-        </ItemTemplate>
-    </MudAutocomplete>
+    <MudSelect T="DvhcRecord"
+               Label="Chọn đơn vị hành chính cấp Xã"
+               Variant="Variant.Outlined"
+               Margin="Margin.Dense"
+               Dense="true"
+               SelectedValues="CapXas"
+               ToStringFunc="CapXaToString"
+               MultiSelection="MultiCapXa"
+               SelectedValuesChanged="SetCapXa">
+        @foreach(var capXa in _capXas)
+        {
+            <MudSelectItem Value="capXa">
+                <MudStack Row="true" StretchItems="StretchItems.All">
+                    <MudText Typo="Typo.subtitle1">
+                        @capXa.Ten
+                    </MudText>
+                    <MudText Typo="Typo.subtitle1" Align="Align.End">
+                        [Mã: @capXa.Ma.ToString("00000")]
+                    </MudText>
+                </MudStack>
+            </MudSelectItem>
+        }
+    </MudSelect>
 </MudStack>
-
-
-@code {
-    
-}

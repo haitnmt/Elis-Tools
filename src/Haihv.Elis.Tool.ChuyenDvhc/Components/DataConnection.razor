@@ -1,4 +1,5 @@
-﻿@using Haihv.Elis.Tool.ChuyenDvhc.Data
+﻿@using System.Text.Json
+@using Haihv.Elis.Tool.ChuyenDvhc.Data
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Caching.Memory
 
@@ -73,10 +74,10 @@
 @code {
     bool _processing = false;
     bool _finishChecking = false;
-    string _serverAddress = "1.1.1.1";
-    string _databaseName = "elis";
-    string _userName = "";
-    string _password = "";
+    string _serverAddress = string.Empty;
+    string _databaseName = string.Empty;
+    string _userName = string.Empty;
+    string _password = string.Empty;
     [Parameter]
     public bool IsConnected { get; set; }
 
@@ -84,6 +85,13 @@
     public EventCallback<bool> IsConnectedChanged { get; set; }
     bool _trustedConnection = true;
     string _errorMessage = string.Empty;
+
+    protected override async Task OnInitializedAsync()
+    {
+        await LoadConnectionInfoAsync();
+        await base.OnInitializedAsync();
+    }
+
     async Task StartCheckConnectionAsync()
     {
         _processing = true;
@@ -99,6 +107,8 @@
             await context.Database.OpenConnectionAsync();
             MemoryCache.Set("ConnectionString", connectionString);
             IsConnected = true;
+            _errorMessage = string.Empty;
+            await SaveConnectionInfoAsync();
         }
         catch (Exception ex)
         {
@@ -113,4 +123,55 @@
             _finishChecking = true;
         }
     }
+    
+    private class DataConnectionModel
+    {
+        public string ServerAddress { get; set; } = "localhost";
+        public string DatabaseName { get; set; } = "elis";
+        public string UserName { get; set; } = "sa";
+        public string Password { get; set; } = "";
+        public bool TrustedConnection { get; set; } = true;
+    }
+
+    private async Task LoadConnectionInfoAsync()
+    {
+        try
+        {
+            var json = await File.ReadAllTextAsync("connectionInfo.inf");
+            var connectionInfo = JsonSerializer.Deserialize<DataConnectionModel>(json.Decrypt());
+            if (connectionInfo != null)
+            {
+                _serverAddress = connectionInfo.ServerAddress;
+                _databaseName = connectionInfo.DatabaseName;
+                _userName = connectionInfo.UserName;
+                _password = connectionInfo.Password;
+                _trustedConnection = connectionInfo.TrustedConnection;
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Error reading connection info: {ex.Message}");
+            var connectionInfo = new DataConnectionModel();
+            _serverAddress = connectionInfo.ServerAddress;
+            _databaseName = connectionInfo.DatabaseName;
+            _userName = connectionInfo.UserName;
+            _password = connectionInfo.Password;
+            _trustedConnection = connectionInfo.TrustedConnection;
+        }
+    }
+    
+    private async Task SaveConnectionInfoAsync()
+    {
+        var connectionInfo = new DataConnectionModel
+        {
+            ServerAddress = _serverAddress,
+            DatabaseName = _databaseName,
+            UserName = _userName,
+            Password = _password,
+            TrustedConnection = _trustedConnection
+        };
+        var json = JsonSerializer.Serialize(connectionInfo).Encrypt();
+        await File.WriteAllTextAsync("connectionInfo.inf", json);
+    }
 }
+

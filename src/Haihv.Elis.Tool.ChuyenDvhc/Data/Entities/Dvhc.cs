@@ -6,7 +6,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 
 [Table("DVHC")]
 [PrimaryKey("MaDvhc")]
-public class Dvhc
+public sealed class Dvhc
 {
     [Column("MaDVHC", TypeName = "int")]
     public int MaDvhc { get; set; }

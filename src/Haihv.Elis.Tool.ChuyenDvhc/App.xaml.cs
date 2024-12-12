@@ -12,11 +12,10 @@
             return new Window(new MainPage())
             {
                 Title = "Chuyển đổi đơn vị hành chính",
-                MaximumHeight = 710,
-                MaximumWidth = 880,
+                Height = 710,
+                Width = 880,
                 MinimumHeight = 710,
                 MinimumWidth = 880,
-                
             };
         }
     }
