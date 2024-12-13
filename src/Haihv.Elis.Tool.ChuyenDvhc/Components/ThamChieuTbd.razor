@@ -91,7 +91,7 @@
                 SoToBanDoTruoc = tbd.SoTo,
                 SoToBanDoSau = tbd.SoTo
             }));
-            //var soToBanDoTiepTheo = tbds.Max(tbd => tbd.SoTo) + 1;
+            var soToBanDoTiepTheo = tbds.Where(t => int.TryParse(t.SoTo, out _)).Select(t => int.Parse(t.SoTo)).Max();
             var maDvhcTruocs = DvhcTruocs
                 .Where(d => d.MaDvhc != DvhcSau.MaDvhc)
                 .Select(d => d.MaDvhc)
@@ -107,9 +107,11 @@
                     Id = stt++,
                     TenDvhcTruoc = tenDvhc,
                     MaDvhcTruoc = maDvhc,
+                    MaToBanDoTruoc = tbd.MaToBanDo,
+                    SoToBanDoTruoc = tbd.SoTo,
                     TenDvhcSau = TenDvhcSau?? DvhcSau.Ten,
                     MaDvhcSau = DvhcSau.MaDvhc,
-                    SoToBanDoTruoc = tbd.SoTo,
+                    SoToBanDoSau = soToBanDoTiepTheo++.ToString()
                 }));
             }
 

@@ -22,7 +22,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
             builder.Services.AddMauiBlazorWebView();
             
             // Đăng ký FileService
-            builder.Services.AddSingleton<IFileService, FileService>();
+           builder.Services.AddSingleton<IFileService, FileService>();
             
             // Đăng ký MudBlazor
             builder.Services.AddMudServices();
@@ -36,9 +36,4 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
             return builder.Build();
         }
     }
-}
-
-public static class Settings
-{
-    public const string KeyConnectionString = "ConnectionString";
 }

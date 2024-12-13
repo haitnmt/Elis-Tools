@@ -92,6 +92,8 @@
 
     [Parameter]
     public EventCallback<bool> IsConnectedChanged { get; set; }
+    
+    private readonly string _filePath = $"{Settings.PathRootConfig()}connectionInfo.inf";
     bool _trustedConnection = true;
     string _errorMessage = string.Empty;
     string _errorWriteFile = string.Empty;
@@ -147,7 +149,7 @@
     {
         try
         {
-            var json = await FileService.ReadFileAsync("connectionInfo.inf");
+            var json = await FileService.ReadFileAsync(_filePath);
             var connectionInfo = JsonSerializer.Deserialize<DataConnectionModel>(json.Decrypt());
             if (connectionInfo != null)
             {
@@ -183,7 +185,7 @@
         var json = JsonSerializer.Serialize(connectionInfo).Encrypt();
         try
         {
-            await FileService.WriteFileAsync("connectionInfo.inf", json);
+            await FileService.WriteFileAsync(_filePath, json);
         }
         catch (Exception ex)
         {
