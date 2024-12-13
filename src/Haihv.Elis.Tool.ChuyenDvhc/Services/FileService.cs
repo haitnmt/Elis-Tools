@@ -1,6 +1,4 @@
-﻿using System.Net;
-
-namespace Haihv.Elis.Tool.ChuyenDvhc.Services;
+﻿namespace Haihv.Elis.Tool.ChuyenDvhc.Services;
 
 public interface IFileService
 {
