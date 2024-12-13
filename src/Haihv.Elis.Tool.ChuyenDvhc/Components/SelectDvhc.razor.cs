@@ -55,7 +55,7 @@ public partial class SelectDvhc : ComponentBase
             var dvhcs = await _dataContext.Dvhcs
                 .Where(d => d.MaHuyen == 0 && d.MaXa == 0)
                 .OrderBy(d => d.MaTinh).ToListAsync(cancellationToken: token);
-            return dvhcs.Select(d => new DvhcRecord(d.MaTinh, d.Ten));
+            return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.MaTinh, d.Ten));
         });
         _capTinhs = dvhcRecords ?? [];
         return string.IsNullOrWhiteSpace(value)
@@ -75,7 +75,7 @@ public partial class SelectDvhc : ComponentBase
             var dvhcs = await _dataContext.Dvhcs
                 .Where(d => d.MaTinh == CapTinh.Ma && d.MaXa == 0 && d.MaHuyen != 0)
                 .OrderBy(d => d.MaTinh).ToListAsync(cancellationToken: token);
-            return dvhcs.Select(d => new DvhcRecord(d.MaHuyen, d.Ten));
+            return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.MaHuyen, d.Ten));
         });
 
         _capHuyens = dvhcRecords ?? [];
@@ -92,7 +92,7 @@ public partial class SelectDvhc : ComponentBase
             var dvhcs = await _dataContext.Dvhcs
                 .Where(d => d.MaHuyen == CapHuyen.Ma && d.MaXa != 0)
                 .OrderBy(d => d.MaTinh).ToListAsync();
-            return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.Ten));
+            return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.MaXa, d.Ten));
         });
 
         _capXas = dvhcRecords ?? [];
@@ -131,4 +131,4 @@ public partial class SelectDvhc : ComponentBase
     }
 }
 
-public sealed record DvhcRecord(int Ma, string Ten);
+public sealed record DvhcRecord(int MaDvhc, int Ma, string Ten);

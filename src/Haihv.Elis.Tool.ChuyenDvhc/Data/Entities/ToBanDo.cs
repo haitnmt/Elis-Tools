@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 
+[Table("ToBanDo")]
 [PrimaryKey("MaToBanDo")]
 public sealed class ToBanDo
 {
@@ -29,7 +30,9 @@ public class ThamChieuToBanDo
 {
     public int Id { get; set; }
     public int MaDvhcTruoc { get; set; }
+    public string TenDvhcTruoc { get; set; } = string.Empty;
     public int MaDvhcSau { get; set; }
+    public string TenDvhcSau { get; set; } = string.Empty;
     public int MaToBanDoTruoc { get; set; }
     public int MaToBanDoSau { get; set; }
     public string SoToBanDoTruoc { get; set; } = string.Empty;

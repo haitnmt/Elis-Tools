@@ -2,22 +2,28 @@
 
 @inject IMemoryCache MemoryCache
 <MudStack>
-    @if (IsConnected)
+    @if (!IsConnected)
+    {
+        <MudAlert Severity="Severity.Warning">
+            Vui lòng cấu hình kết nối cơ sở dữ liệu ELIS SQL trước khi tiếp tục! (Quay lại bước trước)
+        </MudAlert>
+    }
+    else
     {
         <MudStack Row="true" StretchItems="StretchItems.All">
             <MudCard>
                 <MudCardContent>
                     <MudStack>
                         <MudText Typo="Typo.body1"
-                        Color="Color.Primary">
+                                 Color="Color.Primary">
                             Đơn vị hành chính trước chuyển đổi
                         </MudText>
                         <SelectDvhc IsConnected="IsConnected"
-                        IsBefore="true"
-                        MultiCapXa="true"
-                        CapTinhChanged="CapTinhChanged"
-                        CapHuyenChanged="CapHuyenChanged"
-                        CapXaChanged="CapXaChanged"/>
+                                    IsBefore="true"
+                                    MultiCapXa="true"
+                                    CapTinhChanged="CapTinhChanged"
+                                    CapHuyenChanged="CapHuyenChanged"
+                                    CapXaChanged="CapXaChanged"/>
                     </MudStack>
                 </MudCardContent>
             </MudCard>
@@ -25,33 +31,27 @@
                 <MudCardContent>
                     <MudStack>
                         <MudText Typo="Typo.body1"
-                        Color="Color.Secondary">
+                                 Color="Color.Secondary">
                             Đơn vị hành chính sau chuyển đổi
                         </MudText>
                         <SelectDvhc IsConnected="IsConnected"
-                        IsBefore="false"
-                        MultiCapXa="false"
-                        CapTinh="_capTinh"
+                                    IsBefore="false"
+                                    MultiCapXa="false"
+                                    CapTinh="_capTinh"
                                     CapTinhChanged="CapTinhSauChanged"
-                        CapHuyen="_capHuyen"
-                        CapHuyenChanged="CapHuyenChanged"
-                        CapXas="_capXa"
-                        CapXaChanged="CapXaSauChanged" />
+                                    CapHuyen="_capHuyen"
+                                    CapHuyenChanged="CapHuyenSauChanged"
+                                    CapXas="_capXaTruoc"
+                                    CapXaChanged="CapXaSauChanged"/>
                         <MudTextField @bind-Value="@_tenDvhcSau"
-                        Variant="Variant.Outlined"
-                        Margin="Margin.Dense"
-                        Label="Tên đơn vị hành chính sau sát nhập"/>
+                                      Variant="Variant.Outlined"
+                                      Margin="Margin.Dense"
+                                      Label="Tên đơn vị hành chính sau sát nhập"/>
                     </MudStack>
                 </MudCardContent>
             </MudCard>
-        </MudStack>
-        <ThamChieuToBanDo/>
-    }
-    else
-    {
-        <MudAlert Severity="Severity.Warning">
-            Vui lòng cấu hình kết nối cơ sở dữ liệu ELIS SQL trước khi tiếp tục! (Quay lại bước trước)
-        </MudAlert>
+        </MudStack> 
+        <ThamChieuTbd DvhcTruocs="_capXaTruoc" DvhcSau="_capXaSau" TenDvhcSau="@_tenDvhcSau"/>
     }
 </MudStack>
 
@@ -61,47 +61,52 @@
     private string _tenDvhcSau = string.Empty;
     private DvhcRecord? _capTinh;
     private DvhcRecord? _capHuyen;
-    private List<DvhcRecord?> _capXa = [];
+    private List<DvhcRecord?> _capXaTruoc = [];
+    private DvhcRecord? _capXaSau;
 
     private void CapTinhChanged(DvhcRecord? capTinh)
     {
         if (capTinh == null || _capTinh != null) return;
         _capTinh = capTinh;
         _capHuyen = null;
-        _capXa = [];
+        _capXaTruoc = [];
     }
+
     private void CapTinhSauChanged(DvhcRecord? capTinh)
     {
         if (capTinh == null) return;
         _capTinh = capTinh;
         _capHuyen = null;
-        _capXa = [];
+        _capXaTruoc = [];
     }
 
     private void CapHuyenChanged(DvhcRecord? capHuyen)
     {
         if (capHuyen == null || _capHuyen != null) return;
         _capHuyen = capHuyen;
-        _capXa = [];
+        _capXaTruoc = [];
     }
+
     private void CapHuyenSauChanged(DvhcRecord? capHuyen)
     {
         if (capHuyen == null) return;
         _capHuyen = capHuyen;
-        _capXa = [];
     }
 
     private void CapXaChanged(IEnumerable<DvhcRecord?>? capXa)
     {
-        if (capXa == null || _capXa.Count > 0) return;
-        _capXa = capXa.ToList();
+        if (capXa == null) return;
+        _capXaTruoc = capXa.ToList();
         if (string.IsNullOrWhiteSpace(_tenDvhcSau))
-            _tenDvhcSau = _capXa.Count > 0 ? _capXa[0]?.Ten ?? string.Empty : string.Empty;
+            _tenDvhcSau = _capXaTruoc.Count > 0 ? _capXaTruoc[0]?.Ten ?? string.Empty : string.Empty;
     }
+
     private void CapXaSauChanged(IEnumerable<DvhcRecord?>? capXa)
     {
         if (capXa == null) return;
-        _capXa = capXa.ToList();
-        _tenDvhcSau = _capXa.Count > 0 ? _capXa[0]?.Ten ?? string.Empty : string.Empty;
+        var dvhcSau = capXa.ToList();
+        if (dvhcSau.Count == 0) return;
+        _capXaSau = dvhcSau[0];
+        _tenDvhcSau = _capXaSau?.Ten ?? string.Empty;
     }
 }

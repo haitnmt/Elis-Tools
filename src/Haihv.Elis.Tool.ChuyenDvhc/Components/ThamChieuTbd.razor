@@ -1,14 +1,49 @@
-﻿<MudCard>
+﻿@using Haihv.Elis.Tool.ChuyenDvhc.Data
+@using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.Extensions.Caching.Memory
+
+<MudCard>
     <MudCardContent>
         <MudStack>
-            <MudText Typo="Typo.body1"
-                     Color="Color.Info">
-                Bảng tham chiếu tờ bản đồ
-            </MudText>
-            <MudDataGrid Items="_thamChieuToBanDos">
-                
+            <MudStack Row="true" Justify="Justify.SpaceBetween">
+                <MudText Typo="Typo.body1"
+                         Color="Color.Info">
+                    Bảng tham chiếu tờ bản đồ
+                </MudText>
+                <MudStack Row="true">
+                    @if(DvhcTruocs != null && DvhcTruocs.Any() && DvhcSau != null)
+                    {
+                        <MudSwitch @bind-Value="_readOnly" Color="Color.Primary">Chỉ xem</MudSwitch>
+                        <MudButton Disabled="@_loadingToBanDos" OnClick="LoadBanDoFromDataAsync" Variant="Variant.Filled" Color="Color.Primary">
+                            @if (_loadingToBanDos)
+                            {
+                                <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                                <MudText Class="ms-2">Đang thực hiện</MudText>
+                            }
+                            else
+                            {
+                                <MudText>Làm mới dữ liệu tham chiếu</MudText>
+                            }
+                        </MudButton>
+                    }
+                </MudStack>
+            </MudStack>
+            <MudDataGrid Items="_thamChieuToBanDos"
+                         Dense="true"
+                         ReadOnly="_readOnly"
+                         EditMode="DataGridEditMode.Cell"
+                         Groupable="true"
+                         Filterable="true"
+                         FilterMode="DataGridFilterMode.Simple"
+                         GroupExpanded="true"
+                         FilterCaseSensitivity="DataGridFilterCaseSensitivity.Default">
                 <Columns>
-                    <PropertyColumn Property="t => t.Id"></PropertyColumn>
+                    <PropertyColumn Property="t => t.Id" Title="STT"/>
+                    <PropertyColumn Property="t => t.TenDvhcTruoc" Title="Đơn vị hành chính trước" Grouping/>
+                    <PropertyColumn Property="t => t.SoToBanDoTruoc" Title="Số tờ trước"/>
+                    <PropertyColumn Property="t => t.TenDvhcSau" Title="Đơn vị hành chính sau"/>
+                    <PropertyColumn Property="t => t.SoToBanDoSau" Title="Số tờ sau"/>
                 </Columns>
             </MudDataGrid>
         </MudStack>
@@ -16,5 +51,77 @@
 </MudCard>
 
 @code {
-    private IEnumerable<ThamChieuToBanDo> _thamChieuToBanDos = [];
+    [Inject]
+    IMemoryCache Cache { get; set; } = null!;
+    [Parameter]
+    public IEnumerable<DvhcRecord>? DvhcTruocs { get; set; }
+    [Parameter]
+    public DvhcRecord? DvhcSau { get; set; }
+    [Parameter]
+    public string? TenDvhcSau { get; set; }
+    private List<ThamChieuToBanDo> _thamChieuToBanDos = [];
+    private bool _readOnly = true;
+    private bool _loadingToBanDos = false;
+
+    private async Task LoadBanDoFromDataAsync(MouseEventArgs arg)
+    {
+        try
+        {
+            if(DvhcTruocs == null || !DvhcTruocs.Any() || DvhcSau == null)
+            {
+                return;
+            }
+            _loadingToBanDos = true;
+            var connectionString = Cache.Get(Settings.KeyConnectionString)?.ToString();
+            if (string.IsNullOrWhiteSpace(connectionString))
+            {
+                return;
+            }
+            var dbConText = new ElisDataContext(connectionString);
+            var tbds = await dbConText.ToBanDos.Where(tbd => tbd.MaDvhc == DvhcSau.MaDvhc).ToListAsync();
+            _thamChieuToBanDos = [];
+            var stt = 0;
+            _thamChieuToBanDos.AddRange(tbds.Select(tbd => new ThamChieuToBanDo
+            {
+                Id = stt++,
+                TenDvhcTruoc = DvhcSau.Ten,
+                MaDvhcTruoc = DvhcSau.MaDvhc,
+                TenDvhcSau = TenDvhcSau?? DvhcSau.Ten,
+                MaDvhcSau = DvhcSau.MaDvhc,
+                SoToBanDoTruoc = tbd.SoTo,
+                SoToBanDoSau = tbd.SoTo
+            }));
+            //var soToBanDoTiepTheo = tbds.Max(tbd => tbd.SoTo) + 1;
+            var maDvhcTruocs = DvhcTruocs
+                .Where(d => d.MaDvhc != DvhcSau.MaDvhc)
+                .Select(d => d.MaDvhc)
+                .ToList();
+            foreach (var maDvhc in maDvhcTruocs)
+            {
+                var tenDvhc = DvhcTruocs.First(d => d.MaDvhc == maDvhc).Ten;
+                tbds = await dbConText.ToBanDos
+                    .Where(tbd => tbd.MaDvhc == maDvhc)
+                    .ToListAsync();
+                _thamChieuToBanDos.AddRange(tbds.Select(tbd => new ThamChieuToBanDo
+                {
+                    Id = stt++,
+                    TenDvhcTruoc = tenDvhc,
+                    MaDvhcTruoc = maDvhc,
+                    TenDvhcSau = TenDvhcSau?? DvhcSau.Ten,
+                    MaDvhcSau = DvhcSau.MaDvhc,
+                    SoToBanDoTruoc = tbd.SoTo,
+                }));
+            }
+
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+        }
+        finally
+        {
+            _loadingToBanDos = false;
+        }
+    }
+    
 }

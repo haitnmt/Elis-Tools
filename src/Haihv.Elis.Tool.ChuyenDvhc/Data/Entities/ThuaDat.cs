@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 
+[Table("ThuaDat")]
 [PrimaryKey("MaThuaDat")]
 public sealed class ThuaDat
 {

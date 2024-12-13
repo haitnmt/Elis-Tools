@@ -1,9 +1,11 @@
 ﻿@using System.Text.Json
 @using Haihv.Elis.Tool.ChuyenDvhc.Data
+@using Haihv.Elis.Tool.ChuyenDvhc.Services
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Caching.Memory
 
 @inject IMemoryCache MemoryCache
+@inject IFileService FileService
 
 <MudStack>
     <MudTextField @bind-Value="_serverAddress"
@@ -31,7 +33,7 @@
         @if (_processing)
         {
             <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
-            <MudText Class="ms-2">Processing</MudText>
+            <MudText Class="ms-2">Đang kiểm tra</MudText>
         }
         else
         {
@@ -60,6 +62,13 @@
                 Vui lòng sao lưu dữ liệu trước khi thực hiện các bước tiếp theo!
             </MudAlert>
         }
+        @if(!string.IsNullOrWhiteSpace(_errorMessage))
+        {
+            <MudAlert Severity="Severity.Warning" 
+                      Dense="true">
+                @_errorMessage
+            </MudAlert>
+        }
     }
     else
     {
@@ -85,6 +94,7 @@
     public EventCallback<bool> IsConnectedChanged { get; set; }
     bool _trustedConnection = true;
     string _errorMessage = string.Empty;
+    string _errorWriteFile = string.Empty;
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,7 +147,7 @@
     {
         try
         {
-            var json = await File.ReadAllTextAsync("connectionInfo.inf");
+            var json = await FileService.ReadFileAsync("connectionInfo.inf");
             var connectionInfo = JsonSerializer.Deserialize<DataConnectionModel>(json.Decrypt());
             if (connectionInfo != null)
             {
@@ -171,7 +181,15 @@
             TrustedConnection = _trustedConnection
         };
         var json = JsonSerializer.Serialize(connectionInfo).Encrypt();
-        await File.WriteAllTextAsync("connectionInfo.inf", json);
+        try
+        {
+            await FileService.WriteFileAsync("connectionInfo.inf", json);
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex);
+            _errorWriteFile = $"Lỗi khi lưu thông tin kết nối: {ex.Message}";
+        }
     }
 }
 

@@ -1,4 +1,5 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+﻿using Haihv.Elis.Tool.ChuyenDvhc.Services;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls.Hosting;
 using Microsoft.Maui.Hosting;
@@ -19,6 +20,11 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
                 });
             builder.Services.AddMemoryCache();
             builder.Services.AddMauiBlazorWebView();
+            
+            // Đăng ký FileService
+            builder.Services.AddSingleton<IFileService, FileService>();
+            
+            // Đăng ký MudBlazor
             builder.Services.AddMudServices();
 
 
@@ -26,8 +32,13 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
     		builder.Services.AddBlazorWebViewDeveloperTools();
     		builder.Logging.AddDebug();
 #endif
-
+            
             return builder.Build();
         }
     }
+}
+
+public static class Settings
+{
+    public const string KeyConnectionString = "ConnectionString";
 }
