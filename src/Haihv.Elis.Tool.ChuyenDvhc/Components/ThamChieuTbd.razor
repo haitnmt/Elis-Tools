@@ -1,0 +1,20 @@
+﻿<MudCard>
+    <MudCardContent>
+        <MudStack>
+            <MudText Typo="Typo.body1"
+                     Color="Color.Info">
+                Bảng tham chiếu tờ bản đồ
+            </MudText>
+            <MudDataGrid Items="_thamChieuToBanDos">
+                
+                <Columns>
+                    <PropertyColumn Property="t => t.Id"></PropertyColumn>
+                </Columns>
+            </MudDataGrid>
+        </MudStack>
+    </MudCardContent>
+</MudCard>
+
+@code {
+    private IEnumerable<ThamChieuToBanDo> _thamChieuToBanDos = [];
+}
