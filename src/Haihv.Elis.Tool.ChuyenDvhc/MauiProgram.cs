@@ -22,7 +22,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
             builder.Services.AddMauiBlazorWebView();
             
             // Đăng ký FileService
-           builder.Services.AddSingleton<IFileService, FileService>();
+            builder.Services.AddSingleton<IFileService, FileService>();
             
             // Đăng ký MudBlazor
             builder.Services.AddMudServices();
