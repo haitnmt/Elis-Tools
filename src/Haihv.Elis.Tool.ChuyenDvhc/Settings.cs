@@ -1,6 +1,3 @@
-using System;
-using System.IO;
-
 namespace Haihv.Elis.Tool.ChuyenDvhc;
 
 public static class Settings
@@ -14,9 +11,9 @@ public static class Settings
         {
             Directory.CreateDirectory(path);
         }
-#if WINDOWS
-        return path + "\\";
-#endif
+#if !WINDOWS
         return path + "/";
+#endif
+        return path + "\\";
     }
 }
