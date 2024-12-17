@@ -12,3 +12,4 @@ public class ThamChieuToBanDo
     public string SoToBanDoTruoc { get; set; } = string.Empty;
     public string SoToBanDoSau { get; set; } = string.Empty;
 }
+

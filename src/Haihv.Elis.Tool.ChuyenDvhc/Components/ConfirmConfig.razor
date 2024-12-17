@@ -3,14 +3,24 @@
         <MudText>
             Vui lòng kiểm tra lại thông tin cấu hình trước khi tiếp tục!
         </MudText>
-        <MudDivider s></MudDivider>
-        <MudCheckBox @bind-Value="_isBackup" 
+        <MudCheckBox @bind-Value="_isBackupConfirmed" 
                      Dense="true"
                      Label="Đã sao lưu cơ sở dữ liệu"></MudCheckBox>
+
     </MudAlert>
-    <MudSpacer></MudSpacer>
+    <MudSpacer/>
+    <MudAlert Severity="Severity.Info" ShowCloseIcon="false">
+        <MudText>
+            Tùy trọn
+        </MudText>
+        <MudCheckBox @bind-Value="_isAuditEnabled"
+                     Dense="true"
+                     Label="Tạo bảng tham chiếu dữ liệu [Điều kiện cần để xuất ra Excel]"/>
+    </MudAlert>
 </MudStack>
 
 @code {
-    bool _isBackup = false;
+    bool _isBackupConfirmed = false;
+    bool _isAuditEnabled = true;
+    //bool _isConfigurationVerified = false;
 }

@@ -1,8 +1,3 @@
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using Haihv.Elis.Tool.ChuyenDvhc.Data;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;

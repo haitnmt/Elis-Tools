@@ -1,5 +1,78 @@
-﻿<h3>ThamChieuDuLieu</h3>
+﻿@using Microsoft.Extensions.Caching.Memory
 
-@code {
-    
+<MudExpansionPanel Expanded="true" Dense="true">
+    <TitleContent>
+        <MudStack Row="true" Justify="Justify.SpaceBetween">
+            <MudText Typo="Typo.subtitle2">
+                Cập nhật nội dung dữ liệu
+            </MudText>
+            <MudTooltip>
+                <ChildContent>
+                    <MudIconButton Class="my-n3 mr-2" Icon="@Icons.Material.Filled.Help" />
+                </ChildContent>
+                <TooltipContent>
+                    <MudText Typo="Typo.h6">Hướng dẫn</MudText>
+                    <MudText Typo="Typo.body2">{Ngay}: Ngày sát nhập</MudText>
+                    <MudText Typo="Typo.body2">{ThuaDat}: Số thửa đất</MudText>
+                    <MudText Typo="Typo.body2">{TBD}: Số tờ bản đồ</MudText>
+                    <MudText Typo="Typo.body2">{DVHC}: Tên đơn vị hành chính</MudText>
+                </TooltipContent>
+            </MudTooltip>
+        </MudStack>
+    </TitleContent>
+    <ChildContent>
+        <MudGrid Spacing="2" Class="mb-3">
+            <MudItem xs="12" md="6" xxl="3">
+                <MudTextField @bind-Value="@_toBanDoCu" Variant="Variant.Outlined" Margin="Margin.Dense"
+                    HelperText="Hiển thị tại [Xem Thông tin thửa đất cũ]" Label="Tờ bản đồ cũ"
+                    TextChanged="@(t => SetToBanDoCuCache(t))" />
+            </MudItem>
+            <MudItem xs="12" md="6" xxl="3">
+                <MudTextField @bind-Value="@_ghiChuToBanDo" Variant="Variant.Outlined" Margin="Margin.Dense"
+                    HelperText="Hiển thị tại [Bảng mã -> Danh mục Tờ bản đồ]" Label="Ghi chú Tờ bản đồ"
+                    TextChanged="@(t => SetGhiChuToBanDoCache(t))" />
+            </MudItem>
+            <MudItem xs="12" md="6" xxl="3">
+                <MudTextField @bind-Value="@_ghiChuThuaDat" Variant="Variant.Outlined" Margin="Margin.Dense"
+                    HelperText="Hiển thị tại [Thông tin đăng ký -> thửa đất]" Label="Ghi chú Thửa đất"
+                    TextChanged="@(t => SetGhiChuThuaDatCache(t))" />
+            </MudItem>
+            <MudItem xs="12" md="6" xxl="3">
+                <MudTextField @bind-Value="@_ghiChuGiayChungNhan" Variant="Variant.Outlined" Margin="Margin.Dense"
+                    HelperText="Hiển thị tại [Thông tin đăng ký -> Giấy chứng nhận]" Label="Ghi chú Giấy chứng nhận"
+                    TextChanged="@(t => SetGhiChuGiayChungNhanCache(t))" />
+            </MudItem>
+        </MudGrid>
+    </ChildContent>
+</MudExpansionPanel>
+@code
+{
+    [Inject] IMemoryCache MemoryCache { get; set; } = null!;
+    private string _toBanDoCu = "{TBD}{DVHC}";
+    private string _ghiChuToBanDo = "Trước ngày {Ngay} là tờ bản đồ số {TBD} {DVHC}";
+    private string _ghiChuThuaDat = "Trước ngày {Ngay} thuộc tờ bản đồ số {TBD} {DVHC}";
+    private string _ghiChuGiayChungNhan = "Trước ngày {Ngay} là thửa đất số {ThuaDat} tờ bản đồ số {TBD} {DVHC}";
+
+    protected override void OnAfterRender(bool firstRender)
+    {
+        if (!firstRender) return;
+        SetAllCache();
+    }
+
+    private void SetAllCache()
+    {
+        SetToBanDoCuCache(_toBanDoCu);
+        SetGhiChuToBanDoCache(_ghiChuToBanDo);
+        SetGhiChuThuaDatCache(_ghiChuThuaDat);
+        SetGhiChuGiayChungNhanCache(_ghiChuGiayChungNhan);
+    }
+
+    private void SetToBanDoCuCache(string textChanged) => 
+        MemoryCache.Set(Settings.KeyConfigToBanDoCu, textChanged);
+    private void SetGhiChuToBanDoCache(string textChanged) => 
+        MemoryCache.Set(Settings.KeyConfigGhiChuToBanDo, textChanged);
+    private void SetGhiChuThuaDatCache(string textChanged) => 
+        MemoryCache.Set(Settings.KeyConfigGhiChuThuaDat, textChanged);
+    private void SetGhiChuGiayChungNhanCache(string textChanged) => 
+        MemoryCache.Set(Settings.KeyConfigGhiChuGiayChungNhan, textChanged);
 }

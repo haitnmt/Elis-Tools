@@ -15,10 +15,10 @@
             return new Window(new MainPage())
             {
                 Title = "Chuyển đổi đơn vị hành chính",
-                Height = 710 * scale,
-                Width = 880 * scale,
-                MinimumHeight = 710,
-                MinimumWidth = 880,
+                Height = 750 * scale,
+                Width = 960 * scale,
+                MinimumHeight = 750,
+                MinimumWidth = 960
             };
         }
     }

@@ -92,8 +92,8 @@
 
     [Parameter]
     public EventCallback<bool> IsConnectedChanged { get; set; }
-    
-    private readonly string _filePath = $"{Settings.PathRootConfig()}connectionInfo.inf";
+
+    private readonly string _filePath = Settings.PathConnectionString;
     bool _trustedConnection = true;
     string _errorMessage = string.Empty;
     string _errorWriteFile = string.Empty;
