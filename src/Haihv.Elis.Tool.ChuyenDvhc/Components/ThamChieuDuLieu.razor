@@ -67,12 +67,12 @@
         SetGhiChuGiayChungNhanCache(_ghiChuGiayChungNhan);
     }
 
-    private void SetToBanDoCuCache(string textChanged) => 
+    private void SetToBanDoCuCache(string textChanged) =>
         MemoryCache.Set(Settings.KeyConfigToBanDoCu, textChanged);
-    private void SetGhiChuToBanDoCache(string textChanged) => 
+    private void SetGhiChuToBanDoCache(string textChanged) =>
         MemoryCache.Set(Settings.KeyConfigGhiChuToBanDo, textChanged);
-    private void SetGhiChuThuaDatCache(string textChanged) => 
+    private void SetGhiChuThuaDatCache(string textChanged) =>
         MemoryCache.Set(Settings.KeyConfigGhiChuThuaDat, textChanged);
-    private void SetGhiChuGiayChungNhanCache(string textChanged) => 
+    private void SetGhiChuGiayChungNhanCache(string textChanged) =>
         MemoryCache.Set(Settings.KeyConfigGhiChuGiayChungNhan, textChanged);
 }

@@ -71,9 +71,13 @@
             
             <MudExpansionPanel Text="Cấu hình tham chiếu, cập nhật dữ liệu" Expanded="true">
                 <MudExpansionPanels MultiExpansion="true">
-                    <ThamChieuTbd DvhcTruocs="_capXaTruoc" DvhcSau="_capXaSau" TenDvhcSau="@_tenDvhcSau"/>
-
-                    <ThamChieuDuLieu/>
+                    <ThamChieuTbd DvhcTruocs="_capXaTruoc" 
+                                  DvhcSau="_capXaSau" 
+                                  TenDvhcSau="@_tenDvhcSau" 
+                                  IsCompleted="_isCompletedThamChieuBanDo"
+                                  IsCompletedChanged="SetCompletedThamChieuBanDo"/>
+                    <ThamChieuDuLieu IsCompleted="_isCompletedThamChieuBanDo"
+                                     IsCompletedChanged="SetCompletedThamChieuDuLieu"/>
                 </MudExpansionPanels>
             </MudExpansionPanel>
         </MudExpansionPanels>
@@ -84,7 +88,10 @@
 {
     [Parameter] public bool IsConnected { get; set; }
     [Parameter] public bool IsCompleted { get; set; }
-    [Parameter] public EventCallback<bool?> IsCompletedChanged { get; set; }
+    [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
+    
+    private bool _isCompletedThamChieuBanDo = false;
+    private bool _isCompletedThamChieuDuLieu = false;
     private string _tenDvhcSau = string.Empty;
     private DvhcRecord? _capTinh;
     private DvhcRecord? _capHuyen;
@@ -137,6 +144,7 @@
         if (dvhcSau.Count == 0) return;
         _capXaSau = dvhcSau[0];
         _tenDvhcSau = _capXaSau?.Ten ?? string.Empty;
+        IsCompletedChangedHandler();
     }
     
     private MudDatePicker _picker = null!;
@@ -147,9 +155,20 @@
     
     private void IsCompletedChangedHandler()
     {
-
-        IsCompleted = _capXaSau != null && _capXaTruoc.Count > 0 && !string.IsNullOrWhiteSpace(_tenDvhcSau);
-                
+        IsCompleted = _capXaSau != null && _capXaTruoc.Count > 0 && !string.IsNullOrWhiteSpace(_tenDvhcSau) && 
+                      _isCompletedThamChieuBanDo && _isCompletedThamChieuDuLieu;
         IsCompletedChanged.InvokeAsync(IsCompleted);
+    }
+
+    private void SetCompletedThamChieuBanDo(bool isCompletedThamChieuBanDo)
+    {
+       _isCompletedThamChieuBanDo = isCompletedThamChieuBanDo;
+         IsCompletedChangedHandler();
+    }
+
+    private void SetCompletedThamChieuDuLieu(bool isCompletedThamChieuDuLieu)
+    {
+        _isCompletedThamChieuDuLieu = isCompletedThamChieuDuLieu;
+        IsCompletedChangedHandler();
     }
 }

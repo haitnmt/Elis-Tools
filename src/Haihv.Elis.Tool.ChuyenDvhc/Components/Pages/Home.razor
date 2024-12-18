@@ -31,18 +31,19 @@
         <MudStep Title="Cấu hình"
                  SecondaryText="Tham số chuyển đổi">
             <MudStack Style="min-height:  calc(100vh - 235px)">
-                <ConfigDataTransfer IsConnected="_isConnected"></ConfigDataTransfer>
+                <ConfigDataTransfer IsConnected="_isConnected" 
+                                    @bind-IsCompleted="_isCompletedConfig"></ConfigDataTransfer>
             </MudStack>
         </MudStep>
         <MudStep Title="Xác thực" SecondaryText="Thông tin ">
             <MudStack Style="min-height:  calc(100vh - 235px)">
-                <ConfirmConfig></ConfirmConfig>
+                <ConfirmConfig @bind-IsCompleted="_isConfigurationVerified" @bind-IsAuditEnabled="_isAuditEnabled"></ConfirmConfig>
             </MudStack>
         </MudStep>
         <MudStep Title="Thực hiện"
                  SecondaryText="Chuyển đổi dữ liệu">
             <MudStack Style="min-height:  calc(100vh - 235px)">
-                Quá trình thực hiện
+                <ProcessingDataTransfer IsAuditEnabled="_isAuditEnabled"></ProcessingDataTransfer>
             </MudStack>
         </MudStep>
         <MudStep Title="Hoàn thành"
@@ -66,7 +67,9 @@
 
             <MudSpacer/>
             <MudButton OnClick="@(() => stepper.NextStepAsync())"
-                       Disabled="@(!_isConnected && _index == 1)"
+                       Disabled="@((!_isConnected && _index == 1) || 
+                                   (!_isCompletedConfig && _index == 2) ||
+                                   (!_isConfigurationVerified && _index == 3))"
                        EndIcon="@Icons.Material.Filled.ArrowForward"
                        Color="Color.Primary">
                 Tiếp theo
@@ -79,6 +82,9 @@
 
 {
     bool _isConnected;
+    bool _isConfigurationVerified;
+    bool _isCompletedConfig;
     bool _completed;
     int _index;
+    bool _isAuditEnabled;
 }
