@@ -1,6 +1,6 @@
-﻿@using Microsoft.Extensions.Caching.Memory
+﻿@using Haihv.Elis.Tool.ChuyenDvhc.Settings
+@using Microsoft.Extensions.Caching.Memory
 
-@inject IMemoryCache MemoryCache
 <MudStack>
     @if (!IsConnected)
     {
@@ -22,20 +22,23 @@
                                 </MudText>
                                 <SelectDvhc IsConnected="IsConnected"
                                             IsBefore="true"
-                                            MultiCapXa="true"
+                                            CapTinh="_capTinhTruoc"
+                                            CapHuyen="_capHuyenTruoc"
+                                            CapXas="_capXaTruoc"
                                             CapTinhChanged="CapTinhChanged"
                                             CapHuyenChanged="CapHuyenChanged"
                                             CapXaChanged="CapXaChanged"/>
-                                <MudDatePicker @ref="_picker" 
-                                               Label="Ngày sát nhập"
+                                <MudDatePicker Label="Ngày sát nhập"
                                                Placeholder="Ngày sát nhập các đơn vị hành chính được chọn về đơn vị hành chính mới"
+                                               AutoClose="true"
                                                Variant="Variant.Outlined"
                                                Margin="Margin.Dense"
                                                MaxDate="DateTime.Today"
-                                               @bind-Date="_ngaySatNhap"
+                                               Date="_ngaySatNhap"
                                                Editable="true"
                                                DateFormat="dd/MM/yyyy"
-                                               Mask="@(new DateMask("dd/MM/yyyy"))">
+                                               Mask="@(new DateMask("dd/MM/yyyy"))"
+                                               DateChanged="NgaySatNhapChange">
                                     <PickerActions>
                                         <MudButton Class="mr-auto align-self-start" OnClick="TodayAsync">Hôm nay</MudButton>
                                     </PickerActions>
@@ -52,16 +55,18 @@
                                 </MudText>
                                 <SelectDvhc IsConnected="IsConnected"
                                             IsBefore="false"
-                                            MultiCapXa="false"
-                                            CapTinh="_capTinh"
+                                            CapTinh="_capTinhSau"
                                             CapTinhChanged="CapTinhSauChanged"
-                                            CapHuyen="_capHuyen"
+                                            CapHuyen="_capHuyenSau"
                                             CapHuyenChanged="CapHuyenSauChanged"
-                                            CapXas="@([_capXaSau])"
+                                            CapXas="@(_capXaSau != null ? [_capXaSau] : [])"
                                             CapXaChanged="CapXaSauChanged"/>
+
                                 <MudTextField @bind-Value="@_tenDvhcSau"
                                               Variant="Variant.Outlined"
                                               Margin="Margin.Dense"
+                                              Required="true"
+                                              RequiredError="Không được để trống"
                                               Label="Tên đơn vị hành chính sau sát nhập"/>
                             </MudStack>
                         </MudCardContent>
@@ -71,9 +76,9 @@
             
             <MudExpansionPanel Text="Cấu hình tham chiếu, cập nhật dữ liệu" Expanded="true">
                 <MudExpansionPanels MultiExpansion="true">
-                    <ThamChieuTbd DvhcTruocs="_capXaTruoc" 
-                                  DvhcSau="_capXaSau" 
-                                  TenDvhcSau="@_tenDvhcSau" 
+                    <ThamChieuTbd DvhcTruocs="_capXaTruoc"
+                                  DvhcSau="_capXaSau"
+                                  TenDvhcSau="@_tenDvhcSau"
                                   IsCompleted="_isCompletedThamChieuBanDo"
                                   IsCompletedChanged="SetCompletedThamChieuBanDo"/>
                     <ThamChieuDuLieu IsCompleted="_isCompletedThamChieuBanDo"
@@ -86,6 +91,7 @@
 
 @code
 {
+    [Inject] IMemoryCache MemoryCache { get; set; } = null!;
     [Parameter] public bool IsConnected { get; set; }
     [Parameter] public bool IsCompleted { get; set; }
     [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
@@ -93,25 +99,52 @@
     private bool _isCompletedThamChieuBanDo = false;
     private bool _isCompletedThamChieuDuLieu = false;
     private string _tenDvhcSau = string.Empty;
-    private DvhcRecord? _capTinh;
-    private DvhcRecord? _capHuyen;
+    private DvhcRecord? _capTinhTruoc;
+    private DvhcRecord? _capTinhSau;
+    private DvhcRecord? _capHuyenTruoc;
+    private DvhcRecord? _capHuyenSau;
     private List<DvhcRecord?> _capXaTruoc = [];
     private DvhcRecord? _capXaSau;
-    private DateTime? _ngaySatNhap = DateTime.Today;
+    private DateTime? _ngaySatNhap;
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        _ngaySatNhap = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.NgaySatNhap, _ => Task.FromResult(DateTime.Today));
+        _capTinhTruoc = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapTinhTruoc, _ => Task.FromResult(_capHuyenTruoc));
+        _capTinhSau = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapTinhSau, _ => Task.FromResult(_capTinhSau));
+        _capHuyenTruoc = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapHuyenTruoc, _ => Task.FromResult(_capHuyenTruoc));
+        _capHuyenSau = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapHuyenSau, _ => Task.FromResult(_capHuyenSau));
+        _capXaTruoc = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapXaTruoc, _ => Task.FromResult(_capXaTruoc)) ?? [];
+        _capXaSau = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapXaSau, _ => Task.FromResult(_capXaSau));
+        _tenDvhcSau = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.TenDvhcSau, _ => Task.FromResult(_tenDvhcSau)) ?? string.Empty;
+    }
 
     private void CapTinhChanged(DvhcRecord? capTinh)
     {
-        if (capTinh == null || _capTinh != null) return;
-        _capTinh = capTinh;
-        _capHuyen = null;
+        if (capTinh == null) return;
+        _capTinhTruoc = capTinh;
+        _capTinhSau ??= capTinh;
+        _capHuyenTruoc = null;
         _capXaTruoc = [];
+        // Set Cache
+        MemoryCache.Set(CacheThamSoDvhc.CapTinhTruoc, _capTinhTruoc);
+        MemoryCache.Set(CacheThamSoDvhc.CapTinhSau, _capTinhSau);
+        MemoryCache.Set(CacheThamSoDvhc.CapHuyenTruoc, _capHuyenTruoc);
+        MemoryCache.Set(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
     }
     
     private void CapHuyenChanged(DvhcRecord? capHuyen)
     {
-        if (capHuyen == null || _capHuyen != null) return;
-        _capHuyen = capHuyen;
+        if (capHuyen == null) return;
+        _capHuyenTruoc = capHuyen;
+        _capHuyenSau ??= capHuyen;
         _capXaTruoc = [];
+
+        // Set Cache
+        MemoryCache.Set(CacheThamSoDvhc.CapHuyenTruoc, _capHuyenTruoc);
+        MemoryCache.Set(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
+        MemoryCache.Set(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
     }
     
     private void CapXaChanged(IEnumerable<DvhcRecord?>? capXa)
@@ -122,35 +155,50 @@
         _capXaSau = _capXaTruoc[0];
         if (string.IsNullOrWhiteSpace(_tenDvhcSau))
             _tenDvhcSau = _capXaTruoc.Count > 0 ? _capXaTruoc[0]?.Ten ?? string.Empty : string.Empty;
+        // Set Cache
+        MemoryCache.Set(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
+        MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
+        MemoryCache.Set(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
     }
     
     private void CapTinhSauChanged(DvhcRecord? capTinh)
     {
-        if (capTinh == null) return;
-        _capTinh = capTinh;
-        _capHuyen = null;
+        if (_capTinhSau != null && (capTinh == null || capTinh.MaDvhc == _capTinhSau.MaDvhc)) return;
+        _capTinhSau = capTinh;
+        _capHuyenSau = null;
+        _capXaSau = null;
+        // Set Cache
+        MemoryCache.Set(CacheThamSoDvhc.CapTinhSau, _capTinhSau);
+        MemoryCache.Set(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
+        MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
     }
     
     private void CapHuyenSauChanged(DvhcRecord? capHuyen)
     {
-        if (capHuyen == null) return;
-        _capHuyen = capHuyen;
+        if (_capHuyenSau != null && (capHuyen == null || capHuyen.MaDvhc == _capHuyenSau.MaDvhc)) return;
+        _capHuyenSau = capHuyen;
+        _capXaSau = null;
+        // Set Cache
+        MemoryCache.Set(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
+        MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
     }
     
     private void CapXaSauChanged(IEnumerable<DvhcRecord?>? capXa)
     {
         if (capXa == null) return;
         var dvhcSau = capXa.ToList();
-        if (dvhcSau.Count == 0) return;
+        if (_capXaSau != null && (dvhcSau.Count == 0 || dvhcSau[0] == null || dvhcSau[0]!.MaDvhc == _capXaSau.MaDvhc)) return;
         _capXaSau = dvhcSau[0];
         _tenDvhcSau = _capXaSau?.Ten ?? string.Empty;
+        // Set Cache
+        MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
+        MemoryCache.Set(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
         IsCompletedChangedHandler();
     }
-    
-    private MudDatePicker _picker = null!;
-    private Task TodayAsync(MouseEventArgs arg)
+
+    private void TodayAsync(MouseEventArgs arg)
     {
-        return _picker.GoToDate(DateTime.Today);
+        _ngaySatNhap = DateTime.Today;
     }
     
     private void IsCompletedChangedHandler()
@@ -170,5 +218,17 @@
     {
         _isCompletedThamChieuDuLieu = isCompletedThamChieuDuLieu;
         IsCompletedChangedHandler();
+    }
+
+    private void NgaySatNhapChange(DateTime? ngaySatNhap)
+    {
+        _ngaySatNhap = ngaySatNhap;
+        if (ngaySatNhap == null || ngaySatNhap.Value.Date == DateTime.Today)
+        {
+            MemoryCache.Remove(CacheThamSoDvhc.NgaySatNhap);
+        }
+
+        MemoryCache.Set(CacheThamSoDvhc.NgaySatNhap, _ngaySatNhap);
+        StateHasChanged();
     }
 }

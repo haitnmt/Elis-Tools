@@ -1,5 +1,6 @@
 ﻿@using Haihv.Elis.Tool.ChuyenDvhc.Data
 @using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities
+@using Haihv.Elis.Tool.ChuyenDvhc.Settings
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Caching.Memory
 
@@ -12,16 +13,16 @@
             <MudStack Row="true" Class="mr-3">
                 @if (DvhcTruocs != null && DvhcTruocs.Any() && DvhcSau != null)
                 {
-                    <MudButton Disabled="@_loadingToBanDos" OnClick="LoadBanDoFromDataAsync" Variant="Variant.Filled"
+                    <MudButton Disabled="@_loadingToBanDos" OnClick="LoadBanDoFromDataAsync"
                                Color="Color.Primary">
                         @if (_loadingToBanDos)
                         {
                             <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
-                            <MudText Class="ms-2">Đang thực hiện</MudText>
+                            <MudText Class="ms-2" Typo="Typo.button">Đang thực hiện</MudText>
                         }
                         else
                         {
-                            <MudText>Làm mới</MudText>
+                            <MudText Typo="Typo.button">Làm mới</MudText>
                         }
                     </MudButton>
                 }
@@ -29,24 +30,33 @@
         </MudStack>
     </TitleContent>
     <ChildContent>
-        <MudDataGrid Height="@_heightGrid" Class="mb-3" Items="_thamChieuToBanDos"
-                     Dense="true"
-                     Groupable="true"
-                     Filterable="true"
-                     FilterMode="DataGridFilterMode.Simple"
-                     GroupExpanded="true"
-                     MultiSelection="true"
-                     SelectOnRowClick="true"
-                     FilterCaseSensitivity="DataGridFilterCaseSensitivity.Default">
-            <Columns>
-                <SelectColumn T="ThamChieuToBanDo"/>
-                <PropertyColumn Property="t => t.Id" Title="STT"/>
-                <PropertyColumn Property="t => t.TenDvhcTruoc" Title="Đơn vị hành chính trước" Grouping/>
-                <PropertyColumn Property="t => t.SoToBanDoTruoc" Title="Số tờ trước"/>
-                <PropertyColumn Property="t => t.TenDvhcSau" Title="Đơn vị hành chính sau"/>
-                <PropertyColumn Property="t => t.SoToBanDoSau" Title="Số tờ sau"/>
-            </Columns>
-        </MudDataGrid>
+        @if (DvhcTruocs != null && DvhcTruocs.Any() && DvhcSau != null)
+        {
+            <MudDataGrid Height="@_heightGrid" Class="mb-3" Items="_thamChieuToBanDos"
+                         Dense="true"
+                         Groupable="true"
+                         Filterable="true"
+                         FilterMode="DataGridFilterMode.Simple"
+                         GroupExpanded="true"
+                         MultiSelection="true"
+                         SelectOnRowClick="true"
+                         FilterCaseSensitivity="DataGridFilterCaseSensitivity.Default">
+                <Columns>
+                    <SelectColumn T="ThamChieuToBanDo"/>
+                    <PropertyColumn Property="t => t.Id" Title="STT"/>
+                    <PropertyColumn Property="t => t.TenDvhcTruoc" Title="Đơn vị hành chính trước" Grouping/>
+                    <PropertyColumn Property="t => t.SoToBanDoTruoc" Title="Số tờ trước"/>
+                    <PropertyColumn Property="t => t.TenDvhcSau" Title="Đơn vị hành chính sau"/>
+                    <PropertyColumn Property="t => t.SoToBanDoSau" Title="Số tờ sau"/>
+                </Columns>
+            </MudDataGrid>
+        }
+        else
+        {
+            <MudAlert Class="mb-3" Severity="Severity.Warning" Variant="Variant.Outlined">
+                <MudText Typo="Typo.body2">Vui lòng chọn đơn vị hành chính trước và sau</MudText>
+            </MudAlert>
+        }
     </ChildContent>
 </MudExpansionPanel>
 
@@ -62,19 +72,53 @@
     private IEnumerable<DvhcRecord>? _dvhcTruocs;
     private string? _tenDvhcSau;
     private List<ThamChieuToBanDo> _thamChieuToBanDos = [];
-    private string _heightGrid = "50px";
+    private string _heightGrid = "null";
     
     private bool _loadingToBanDos = false;
 
+
+    protected override async Task OnInitializedAsync()
+    {
+        _thamChieuToBanDos = await Cache.GetOrCreateAsync(CacheThamSoBanDo.ThamChieuToBanDo,
+            _ => Task.FromResult(_thamChieuToBanDos)) ?? [];
+        _heightGrid = _thamChieuToBanDos.Count > 10 ? "400px" : "null";
+    }
+
     protected override void OnParametersSet()
     {
-        if (DvhcSau == _dvhcSau && Equals(DvhcTruocs, _dvhcTruocs) && TenDvhcSau == _tenDvhcSau) return;
-        _dvhcSau = DvhcSau;
-        _dvhcTruocs = DvhcTruocs;
+        if (DvhcSau != null && DvhcSau != _dvhcSau)
+        {
+            if (_dvhcSau != null)
+            {
+                _thamChieuToBanDos = [];
+                _heightGrid = "null";
+            }
+
+            _dvhcSau = DvhcSau;
+            CheckCompleted();
+        }
+
+        if (DvhcTruocs != null && !Equals(DvhcTruocs, _dvhcTruocs))
+        {
+            if (_dvhcTruocs != null && _dvhcTruocs.Any())
+            {
+                _thamChieuToBanDos = [];
+                _heightGrid = "null";
+            }
+
+            _dvhcTruocs = DvhcTruocs;
+            CheckCompleted();
+        }
+
+        if (TenDvhcSau == null || TenDvhcSau == _tenDvhcSau) return;
+        if (!string.IsNullOrWhiteSpace(_tenDvhcSau))
+        {
+            _thamChieuToBanDos = [];
+            _heightGrid = "null";
+        }
+
         _tenDvhcSau = TenDvhcSau;
-        _thamChieuToBanDos = [];
-        _heightGrid = "50px";
-        SetCompleted();
+        CheckCompleted();
     }
 
     private async Task LoadBanDoFromDataAsync(MouseEventArgs arg)
@@ -87,7 +131,7 @@
             }
 
             _loadingToBanDos = true;
-            var connectionString = Cache.Get(Settings.KeyConnectionString)?.ToString();
+            var connectionString = Cache.Get(FilePath.KeyConnectionString)?.ToString();
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 return;
@@ -137,12 +181,10 @@
                     SoToBanDoSau = soToBanDoTiepTheo++.ToString()
                 }));
             }
-            if (_thamChieuToBanDos.Count > 10)
-            {
-                _heightGrid = "400px";
-            }
+
+            _heightGrid = _thamChieuToBanDos.Count > 10 ? "400px" : "null";
             StateHasChanged();
-            SetCache();
+            CheckCompleted();
         }
         catch (Exception ex)
         {
@@ -154,17 +196,13 @@
         }
     }
 
-    private void SetCache()
-    {
-        Cache.Set(Settings.KeyThamChieuToBanDo, _thamChieuToBanDos);
-        SetCompleted();
-    }
-
-    private void SetCompleted()
+    private void CheckCompleted()
     {
         IsCompleted = _thamChieuToBanDos.Any();
+        if (IsCompleted)
+            Cache.Set(CacheThamSoBanDo.ThamChieuToBanDo, _thamChieuToBanDos);
+        else
+            Cache.Remove(CacheThamSoBanDo.ThamChieuToBanDo);
         IsCompletedChanged.InvokeAsync(IsCompleted);
     }
-
-
 }

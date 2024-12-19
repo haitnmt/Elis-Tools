@@ -14,7 +14,7 @@
     </ConnectorTemplate>
     <ChildContent>
         <MudStep Title="Giới thiệu">
-            <MudStack Style="min-height: calc(100vh - 235px)">
+            <MudStack Style="@_style">
                 <MudText Typo="Typo.body2">
                     Công cụ chuyển đổi đơn vị hành chính được phát triển nhằm hỗ trợ trong việc chuyển đổi dữ liệu các
                     thửa đất trên cơ sở dữ liệu ELIS SQL, khi có các thay đổi về địa giới hành chính, 
@@ -24,31 +24,31 @@
         </MudStep>
         <MudStep Title="Kết nối"
                  SecondaryText="Dữ liệu ELIS SQL">
-            <MudStack Style="min-height:  calc(100vh - 235px)">
+            <MudStack Style="@_style">
                 <DataConnection @bind-IsConnected="_isConnected"></DataConnection>
             </MudStack>
         </MudStep>
         <MudStep Title="Cấu hình"
                  SecondaryText="Tham số chuyển đổi">
-            <MudStack Style="min-height:  calc(100vh - 235px)">
+            <MudStack Style="@_style">
                 <ConfigDataTransfer IsConnected="_isConnected" 
                                     @bind-IsCompleted="_isCompletedConfig"></ConfigDataTransfer>
             </MudStack>
         </MudStep>
-        <MudStep Title="Xác thực" SecondaryText="Thông tin ">
+        <MudStep Title="Xác nhận" SecondaryText="Kiểm tra lại thông tin và tùy trọn">
             <MudStack Style="min-height:  calc(100vh - 235px)">
                 <ConfirmConfig @bind-IsCompleted="_isConfigurationVerified" @bind-IsAuditEnabled="_isAuditEnabled"></ConfirmConfig>
             </MudStack>
         </MudStep>
         <MudStep Title="Thực hiện"
                  SecondaryText="Chuyển đổi dữ liệu">
-            <MudStack Style="min-height:  calc(100vh - 235px)">
+            <MudStack Style="@_style">
                 <ProcessingDataTransfer IsAuditEnabled="_isAuditEnabled"></ProcessingDataTransfer>
             </MudStack>
         </MudStep>
         <MudStep Title="Hoàn thành"
                  @bind-Completed="_completed">
-            <MudStack Style="min-height:  calc(100vh - 235px)">
+            <MudStack Style="@_style">
                 Hoàn thành
             </MudStack>
         </MudStep>
@@ -87,4 +87,5 @@
     bool _completed;
     int _index;
     bool _isAuditEnabled;
+    string _style = "min-height: calc(100vh - 235px)";
 }

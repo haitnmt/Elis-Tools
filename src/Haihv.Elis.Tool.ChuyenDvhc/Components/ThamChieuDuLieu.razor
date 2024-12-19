@@ -1,4 +1,5 @@
-﻿@using Microsoft.Extensions.Caching.Memory
+﻿@using Haihv.Elis.Tool.ChuyenDvhc.Settings
+@using Microsoft.Extensions.Caching.Memory
 
 <MudExpansionPanel Expanded="true" Dense="true">
     <TitleContent>
@@ -8,7 +9,10 @@
             </MudText>
             <MudTooltip>
                 <ChildContent>
-                    <MudIconButton Class="my-n3 mr-2" Icon="@Icons.Material.Filled.Help" />
+                    <MudButton Color="Color.Info" OnClick="ResetDefault">
+                        <MudText Typo="Typo.button">Mặc định</MudText>
+                    </MudButton>
+                    <MudIconButton Size="Size.Small" Class="my-n3 mr-2" Icon="@Icons.Material.Filled.Help"/>
                 </ChildContent>
                 <TooltipContent>
                     <MudText Typo="Typo.h6">Hướng dẫn</MudText>
@@ -24,55 +28,120 @@
         <MudGrid Spacing="2" Class="mb-3">
             <MudItem xs="12" md="6" xxl="3">
                 <MudTextField @bind-Value="@_toBanDoCu" Variant="Variant.Outlined" Margin="Margin.Dense"
-                    HelperText="Hiển thị tại [Xem Thông tin thửa đất cũ]" Label="Tờ bản đồ cũ"
-                    TextChanged="@(t => SetToBanDoCuCache(t))" />
+                              HelperText="Hiển thị tại [Xem Thông tin thửa đất cũ]" Label="Tờ bản đồ cũ"
+                              TextChanged="@(t => SetToBanDoCuCache(t))"/>
             </MudItem>
             <MudItem xs="12" md="6" xxl="3">
                 <MudTextField @bind-Value="@_ghiChuToBanDo" Variant="Variant.Outlined" Margin="Margin.Dense"
-                    HelperText="Hiển thị tại [Bảng mã -> Danh mục Tờ bản đồ]" Label="Ghi chú Tờ bản đồ"
-                    TextChanged="@(t => SetGhiChuToBanDoCache(t))" />
+                              HelperText="Hiển thị tại [Bảng mã -> Danh mục Tờ bản đồ]" Label="Ghi chú Tờ bản đồ"
+                              TextChanged="@(t => SetGhiChuToBanDoCache(t))"/>
             </MudItem>
             <MudItem xs="12" md="6" xxl="3">
                 <MudTextField @bind-Value="@_ghiChuThuaDat" Variant="Variant.Outlined" Margin="Margin.Dense"
-                    HelperText="Hiển thị tại [Thông tin đăng ký -> thửa đất]" Label="Ghi chú Thửa đất"
-                    TextChanged="@(t => SetGhiChuThuaDatCache(t))" />
+                              HelperText="Hiển thị tại [Thông tin đăng ký -> thửa đất]" Label="Ghi chú Thửa đất"
+                              TextChanged="@(t => SetGhiChuThuaDatCache(t))"/>
             </MudItem>
             <MudItem xs="12" md="6" xxl="3">
                 <MudTextField @bind-Value="@_ghiChuGiayChungNhan" Variant="Variant.Outlined" Margin="Margin.Dense"
-                    HelperText="Hiển thị tại [Thông tin đăng ký -> Giấy chứng nhận]" Label="Ghi chú Giấy chứng nhận"
-                    TextChanged="@(t => SetGhiChuGiayChungNhanCache(t))" />
+                              HelperText="Hiển thị tại [Thông tin đăng ký -> Giấy chứng nhận]"
+                              Label="Ghi chú Giấy chứng nhận"
+                              TextChanged="@(t => SetGhiChuGiayChungNhanCache(t))"/>
             </MudItem>
         </MudGrid>
     </ChildContent>
 </MudExpansionPanel>
+
 @code
 {
     [Inject] IMemoryCache MemoryCache { get; set; } = null!;
+    [Parameter] public bool IsCompleted { get; set; }
+    [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
     private string _toBanDoCu = "{TBD}{DVHC}";
     private string _ghiChuToBanDo = "Trước ngày {Ngay} là tờ bản đồ số {TBD} {DVHC}";
     private string _ghiChuThuaDat = "Trước ngày {Ngay} thuộc tờ bản đồ số {TBD} {DVHC}";
     private string _ghiChuGiayChungNhan = "Trước ngày {Ngay} là thửa đất số {ThuaDat} tờ bản đồ số {TBD} {DVHC}";
 
-    protected override void OnAfterRender(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        if (!firstRender) return;
-        SetAllCache();
+        await SetAllCache();
     }
 
-    private void SetAllCache()
+    /// <summary>
+    /// Thiết lập tất cả các giá trị cache từ bộ nhớ.
+    /// </summary>
+    /// <returns>Task đại diện cho thao tác không đồng bộ.</returns>
+    private async Task SetAllCache()
     {
-        SetToBanDoCuCache(_toBanDoCu);
-        SetGhiChuToBanDoCache(_ghiChuToBanDo);
-        SetGhiChuThuaDatCache(_ghiChuThuaDat);
-        SetGhiChuGiayChungNhanCache(_ghiChuGiayChungNhan);
+        _toBanDoCu = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.ToBanDoCu,
+            _ => Task.FromResult(_toBanDoCu)) ?? _toBanDoCu;
+        _ghiChuToBanDo = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuToBanDo,
+            _ => Task.FromResult(_ghiChuToBanDo)) ?? _ghiChuToBanDo;
+        _ghiChuThuaDat = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuThuaDat,
+            _ => Task.FromResult(_ghiChuThuaDat)) ?? _ghiChuThuaDat;
+        _ghiChuGiayChungNhan = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuGiayChungNhan,
+            _ => Task.FromResult(_ghiChuGiayChungNhan)) ?? _ghiChuGiayChungNhan;
     }
 
-    private void SetToBanDoCuCache(string textChanged) =>
-        MemoryCache.Set(Settings.KeyConfigToBanDoCu, textChanged);
-    private void SetGhiChuToBanDoCache(string textChanged) =>
-        MemoryCache.Set(Settings.KeyConfigGhiChuToBanDo, textChanged);
-    private void SetGhiChuThuaDatCache(string textChanged) =>
-        MemoryCache.Set(Settings.KeyConfigGhiChuThuaDat, textChanged);
-    private void SetGhiChuGiayChungNhanCache(string textChanged) =>
-        MemoryCache.Set(Settings.KeyConfigGhiChuGiayChungNhan, textChanged);
+    /// <summary>
+    /// Thiết lập giá trị cache cho Tờ bản đồ cũ.
+    /// </summary>
+    /// <param name="textChanged">Giá trị mới của Tờ bản đồ cũ.</param>
+    private void SetToBanDoCuCache(string textChanged)
+    {
+        _toBanDoCu = textChanged;
+        MemoryCache.Set(CacheThamSoDuLieu.ToBanDoCu, textChanged);
+        SetCompleted();
+    }
+
+
+    /// <summary>
+    /// Thiết lập giá trị cache cho Ghi chú Tờ bản đồ.
+    /// </summary>
+    /// <param name="textChanged">Giá trị mới của Ghi chú Tờ bản đồ.</param>
+    private void SetGhiChuToBanDoCache(string textChanged)
+    {
+        _ghiChuToBanDo = textChanged;
+        MemoryCache.Set(CacheThamSoDuLieu.GhiChuToBanDo, textChanged);
+        SetCompleted();
+    }
+
+    /// <summary>
+    /// Thiết lập giá trị cache cho Ghi chú Thửa đất.
+    /// </summary>
+    /// <param name="textChanged">Giá trị mới của Ghi chú Thửa đất.</param>
+    private void SetGhiChuThuaDatCache(string textChanged)
+    {
+        _ghiChuThuaDat = textChanged;
+        MemoryCache.Set(CacheThamSoDuLieu.GhiChuThuaDat, textChanged);
+        SetCompleted();
+    }
+
+    /// <summary>
+    /// Thiết lập giá trị cache cho Ghi chú Giấy chứng nhận.
+    /// </summary>
+    /// <param name="textChanged">Giá trị mới của Ghi chú Giấy chứng nhận.</param>
+    private void SetGhiChuGiayChungNhanCache(string textChanged)
+    {
+        _ghiChuGiayChungNhan = textChanged;
+        MemoryCache.Set(CacheThamSoDuLieu.GhiChuGiayChungNhan, textChanged);
+        SetCompleted();
+    }
+
+
+    private void SetCompleted()
+    {
+        IsCompleted = !string.IsNullOrWhiteSpace(_toBanDoCu) &&
+                      !string.IsNullOrWhiteSpace(_ghiChuToBanDo) &&
+                      !string.IsNullOrWhiteSpace(_ghiChuThuaDat) &&
+                      !string.IsNullOrWhiteSpace(_ghiChuGiayChungNhan);
+        IsCompletedChanged.InvokeAsync(IsCompleted);
+    }
+
+    private void ResetDefault(MouseEventArgs obj)
+    {
+        _toBanDoCu = "{TBD}{DVHC}";
+        _ghiChuToBanDo = "Trước ngày {Ngay} là tờ bản đồ số {TBD} {DVHC}";
+        _ghiChuThuaDat = "Trước ngày {Ngay} thuộc tờ bản đồ số {TBD} {DVHC}";
+        _ghiChuGiayChungNhan = "Trước ngày {Ngay} là thửa đất số {ThuaDat} tờ bản đồ số {TBD} {DVHC}";
+    }
 }

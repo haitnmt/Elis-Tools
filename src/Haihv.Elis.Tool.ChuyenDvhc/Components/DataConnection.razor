@@ -1,6 +1,7 @@
 ﻿@using System.Text.Json
 @using Haihv.Elis.Tool.ChuyenDvhc.Data
 @using Haihv.Elis.Tool.ChuyenDvhc.Services
+@using Haihv.Elis.Tool.ChuyenDvhc.Settings
 @using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Caching.Memory
 
@@ -93,7 +94,7 @@
     [Parameter]
     public EventCallback<bool> IsConnectedChanged { get; set; }
 
-    private readonly string _filePath = Settings.PathConnectionString;
+    private readonly string _filePath = FilePath.PathConnectionString;
     bool _trustedConnection = true;
     string _errorMessage = string.Empty;
     string _errorWriteFile = string.Empty;

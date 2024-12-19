@@ -10,13 +10,12 @@ public partial class SelectDvhc : ComponentBase
     [Inject] private IMemoryCache Cache { get; set; } = null!;
     [Parameter] public bool IsConnected { get; set; }
     [Parameter] public bool IsBefore { get; set; }
-    [Parameter] public bool MultiCapXa { get; set; }
     [Parameter] public DvhcRecord? CapTinh { get; set; }
     [Parameter] public EventCallback<DvhcRecord?> CapTinhChanged { get; set; }
     [Parameter] public DvhcRecord? CapHuyen { get; set; }
     [Parameter] public EventCallback<DvhcRecord?> CapHuyenChanged { get; set; }
-    [Parameter] public IEnumerable<DvhcRecord?>? CapXas { get; set; } = [];
-    [Parameter] public EventCallback<IEnumerable<DvhcRecord?>?> CapXaChanged { get; set; }
+    [Parameter] public IEnumerable<DvhcRecord> CapXas { get; set; } = [];
+    [Parameter] public EventCallback<IEnumerable<DvhcRecord>> CapXaChanged { get; set; }
 
 
     private string? _connectionString = string.Empty;
@@ -30,6 +29,7 @@ public partial class SelectDvhc : ComponentBase
     private string _tenHuyen = string.Empty;
 
     private IEnumerable<DvhcRecord> _capXas = [];
+
     protected override void OnParametersSet()
     {
         if (!IsConnected || _capTinhs.Any()) return;
@@ -38,10 +38,10 @@ public partial class SelectDvhc : ComponentBase
         {
             _dataContext = new ElisDataContext(_connectionString);
         }
-        if (CapHuyen is not null)
-        {
-            SetCapHuyen();
-        }
+
+        if (CapHuyen == null || _tenHuyen == CapHuyen.Ten) return;
+        _tenHuyen = CapHuyen.Ten;
+        _ = GetCapXa();
     }
 
     private async Task<IEnumerable<DvhcRecord>> GetCapTinh(string? value, CancellationToken token)
@@ -59,8 +59,17 @@ public partial class SelectDvhc : ComponentBase
         });
         _capTinhs = dvhcRecords ?? [];
         return string.IsNullOrWhiteSpace(value)
-                ? _capTinhs
-                : _capTinhs.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+            ? _capTinhs
+            : _capTinhs.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    private async Task SetCacheCapTinh()
+    {
+        var dvhcRecords = await _dataContext.Dvhcs
+            .Where(d => d.MaHuyen == 0 && d.MaXa == 0)
+            .OrderBy(d => d.MaTinh).ToListAsync();
+        _capTinhs = dvhcRecords.Select(d => new DvhcRecord(d.MaDvhc, d.MaTinh, d.Ten));
+        Cache.Set("CapTinh", _capTinhs);
     }
 
     private async Task<IEnumerable<DvhcRecord>> GetCapHuyen(string? value, CancellationToken token)
@@ -79,10 +88,11 @@ public partial class SelectDvhc : ComponentBase
         });
 
         _capHuyens = dvhcRecords ?? [];
-        return string.IsNullOrWhiteSpace(value) ?
-            _capHuyens :
-            _capHuyens.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+        return string.IsNullOrWhiteSpace(value)
+            ? _capHuyens
+            : _capHuyens.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
     }
+
     private async Task GetCapXa()
     {
         if (CapHuyen is not { Ma: > 0 }) return;
@@ -94,7 +104,6 @@ public partial class SelectDvhc : ComponentBase
                 .OrderBy(d => d.MaTinh).ToListAsync();
             return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.MaXa, d.Ten));
         });
-
         _capXas = dvhcRecords ?? [];
     }
 
@@ -102,6 +111,7 @@ public partial class SelectDvhc : ComponentBase
     {
         return dvhcRecord?.Ten;
     }
+
     private void SetCapTinh()
     {
         if (CapTinh is not { Ma: > 0 } || CapTinh.Ten == _tenTinh) return;
@@ -111,22 +121,29 @@ public partial class SelectDvhc : ComponentBase
         _tenTinh = CapTinh.Ten;
         CapTinhChanged.InvokeAsync(CapTinh);
     }
+
     private void SetCapHuyen()
     {
         if (CapHuyen is not { Ma: > 0 } || CapHuyen.Ten == _tenHuyen) return;
-        CapXas = [];
         _tenHuyen = CapHuyen.Ten;
+        CapXas = [];
         CapHuyenChanged.InvokeAsync(CapHuyen);
         _ = GetCapXa();
     }
-    private static string? CapXaToString(DvhcRecord? dvhcRecord)
+
+    private static string? CapXaToString(DvhcRecord? capXa)
     {
-        return dvhcRecord?.Ten;
+        return capXa?.Ten;
+    }
+
+    private static string CapXaToString(IEnumerable<DvhcRecord> capXas)
+    {
+        return string.Join(", ", capXas.Select(x => x.Ten));
     }
 
     private void SetCapXa(IEnumerable<DvhcRecord?>? dvhcRecords)
     {
-        CapXas = dvhcRecords;
+        CapXas = dvhcRecords?.Where(x => x != null).Select(x => x!).ToList() ?? [];
         CapXaChanged.InvokeAsync(CapXas);
     }
 }
