@@ -27,3 +27,8 @@ public static class CacheThamSoBanDo
     private const string RootKey = "ThamSo:BanDo:";
     public static string ThamChieuToBanDo => RootKey + "ThamChieuToBanDo";
 }
+
+public static class CacheDataConnection
+{
+    public const string ConnectionString = "ConnectionString";
+}

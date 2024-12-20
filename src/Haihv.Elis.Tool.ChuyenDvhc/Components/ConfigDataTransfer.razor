@@ -2,91 +2,84 @@
 @using Microsoft.Extensions.Caching.Memory
 
 <MudStack>
-    @if (!IsConnected)
-    {
-        <MudAlert Severity="Severity.Warning">
-            Vui lòng cấu hình kết nối cơ sở dữ liệu ELIS SQL trước khi tiếp tục! (Quay lại bước trước)
-        </MudAlert>
-    }
-    else
-    {
-        <MudExpansionPanels MultiExpansion="true">
-            <MudExpansionPanel Text="Chọn đơn vị hành chính" Expanded="true">
-                <MudStack Row="true" StretchItems="StretchItems.All">
-                    <MudCard>
-                        <MudCardContent>
-                            <MudStack>
-                                <MudText Typo="Typo.body1"
-                                         Color="Color.Primary">
-                                    Trước chuyển đổi
-                                </MudText>
-                                <SelectDvhc IsConnected="IsConnected"
-                                            IsBefore="true"
-                                            CapTinh="_capTinhTruoc"
-                                            CapHuyen="_capHuyenTruoc"
-                                            CapXas="_capXaTruoc"
-                                            CapTinhChanged="CapTinhChanged"
-                                            CapHuyenChanged="CapHuyenChanged"
-                                            CapXaChanged="CapXaChanged"/>
-                                <MudDatePicker Label="Ngày sát nhập"
-                                               Placeholder="Ngày sát nhập các đơn vị hành chính được chọn về đơn vị hành chính mới"
-                                               AutoClose="true"
-                                               Variant="Variant.Outlined"
-                                               Margin="Margin.Dense"
-                                               MaxDate="DateTime.Today"
-                                               Date="_ngaySatNhap"
-                                               Editable="true"
-                                               DateFormat="dd/MM/yyyy"
-                                               Mask="@(new DateMask("dd/MM/yyyy"))"
-                                               DateChanged="NgaySatNhapChange">
-                                    <PickerActions>
-                                        <MudButton Class="mr-auto align-self-start" OnClick="TodayAsync">Hôm nay</MudButton>
-                                    </PickerActions>
-                                </MudDatePicker>
-                            </MudStack>
-                        </MudCardContent>
-                    </MudCard>
-                    <MudCard>
-                        <MudCardContent>
-                            <MudStack>
-                                <MudText Typo="Typo.body1"
-                                         Color="Color.Secondary">
-                                    Sau chuyển đổi
-                                </MudText>
-                                <SelectDvhc IsConnected="IsConnected"
-                                            IsBefore="false"
-                                            CapTinh="_capTinhSau"
-                                            CapTinhChanged="CapTinhSauChanged"
-                                            CapHuyen="_capHuyenSau"
-                                            CapHuyenChanged="CapHuyenSauChanged"
-                                            CapXas="@(_capXaSau != null ? [_capXaSau] : [])"
-                                            CapXaChanged="CapXaSauChanged"/>
 
-                                <MudTextField @bind-Value="@_tenDvhcSau"
-                                              Variant="Variant.Outlined"
-                                              Margin="Margin.Dense"
-                                              Required="true"
-                                              RequiredError="Không được để trống"
-                                              Label="Tên đơn vị hành chính sau sát nhập"/>
-                            </MudStack>
-                        </MudCardContent>
-                    </MudCard>
-                </MudStack>
-            </MudExpansionPanel>
-            
-            <MudExpansionPanel Text="Cấu hình tham chiếu, cập nhật dữ liệu" Expanded="true">
-                <MudExpansionPanels MultiExpansion="true">
-                    <ThamChieuTbd DvhcTruocs="_capXaTruoc"
-                                  DvhcSau="_capXaSau"
-                                  TenDvhcSau="@_tenDvhcSau"
-                                  IsCompleted="_isCompletedThamChieuBanDo"
-                                  IsCompletedChanged="SetCompletedThamChieuBanDo"/>
-                    <ThamChieuDuLieu IsCompleted="_isCompletedThamChieuBanDo"
-                                     IsCompletedChanged="SetCompletedThamChieuDuLieu"/>
-                </MudExpansionPanels>
-            </MudExpansionPanel>
-        </MudExpansionPanels>
-    }
+    <MudExpansionPanels MultiExpansion="true">
+        <MudExpansionPanel Text="Chọn đơn vị hành chính" Expanded="!_isCompletedThamChieuBanDo">
+            <MudStack Row="true" StretchItems="StretchItems.All">
+                <MudCard>
+                    <MudCardContent>
+                        <MudStack>
+                            <MudText Typo="Typo.body1"
+                                     Color="Color.Primary">
+                                Trước chuyển đổi
+                            </MudText>
+                            <SelectDvhc IsConnected="IsConnected"
+                                        IsBefore="true"
+                                        CapTinh="_capTinhTruoc"
+                                        CapHuyen="_capHuyenTruoc"
+                                        CapXas="_capXaTruoc"
+                                        CapTinhChanged="CapTinhChanged"
+                                        CapHuyenChanged="CapHuyenChanged"
+                                        CapXaChanged="CapXaChanged"/>
+                            <MudDatePicker Label="Ngày sát nhập"
+                                           Placeholder="Ngày sát nhập các đơn vị hành chính được chọn về đơn vị hành chính mới"
+                                           AutoClose="true"
+                                           Variant="Variant.Outlined"
+                                           Margin="Margin.Dense"
+                                           MaxDate="DateTime.Today"
+                                           Date="_ngaySatNhap"
+                                           Editable="true"
+                                           DateFormat="dd/MM/yyyy"
+                                           Mask="@(new DateMask("dd/MM/yyyy"))"
+                                           DateChanged="NgaySatNhapChange">
+                                <PickerActions>
+                                    <MudButton Class="mr-auto align-self-start" OnClick="TodayAsync">Hôm nay</MudButton>
+                                </PickerActions>
+                            </MudDatePicker>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+                <MudCard>
+                    <MudCardContent>
+                        <MudStack>
+                            <MudText Typo="Typo.body1"
+                                     Color="Color.Secondary">
+                                Sau chuyển đổi
+                            </MudText>
+                            <SelectDvhc IsConnected="IsConnected"
+                                        IsBefore="false"
+                                        CapTinh="_capTinhSau"
+                                        CapTinhChanged="CapTinhSauChanged"
+                                        CapHuyen="_capHuyenSau"
+                                        CapHuyenChanged="CapHuyenSauChanged"
+                                        CapXas="@(_capXaSau != null ? [_capXaSau] : [])"
+                                        CapXaChanged="CapXaSauChanged"/>
+
+                            <MudTextField @bind-Value="@_tenDvhcSau"
+                                          Variant="Variant.Outlined"
+                                          Margin="Margin.Dense"
+                                          Required="true"
+                                          RequiredError="Không được để trống"
+                                          Label="Tên đơn vị hành chính sau sát nhập"/>
+                        </MudStack>
+                    </MudCardContent>
+                </MudCard>
+            </MudStack>
+        </MudExpansionPanel>
+
+        <MudExpansionPanel Text="Cấu hình tham chiếu, cập nhật dữ liệu" Expanded="true">
+            <MudExpansionPanels MultiExpansion="true">
+                <ThamChieuTbd DvhcTruocs="_capXaTruoc"
+                              DvhcSau="_capXaSau"
+                              TenDvhcSau="@_tenDvhcSau"
+                              IsCompleted="_isCompletedThamChieuBanDo"
+                              IsCompletedChanged="SetCompletedThamChieuBanDo"/>
+                <ThamChieuDuLieu IsCompleted="_isCompletedThamChieuBanDo"
+                                 IsCompletedChanged="SetCompletedThamChieuDuLieu"/>
+            </MudExpansionPanels>
+        </MudExpansionPanel>
+    </MudExpansionPanels>
+
 </MudStack>
 
 @code
@@ -95,7 +88,7 @@
     [Parameter] public bool IsConnected { get; set; }
     [Parameter] public bool IsCompleted { get; set; }
     [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
-    
+
     private bool _isCompletedThamChieuBanDo = false;
     private bool _isCompletedThamChieuDuLieu = false;
     private string _tenDvhcSau = string.Empty;
@@ -133,7 +126,7 @@
         MemoryCache.Set(CacheThamSoDvhc.CapHuyenTruoc, _capHuyenTruoc);
         MemoryCache.Set(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
     }
-    
+
     private void CapHuyenChanged(DvhcRecord? capHuyen)
     {
         if (capHuyen == null) return;
@@ -146,7 +139,7 @@
         MemoryCache.Set(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
         MemoryCache.Set(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
     }
-    
+
     private void CapXaChanged(IEnumerable<DvhcRecord?>? capXa)
     {
         if (capXa == null) return;
@@ -160,7 +153,7 @@
         MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
         MemoryCache.Set(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
     }
-    
+
     private void CapTinhSauChanged(DvhcRecord? capTinh)
     {
         if (_capTinhSau != null && (capTinh == null || capTinh.MaDvhc == _capTinhSau.MaDvhc)) return;
@@ -172,7 +165,7 @@
         MemoryCache.Set(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
         MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
     }
-    
+
     private void CapHuyenSauChanged(DvhcRecord? capHuyen)
     {
         if (_capHuyenSau != null && (capHuyen == null || capHuyen.MaDvhc == _capHuyenSau.MaDvhc)) return;
@@ -182,7 +175,7 @@
         MemoryCache.Set(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
         MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
     }
-    
+
     private void CapXaSauChanged(IEnumerable<DvhcRecord?>? capXa)
     {
         if (capXa == null) return;
@@ -200,18 +193,18 @@
     {
         _ngaySatNhap = DateTime.Today;
     }
-    
+
     private void IsCompletedChangedHandler()
     {
-        IsCompleted = _capXaSau != null && _capXaTruoc.Count > 0 && !string.IsNullOrWhiteSpace(_tenDvhcSau) && 
+        IsCompleted = _capXaSau != null && _capXaTruoc.Count > 0 && !string.IsNullOrWhiteSpace(_tenDvhcSau) &&
                       _isCompletedThamChieuBanDo && _isCompletedThamChieuDuLieu;
         IsCompletedChanged.InvokeAsync(IsCompleted);
     }
 
     private void SetCompletedThamChieuBanDo(bool isCompletedThamChieuBanDo)
     {
-       _isCompletedThamChieuBanDo = isCompletedThamChieuBanDo;
-         IsCompletedChangedHandler();
+        _isCompletedThamChieuBanDo = isCompletedThamChieuBanDo;
+        IsCompletedChangedHandler();
     }
 
     private void SetCompletedThamChieuDuLieu(bool isCompletedThamChieuDuLieu)

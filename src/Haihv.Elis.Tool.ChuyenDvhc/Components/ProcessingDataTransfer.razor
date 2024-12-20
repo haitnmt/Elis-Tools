@@ -1,6 +1,50 @@
-﻿<h3>ProcessingDataTransfer</h3>
-
-@code {
-    [Parameter]
-    public bool IsAuditEnabled { get; set; }
+﻿@if (string.IsNullOrWhiteSpace(_connectionString))
+{
+    <MudAlert Severity="Severity.Warning">
+        Không đọc được chuỗi kết nối! Vui lòng làm lại từ đầu.
+    </MudAlert>
 }
+else
+{
+    <MudTimeline TimelinePosition="TimelinePosition.Start" TimelineAlign="TimelineAlign.Start">
+        @if (IsAuditEnabled)
+        {
+            <MudTimelineItem Color="_colorKhoiTaoDuLieu">
+                <ItemContent>
+                    <MudPaper Elevation="0" Class="mt-n1">
+                        <MudText Color="_colorKhoiTaoDuLieu" Typo="Typo.h6" GutterBottom="true">Tạo bảng tham chiếu dữ
+                            liệu
+                        </MudText>
+                        @if (_isCompletedKhoiTaoDuLieu)
+                        {
+                            @if (!string.IsNullOrWhiteSpace(_errorKhoiTaoDuLieu))
+                            {
+                                <MudAlert Severity="Severity.Warning" Dense="true">
+                                    <MudText>@_timeKhoiTaoDuLieu: @_errorKhoiTaoDuLieu</MudText>
+                                    <MudText>Không xuất được Excel sau khi hoàn thành</MudText>
+                                    <MudText>Bạn có muốn tiếp tục thực hiện và bỏ qua lưu thông tin tham chiếu không?
+                                    </MudText>
+                                    <MudButton>Tiếp tục</MudButton>
+                                </MudAlert>
+                            }
+                            else
+                            {
+                                <MudAlert Severity="Severity.Success" Dense="true">
+                                    @_timeKhoiTaoDuLieu: Đã hoàn thành
+                                </MudAlert>
+                            }
+                        }
+                        else
+                        {
+                            <MudProgressLinear Size="Size.Medium" Color="Color.Primary" Rounded="true"
+                                               Indeterminate="true"/>
+                            <MudText Color="Color.Primary" Typo="Typo.body2">Đang thực hiện</MudText>
+                        }
+                    </MudPaper>
+                </ItemContent>
+            </MudTimelineItem>
+        }
+    </MudTimeline>
+}
+
+

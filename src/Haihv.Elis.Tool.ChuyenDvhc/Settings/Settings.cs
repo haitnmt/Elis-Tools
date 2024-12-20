@@ -2,8 +2,6 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Settings;
 
 public static class FilePath
 {
-    public const string KeyConnectionString = "ConnectionString";
-
     public static string PathConnectionString =>
         Path.Combine(PathRootConfig(), "ConnectionInfo.inf");
 

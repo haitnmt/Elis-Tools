@@ -73,7 +73,7 @@
     private string? _tenDvhcSau;
     private List<ThamChieuToBanDo> _thamChieuToBanDos = [];
     private string _heightGrid = "null";
-    
+    private const string MaxHeight = "360px";
     private bool _loadingToBanDos = false;
 
 
@@ -81,7 +81,7 @@
     {
         _thamChieuToBanDos = await Cache.GetOrCreateAsync(CacheThamSoBanDo.ThamChieuToBanDo,
             _ => Task.FromResult(_thamChieuToBanDos)) ?? [];
-        _heightGrid = _thamChieuToBanDos.Count > 10 ? "400px" : "null";
+        _heightGrid = _thamChieuToBanDos.Count > 10 ? MaxHeight : "null";
     }
 
     protected override void OnParametersSet()
@@ -131,7 +131,7 @@
             }
 
             _loadingToBanDos = true;
-            var connectionString = Cache.Get(FilePath.KeyConnectionString)?.ToString();
+            var connectionString = Cache.Get(CacheDataConnection.ConnectionString)?.ToString();
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 return;
@@ -182,7 +182,7 @@
                 }));
             }
 
-            _heightGrid = _thamChieuToBanDos.Count > 10 ? "400px" : "null";
+            _heightGrid = _thamChieuToBanDos.Count > 10 ? MaxHeight : "null";
             StateHasChanged();
             CheckCompleted();
         }

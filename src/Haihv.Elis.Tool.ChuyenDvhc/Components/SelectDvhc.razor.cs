@@ -136,11 +136,6 @@ public partial class SelectDvhc : ComponentBase
         return capXa?.Ten;
     }
 
-    private static string CapXaToString(IEnumerable<DvhcRecord> capXas)
-    {
-        return string.Join(", ", capXas.Select(x => x.Ten));
-    }
-
     private void SetCapXa(IEnumerable<DvhcRecord?>? dvhcRecords)
     {
         CapXas = dvhcRecords?.Where(x => x != null).Select(x => x!).ToList() ?? [];

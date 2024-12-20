@@ -1,5 +1,6 @@
 ﻿@using System.Text.Json
 @using Haihv.Elis.Tool.ChuyenDvhc.Data
+@using Haihv.Elis.Tool.ChuyenDvhc.Extensions
 @using Haihv.Elis.Tool.ChuyenDvhc.Services
 @using Haihv.Elis.Tool.ChuyenDvhc.Settings
 @using Microsoft.EntityFrameworkCore
@@ -118,7 +119,7 @@
         {
             await using var context = new ElisDataContext(connectionString);
             await context.Database.OpenConnectionAsync();
-            MemoryCache.Set("ConnectionString", connectionString);
+            MemoryCache.Set(CacheDataConnection.ConnectionString, connectionString);
             IsConnected = true;
             _errorMessage = string.Empty;
             await SaveConnectionInfoAsync();
