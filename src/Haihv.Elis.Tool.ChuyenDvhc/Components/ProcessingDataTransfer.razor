@@ -1,38 +1,38 @@
-﻿@if (string.IsNullOrWhiteSpace(_connectionString))
-{
-    <MudAlert Severity="Severity.Warning">
-        Không đọc được chuỗi kết nối! Vui lòng làm lại từ đầu.
-    </MudAlert>
-}
-else
-{
-    <MudTimeline @ref="_timeLine" TimelinePosition="TimelinePosition.Start" TimelineAlign="TimelineAlign.Start">
-        @if (IsAuditEnabled)
-        {
-            <MudTimelineItem Color="_colorKhoiTaoDuLieu">
-                <ItemContent>
-                    <MudPaper Elevation="0" Class="mt-n1">
-                        <MudText Color="_colorKhoiTaoDuLieu" Typo="Typo.h6" GutterBottom="true">Tạo bảng tham chiếu dữ
-                            liệu
-                        </MudText>
-                        @if (_isCompletedKhoiTaoDuLieu)
+﻿<MudSnackbarProvider/>
+<MudTimeline TimelinePosition="TimelinePosition.Start" TimelineAlign="TimelineAlign.Start">
+    @* Khởi tạo bảng tham chiếu dữ liệu *@
+    @if (IsAuditEnabled)
+    {
+        <MudTimelineItem Color="_colorKhoiTaoDuLieu">
+            <ItemContent>
+                <MudPaper Elevation="0" Class="mt-n1">
+                    <MudText Color="_colorKhoiTaoDuLieu" Typo="Typo.h6" GutterBottom="true">Tạo bảng tham chiếu dữ
+                        liệu
+                    </MudText>
+                    @if (_isCompletedKhoiTaoDuLieu)
+                    {
+                        @if (!string.IsNullOrWhiteSpace(_errorKhoiTaoDuLieu))
                         {
-                            @if (!string.IsNullOrWhiteSpace(_errorKhoiTaoDuLieu))
-                            {
-                                <MudAlert Severity="Severity.Warning" Dense="true">
-                                    <MudText>@_timeKhoiTaoDuLieu: @_errorKhoiTaoDuLieu</MudText>
-                                    <MudText>Không xuất được Excel sau khi hoàn thành</MudText>
-                                    <MudText>Bạn có muốn tiếp tục thực hiện và bỏ qua lưu thông tin tham chiếu không?
-                                    </MudText>
-                                    <MudButton>Tiếp tục</MudButton>
-                                </MudAlert>
-                            }
-                            else
-                            {
-                                <MudAlert Severity="Severity.Success" Dense="true">
-                                    @_timeKhoiTaoDuLieu: Đã hoàn thành
-                                </MudAlert>
-                            }
+                            <MudAlert Severity="Severity.Warning" Dense="true">
+                                <MudText>@_timeKhoiTaoDuLieu: @_errorKhoiTaoDuLieu</MudText>
+                                <MudText>Không xuất được Excel sau khi hoàn thành</MudText>
+                                <MudText>Bạn có muốn tiếp tục thực hiện và bỏ qua lưu thông tin tham chiếu không?
+                                </MudText>
+                                <MudButton>Tiếp tục</MudButton>
+                            </MudAlert>
+                        }
+                        else
+                        {
+                            <MudAlert Severity="Severity.Success" Dense="true">
+                                @_timeKhoiTaoDuLieu: Đã hoàn thành
+                            </MudAlert>
+                        }
+                    }
+                    else
+                    {
+                        @if(_colorKhoiTaoDuLieu == Color.Default)
+                        {
+                            <MudText Typo="Typo.body2">Chưa thực hiện</MudText>
                         }
                         else
                         {
@@ -40,11 +40,58 @@ else
                                                Indeterminate="true"/>
                             <MudText Color="Color.Primary" Typo="Typo.body2">Đang thực hiện</MudText>
                         }
-                    </MudPaper>
-                </ItemContent>
-            </MudTimelineItem>
-        }
-    </MudTimeline>
-}
+
+                    }
+                </MudPaper>
+            </ItemContent>
+        </MudTimelineItem>
+    }
+
+    @* Tạo hoặc cập nhật thửa đất lịch sử *@
+    <TimeLineProcess Label="Cập nhật thửa đất lịch sử"
+                     ColorTimeLine="_colorThuaDatLichSu"
+                     IsCompleted="_isCompletedThuaDatLichSu"
+                     Time="@_timeThuaDatLichSu"
+                     Error="@_errorThuaDatLichSu"
+                     MaxCount="_totalThuaDatLichSu"
+                     SuccessMessage="@_messageThuaDatLichSuSuccess"
+                     CurrentCount="_currentThuaDatLichSu"/>
 
 
+    @* Cập nhật giấy chứng nhận *@
+    <TimeLineProcess Label="Cập nhật thông tin Giấy chứng nhận (Ghi chú)"
+                     ColorTimeLine="_colorUpdateGiayChungNhan"
+                     IsCompleted="_isCompletedUpdateGiayChungNhan"
+                     Time="@_timeUpdateGiayChungNhan"
+                     Error="@_errorUpdateGiayChungNhan"
+                     MaxCount="_totalUpdateGiayChungNhan"
+                     SuccessMessage="@_messageUpdateGiayChungNhanSuccess"
+                     CurrentCount="_currentUpdateGiayChungNhan"/>
+
+    @* Cập nhật thông tin thửa đất *@
+    <TimeLineProcess Label="Cập nhật thông tin thửa đất (Ghi chú)"
+                     ColorTimeLine="_colorUpdateThuaDat"
+                     IsCompleted="_isCompletedUpdateThuaDat"
+                     Time="@_timeUpdateThuaDat"
+                     Error="@_errorUpdateThuaDat"
+                     MaxCount="_totalUpdateThuaDat"
+                     SuccessMessage="@_messageUpdateThuaDatSuccess"
+                     CurrentCount="_currentUpdateThuaDat"/>
+
+    @* Cập nhật thông tin tờ bản đồ *@
+    <TimeLineProcess Label="Cập nhật thông tin tờ bản đồ (Ghi chú)"
+                     ColorTimeLine="_colorUpdateToBanDo"
+                     IsCompleted="_isCompletedUpdateToBanDo"
+                     Time="@_timeUpdateToBanDo"
+                     Error="@_errorUpdateToBanDo"
+                     MaxCount="_totalUpdateToBanDo"
+                     SuccessMessage="@_messageUpdateToBanDoSuccess"
+                     CurrentCount="_currentUpdateToBanDo"/>
+
+    @* Cập nhật thông tin đơn vị hành chính *@
+    <TimeLineProcess Label="Cập nhật thông tin đơn vị hành chính"
+                     ColorTimeLine="_colorUpdateDvhc"
+                     IsCompleted="_isCompletedUpdateDvhc"
+                     Time="@_timeUpdateDvhc"
+                     Error="@_errorUpdateDvhc"/>
+</MudTimeline>

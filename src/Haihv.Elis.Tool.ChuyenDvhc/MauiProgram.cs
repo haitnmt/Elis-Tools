@@ -1,8 +1,6 @@
 ﻿using Haihv.Elis.Tool.ChuyenDvhc.Services;
-using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Controls.Hosting;
-using Microsoft.Maui.Hosting;
+using MudBlazor;
 using MudBlazor.Services;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc
@@ -25,7 +23,18 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
             builder.Services.AddSingleton<IFileService, FileService>();
             
             // Đăng ký MudBlazor
-            builder.Services.AddMudServices();
+            builder.Services.AddMudServices(config =>
+            {
+                config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.TopRight;
+
+                config.SnackbarConfiguration.PreventDuplicates = false;
+                config.SnackbarConfiguration.NewestOnTop = false;
+                config.SnackbarConfiguration.ShowCloseIcon = true;
+                config.SnackbarConfiguration.VisibleStateDuration = 10000;
+                config.SnackbarConfiguration.HideTransitionDuration = 500;
+                config.SnackbarConfiguration.ShowTransitionDuration = 500;
+                config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
+            });
 
 
 #if DEBUG

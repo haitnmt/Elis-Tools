@@ -1,7 +1,7 @@
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 
-namespace Haihv.Elis.Tool.ChuyenDvhc.Extensions;
+namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 
 /// <summary>
 /// Lớp mở rộng để khởi tạo dữ liệu.

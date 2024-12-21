@@ -18,7 +18,7 @@ public static class CacheThamSoDvhc
     public static string CapHuyenSau => RootKey + "CapHuyenSau";
     public static string CapXaTruoc => RootKey + "CapXaTruoc";
     public static string CapXaSau => RootKey + "CapXaSau";
-    public static string NgaySatNhap => RootKey + "NgaySatNhap";
+    public static string NgaySatNhap => RootKey + "NgaySapNhap";
     public static string TenDvhcSau => RootKey + "DvhcMoi";
 }
 

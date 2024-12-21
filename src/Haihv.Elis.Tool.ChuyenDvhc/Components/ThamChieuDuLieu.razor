@@ -57,14 +57,10 @@
     [Inject] IMemoryCache MemoryCache { get; set; } = null!;
     [Parameter] public bool IsCompleted { get; set; }
     [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
-    private string _toBanDoCu = $"{ThamSoThayThe.ToBanDo}{ThamSoThayThe.DonViHanhChinh}";
-    private string _ghiChuToBanDo = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
-    $"là tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
-    private string _ghiChuThuaDat = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
-    $"thuộc tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
-    private string _ghiChuGiayChungNhan = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
-    $"là thửa đất số {ThamSoThayThe.SoThua} " +
-    $"tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
+    private string _toBanDoCu = ThamSoThayThe.DefaultToBanDoCu;
+    private string _ghiChuToBanDo = ThamSoThayThe.DefaultGhiChuToBanDo;
+    private string _ghiChuThuaDat = ThamSoThayThe.DefaultGhiChuThuaDat;
+    private string _ghiChuGiayChungNhan = ThamSoThayThe.DefaultGhiChuGiayChungNhan;
 
     protected override async Task OnInitializedAsync()
     {
@@ -152,14 +148,10 @@
     /// <param name="obj">Đối tượng sự kiện chuột.</param>
     private async Task ResetDefaultAsync(MouseEventArgs obj)
     {
-        _toBanDoCu = $"{ThamSoThayThe.ToBanDo}{ThamSoThayThe.DonViHanhChinh}";
-        _ghiChuToBanDo = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
-                         $"là tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
-        _ghiChuThuaDat = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
-                         $"thuộc tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
-        _ghiChuGiayChungNhan = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
-                               $"là thửa đất số {ThamSoThayThe.SoThua} " +
-                               $"tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
+        _toBanDoCu = ThamSoThayThe.DefaultToBanDoCu;
+        _ghiChuToBanDo = ThamSoThayThe.DefaultGhiChuToBanDo;
+        _ghiChuThuaDat = ThamSoThayThe.DefaultGhiChuThuaDat;
+        _ghiChuGiayChungNhan = ThamSoThayThe.DefaultGhiChuGiayChungNhan;
         await SetAllCache();
     }
 }

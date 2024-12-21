@@ -23,4 +23,13 @@ public static class ThamSoThayThe
     public static string SoThua => "{TD}";
     public static string DonViHanhChinh => "{DVHC}";
     public static string NgaySapNhap => "{NSN}";
+    
+    public static string DefaultToBanDoCu = $"{ToBanDo}{DonViHanhChinh}";
+    public static string DefaultGhiChuToBanDo = $"Trước ngày {NgaySapNhap} " +
+                                                $"là tờ bản đồ số {ToBanDo} {DonViHanhChinh}";
+    public static string DefaultGhiChuThuaDat = $"Trước ngày {NgaySapNhap} " +
+                                               $"thuộc tờ bản đồ số {ToBanDo} {DonViHanhChinh}";
+    public static string DefaultGhiChuGiayChungNhan = $"Trước ngày {NgaySapNhap} " +
+                                                     $"là thửa đất số {SoThua} " +
+                                                     $"tờ bản đồ số {ToBanDo} {DonViHanhChinh}";
 }
