@@ -6,7 +6,7 @@
 }
 else
 {
-    <MudTimeline TimelinePosition="TimelinePosition.Start" TimelineAlign="TimelineAlign.Start">
+    <MudTimeline @ref="_timeLine" TimelinePosition="TimelinePosition.Start" TimelineAlign="TimelineAlign.Start">
         @if (IsAuditEnabled)
         {
             <MudTimelineItem Color="_colorKhoiTaoDuLieu">

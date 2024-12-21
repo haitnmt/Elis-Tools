@@ -16,3 +16,11 @@ public static class FilePath
         return path;
     }
 }
+
+public static class ThamSoThayThe
+{
+    public static string ToBanDo => "{TBD}";
+    public static string SoThua => "{TD}";
+    public static string DonViHanhChinh => "{DVHC}";
+    public static string NgaySapNhap => "{NSN}";
+}

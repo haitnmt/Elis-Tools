@@ -1,25 +1,27 @@
 ﻿@using Haihv.Elis.Tool.ChuyenDvhc.Settings
 @using Microsoft.Extensions.Caching.Memory
 
-<MudExpansionPanel Expanded="true" Dense="true">
+<MudExpansionPanel Expanded="false" Dense="true">
     <TitleContent>
-        <MudStack Row="true" Justify="Justify.SpaceBetween">
+        <MudStack Row="true" Justify="Justify.SpaceBetween" AlignItems="AlignItems.Center">
             <MudText Typo="Typo.subtitle2">
                 Cập nhật nội dung dữ liệu
             </MudText>
+            <MudSpacer/>
+            <MudButton Color="Color.Info" OnClick="ResetDefaultAsync">
+                <MudText Typo="Typo.button">Mặc định</MudText>
+            </MudButton>
             <MudTooltip>
                 <ChildContent>
-                    <MudButton Color="Color.Info" OnClick="ResetDefault">
-                        <MudText Typo="Typo.button">Mặc định</MudText>
-                    </MudButton>
-                    <MudIconButton Size="Size.Small" Class="my-n3 mr-2" Icon="@Icons.Material.Filled.Help"/>
+                    <MudIconButton Size="Size.Small" Icon="@Icons.Material.Filled.Help" Color="Color.Info"/>
                 </ChildContent>
                 <TooltipContent>
                     <MudText Typo="Typo.h6">Hướng dẫn</MudText>
-                    <MudText Typo="Typo.body2">{Ngay}: Ngày sát nhập</MudText>
-                    <MudText Typo="Typo.body2">{ThuaDat}: Số thửa đất</MudText>
-                    <MudText Typo="Typo.body2">{TBD}: Số tờ bản đồ</MudText>
-                    <MudText Typo="Typo.body2">{DVHC}: Tên đơn vị hành chính</MudText>
+                    <MudDivider/>
+                    <MudText Align="Align.Start" Typo="Typo.body2">@ThamSoThayThe.NgaySapNhap: Ngày sáp nhập</MudText>
+                    <MudText Align="Align.Start" Typo="Typo.body2">@ThamSoThayThe.SoThua: Số thửa đất</MudText>
+                    <MudText Align="Align.Start" Typo="Typo.body2">@ThamSoThayThe.ToBanDo: Số tờ bản đồ</MudText>
+                    <MudText Align="Align.Start" Typo="Typo.body2">@ThamSoThayThe.DonViHanhChinh: Tên đơn vị hành chính</MudText>
                 </TooltipContent>
             </MudTooltip>
         </MudStack>
@@ -28,24 +30,23 @@
         <MudGrid Spacing="2" Class="mb-3">
             <MudItem xs="12" md="6" xxl="3">
                 <MudTextField @bind-Value="@_toBanDoCu" Variant="Variant.Outlined" Margin="Margin.Dense"
-                              HelperText="Hiển thị tại [Xem Thông tin thửa đất cũ]" Label="Tờ bản đồ cũ"
-                              TextChanged="@(t => SetToBanDoCuCache(t))"/>
+                    HelperText="Hiển thị tại [Xem Thông tin thửa đất cũ]" Label="Tờ bản đồ cũ"
+                    TextChanged="@(t => SetToBanDoCuCache(t))" />
             </MudItem>
             <MudItem xs="12" md="6" xxl="3">
                 <MudTextField @bind-Value="@_ghiChuToBanDo" Variant="Variant.Outlined" Margin="Margin.Dense"
-                              HelperText="Hiển thị tại [Bảng mã -> Danh mục Tờ bản đồ]" Label="Ghi chú Tờ bản đồ"
-                              TextChanged="@(t => SetGhiChuToBanDoCache(t))"/>
+                    HelperText="Hiển thị tại [Bảng mã -> Danh mục Tờ bản đồ]" Label="Ghi chú Tờ bản đồ"
+                    TextChanged="@(t => SetGhiChuToBanDoCache(t))" />
             </MudItem>
             <MudItem xs="12" md="6" xxl="3">
                 <MudTextField @bind-Value="@_ghiChuThuaDat" Variant="Variant.Outlined" Margin="Margin.Dense"
-                              HelperText="Hiển thị tại [Thông tin đăng ký -> thửa đất]" Label="Ghi chú Thửa đất"
-                              TextChanged="@(t => SetGhiChuThuaDatCache(t))"/>
+                    HelperText="Hiển thị tại [Thông tin đăng ký -> thửa đất]" Label="Ghi chú Thửa đất"
+                    TextChanged="@(t => SetGhiChuThuaDatCache(t))" />
             </MudItem>
             <MudItem xs="12" md="6" xxl="3">
                 <MudTextField @bind-Value="@_ghiChuGiayChungNhan" Variant="Variant.Outlined" Margin="Margin.Dense"
-                              HelperText="Hiển thị tại [Thông tin đăng ký -> Giấy chứng nhận]"
-                              Label="Ghi chú Giấy chứng nhận"
-                              TextChanged="@(t => SetGhiChuGiayChungNhanCache(t))"/>
+                    HelperText="Hiển thị tại [Thông tin đăng ký -> Giấy chứng nhận]" Label="Ghi chú Giấy chứng nhận"
+                    TextChanged="@(t => SetGhiChuGiayChungNhanCache(t))" />
             </MudItem>
         </MudGrid>
     </ChildContent>
@@ -56,10 +57,14 @@
     [Inject] IMemoryCache MemoryCache { get; set; } = null!;
     [Parameter] public bool IsCompleted { get; set; }
     [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
-    private string _toBanDoCu = "{TBD}{DVHC}";
-    private string _ghiChuToBanDo = "Trước ngày {Ngay} là tờ bản đồ số {TBD} {DVHC}";
-    private string _ghiChuThuaDat = "Trước ngày {Ngay} thuộc tờ bản đồ số {TBD} {DVHC}";
-    private string _ghiChuGiayChungNhan = "Trước ngày {Ngay} là thửa đất số {ThuaDat} tờ bản đồ số {TBD} {DVHC}";
+    private string _toBanDoCu = $"{ThamSoThayThe.ToBanDo}{ThamSoThayThe.DonViHanhChinh}";
+    private string _ghiChuToBanDo = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
+    $"là tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
+    private string _ghiChuThuaDat = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
+    $"thuộc tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
+    private string _ghiChuGiayChungNhan = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
+    $"là thửa đất số {ThamSoThayThe.SoThua} " +
+    $"tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
 
     protected override async Task OnInitializedAsync()
     {
@@ -73,13 +78,14 @@
     private async Task SetAllCache()
     {
         _toBanDoCu = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.ToBanDoCu,
-            _ => Task.FromResult(_toBanDoCu)) ?? _toBanDoCu;
+        _ => Task.FromResult(_toBanDoCu)) ?? _toBanDoCu;
         _ghiChuToBanDo = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuToBanDo,
-            _ => Task.FromResult(_ghiChuToBanDo)) ?? _ghiChuToBanDo;
+        _ => Task.FromResult(_ghiChuToBanDo)) ?? _ghiChuToBanDo;
         _ghiChuThuaDat = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuThuaDat,
-            _ => Task.FromResult(_ghiChuThuaDat)) ?? _ghiChuThuaDat;
+        _ => Task.FromResult(_ghiChuThuaDat)) ?? _ghiChuThuaDat;
         _ghiChuGiayChungNhan = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuGiayChungNhan,
-            _ => Task.FromResult(_ghiChuGiayChungNhan)) ?? _ghiChuGiayChungNhan;
+        _ => Task.FromResult(_ghiChuGiayChungNhan)) ?? _ghiChuGiayChungNhan;
+        SetCompleted();
     }
 
     /// <summary>
@@ -128,6 +134,9 @@
     }
 
 
+    /// <summary>
+    /// Thiết lập trạng thái hoàn thành.
+    /// </summary>
     private void SetCompleted()
     {
         IsCompleted = !string.IsNullOrWhiteSpace(_toBanDoCu) &&
@@ -137,11 +146,20 @@
         IsCompletedChanged.InvokeAsync(IsCompleted);
     }
 
-    private void ResetDefault(MouseEventArgs obj)
+    /// <summary>
+    /// Đặt lại các giá trị mặc định.
+    /// </summary>
+    /// <param name="obj">Đối tượng sự kiện chuột.</param>
+    private async Task ResetDefaultAsync(MouseEventArgs obj)
     {
-        _toBanDoCu = "{TBD}{DVHC}";
-        _ghiChuToBanDo = "Trước ngày {Ngay} là tờ bản đồ số {TBD} {DVHC}";
-        _ghiChuThuaDat = "Trước ngày {Ngay} thuộc tờ bản đồ số {TBD} {DVHC}";
-        _ghiChuGiayChungNhan = "Trước ngày {Ngay} là thửa đất số {ThuaDat} tờ bản đồ số {TBD} {DVHC}";
+        _toBanDoCu = $"{ThamSoThayThe.ToBanDo}{ThamSoThayThe.DonViHanhChinh}";
+        _ghiChuToBanDo = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
+                         $"là tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
+        _ghiChuThuaDat = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
+                         $"thuộc tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
+        _ghiChuGiayChungNhan = $"Trước ngày {ThamSoThayThe.NgaySapNhap} " +
+                               $"là thửa đất số {ThamSoThayThe.SoThua} " +
+                               $"tờ bản đồ số {ThamSoThayThe.ToBanDo} {ThamSoThayThe.DonViHanhChinh}";
+        await SetAllCache();
     }
 }

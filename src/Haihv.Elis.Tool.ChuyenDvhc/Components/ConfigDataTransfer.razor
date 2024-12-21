@@ -1,10 +1,18 @@
 ﻿@using Haihv.Elis.Tool.ChuyenDvhc.Settings
 @using Microsoft.Extensions.Caching.Memory
 
-<MudStack>
+<MudExpansionPanels MultiExpansion="true">
 
-    <MudExpansionPanels MultiExpansion="true">
-        <MudExpansionPanel Text="Chọn đơn vị hành chính" Expanded="!_isCompletedThamChieuBanDo">
+    <ThamChieuDuLieu IsCompleted="_isCompletedThamChieuDuLieu"
+                     IsCompletedChanged="SetCompletedThamChieuDuLieu"/>
+
+    <MudExpansionPanel Expanded="!_isCompletedThamChieuBanDo">
+        <TitleContent>
+            <MudText Typo="Typo.subtitle2">
+                Chọn đơn vị hành chính
+            </MudText>
+        </TitleContent>
+        <ChildContent>
             <MudStack Row="true" StretchItems="StretchItems.All">
                 <MudCard>
                     <MudCardContent>
@@ -21,8 +29,8 @@
                                         CapTinhChanged="CapTinhChanged"
                                         CapHuyenChanged="CapHuyenChanged"
                                         CapXaChanged="CapXaChanged"/>
-                            <MudDatePicker Label="Ngày sát nhập"
-                                           Placeholder="Ngày sát nhập các đơn vị hành chính được chọn về đơn vị hành chính mới"
+                            <MudDatePicker Label="Ngày sáp nhập"
+                                           Placeholder="Ngày sáp nhập các đơn vị hành chính được chọn về đơn vị hành chính mới"
                                            AutoClose="true"
                                            Variant="Variant.Outlined"
                                            Margin="Margin.Dense"
@@ -60,27 +68,20 @@
                                           Margin="Margin.Dense"
                                           Required="true"
                                           RequiredError="Không được để trống"
-                                          Label="Tên đơn vị hành chính sau sát nhập"/>
+                                          Label="Tên đơn vị hành chính sau sáp nhập"/>
                         </MudStack>
                     </MudCardContent>
                 </MudCard>
             </MudStack>
-        </MudExpansionPanel>
+        </ChildContent>
+    </MudExpansionPanel>
 
-        <MudExpansionPanel Text="Cấu hình tham chiếu, cập nhật dữ liệu" Expanded="true">
-            <MudExpansionPanels MultiExpansion="true">
-                <ThamChieuTbd DvhcTruocs="_capXaTruoc"
-                              DvhcSau="_capXaSau"
-                              TenDvhcSau="@_tenDvhcSau"
-                              IsCompleted="_isCompletedThamChieuBanDo"
-                              IsCompletedChanged="SetCompletedThamChieuBanDo"/>
-                <ThamChieuDuLieu IsCompleted="_isCompletedThamChieuBanDo"
-                                 IsCompletedChanged="SetCompletedThamChieuDuLieu"/>
-            </MudExpansionPanels>
-        </MudExpansionPanel>
-    </MudExpansionPanels>
-
-</MudStack>
+    <ThamChieuTbd DvhcTruocs="_capXaTruoc"
+                  DvhcSau="_capXaSau"
+                  TenDvhcSau="@_tenDvhcSau"
+                  IsCompleted="_isCompletedThamChieuBanDo"
+                  IsCompletedChanged="SetCompletedThamChieuBanDo"/>
+</MudExpansionPanels>
 
 @code
 {

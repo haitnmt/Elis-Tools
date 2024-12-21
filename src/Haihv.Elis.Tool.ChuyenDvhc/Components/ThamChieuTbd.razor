@@ -10,23 +10,22 @@
             <MudText Typo="Typo.subtitle2">
                 Tờ bản đồ
             </MudText>
-            <MudStack Row="true" Class="mr-3">
-                @if (DvhcTruocs != null && DvhcTruocs.Any() && DvhcSau != null)
-                {
-                    <MudButton Disabled="@_loadingToBanDos" OnClick="LoadBanDoFromDataAsync"
-                               Color="Color.Primary">
-                        @if (_loadingToBanDos)
-                        {
-                            <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
-                            <MudText Class="ms-2" Typo="Typo.button">Đang thực hiện</MudText>
-                        }
-                        else
-                        {
-                            <MudText Typo="Typo.button">Làm mới</MudText>
-                        }
-                    </MudButton>
-                }
-            </MudStack>
+            <MudSpacer/>
+            @if (DvhcTruocs != null && DvhcTruocs.Any() && DvhcSau != null)
+            {
+                <MudButton Disabled="@_loadingToBanDos" OnClick="LoadBanDoFromDataAsync"
+                           Color="Color.Primary">
+                    @if (_loadingToBanDos)
+                    {
+                        <MudProgressCircular Class="ms-n1" Size="Size.Small" Indeterminate="true"/>
+                        <MudText Class="ms-2" Typo="Typo.button">Đang thực hiện</MudText>
+                    }
+                    else
+                    {
+                        <MudText Typo="Typo.button">Làm mới</MudText>
+                    }
+                </MudButton>
+            }
         </MudStack>
     </TitleContent>
     <ChildContent>
@@ -73,7 +72,7 @@
     private string? _tenDvhcSau;
     private List<ThamChieuToBanDo> _thamChieuToBanDos = [];
     private string _heightGrid = "null";
-    private const string MaxHeight = "360px";
+    private const string MaxHeight = "null";
     private bool _loadingToBanDos = false;
 
 

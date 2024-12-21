@@ -3,6 +3,7 @@ using Haihv.Elis.Tool.ChuyenDvhc.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
 using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Caching.Memory;
+using MudBlazor;
 using Color = MudBlazor.Color;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Components;
@@ -22,6 +23,7 @@ public partial class ProcessingDataTransfer
     private string? _errorKhoiTaoDuLieu = string.Empty;
     private string? _connectionString;
     private bool _isFinished;
+    private MudTimeline _timeLine = new ();
 
     protected override void OnInitialized()
     {

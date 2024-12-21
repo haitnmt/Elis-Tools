@@ -13,6 +13,7 @@
 /src/**/projectSettingsUpdater.xml
 /src/**/.idea.Elis-Tools.iml
 /src/**/.idea/
+/src/**/.idea/*
 # Editor-based HTTP Client requests
 /httpRequests/
 /src/**/httpRequests/
