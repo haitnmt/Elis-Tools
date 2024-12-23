@@ -15,21 +15,15 @@ public static class ThuaDatCuExtensions
     /// <param name="formatToBanDoCu">
     /// Định dạng tờ bản đồ cũ.
     /// </param>
-    /// <param name="ngaySapNhap">
-    /// Ngày sáp nhập.
-    /// </param>
     /// <returns>Trả về true nếu có bản ghi được tạo hoặc cập nhật, ngược lại trả về false.</returns>
     public static async Task<bool> CreateOrUpdateThuaDatCuAsync(this ElisDataContext dataContext,
-        List<ThuaDatCapNhat> thuaDatCapNhats, string? formatToBanDoCu = null, string? ngaySapNhap = null)
+        List<ThuaDatCapNhat> thuaDatCapNhats, string? formatToBanDoCu = null)
     {
         if (thuaDatCapNhats.Count == 0)
             return false;
 
         if (string.IsNullOrWhiteSpace(formatToBanDoCu))
             formatToBanDoCu = ThamSoThayThe.DefaultToBanDoCu;
-
-        if (string.IsNullOrWhiteSpace(ngaySapNhap))
-            ngaySapNhap = DateTime.Now.ToString(ThamSoThayThe.DinhDangNgaySapNhap);
 
         foreach (var thuaDatCapNhat in from thuaDatCapNhat in thuaDatCapNhats
                  let toBanDoCu = formatToBanDoCu

@@ -25,7 +25,6 @@ public partial class ProcessingDataTransfer
     private string _ghiChuThuaDat = string.Empty;
     private string _ghiChuGiayChungNhan = string.Empty;
     private string _ngaySapNhap = string.Empty;
-    private int _totalThuaDat;
     private int _limit = 100;
 
     private List<int> _maDvhcBiSapNhap = new();
@@ -168,7 +167,7 @@ public partial class ProcessingDataTransfer
     private async Task CreateThamChieuThuaDat()
     {
         if (_isProcessingThamChieuThuaDat || _isCompletedThamChieuThuaDat || _capXaTruoc == null ||
-            _capXaTruoc.Count == 0)
+            _capXaTruoc.Count == 0 || _capXaSau == null)
             return;
         _colorThamChieuThuaDat = Color.Primary;
         _isProcessingThamChieuThuaDat = true;
@@ -176,8 +175,8 @@ public partial class ProcessingDataTransfer
         try
         {
             // Lấy tổng số thửa đất
-            _totalThuaDat = await _dbContext.GetCountThuaDatAsync(_maDvhcBiSapNhap);
-            if (_totalThuaDat == 0)
+            _totalThamChieuThuaDat = await _dbContext.GetCountThuaDatAsync(_maDvhcBiSapNhap);
+            if (_totalThamChieuThuaDat == 0)
             {
                 const string message = "Không có thửa đất nào được tìm thấy.";
                 _messageUpdateToBanDoSuccess = message;
@@ -188,10 +187,10 @@ public partial class ProcessingDataTransfer
                 _isCompletedThamChieuThuaDat = true;
                 _isCompletedUpdateToBanDo = true;
                 SetMessage(message, Severity.Info, false);
+                // Cập nhật dữ liệu Đơn vị hành chính
+                await UpdatingDonViHanhChinh();
                 return;
             }
-
-            _totalThamChieuThuaDat = _totalThuaDat;
             _currentThamChieuThuaDat = 0;
             StateHasChanged();
 
@@ -211,7 +210,7 @@ public partial class ProcessingDataTransfer
                         break;
 
                     // Tạo hoặc cập nhật thông tin Thửa Đất Cũ
-                    await _dbContext.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu, _ngaySapNhap);
+                    await _dbContext.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu);
 
                     // Cập nhật Ghi chú Giấy chứng nhận
                     await _dbContext.UpdateGhiChuGiayChungNhan(thuaDatToBanDos, _ghiChuGiayChungNhan, _ngaySapNhap);
@@ -221,6 +220,7 @@ public partial class ProcessingDataTransfer
                     StateHasChanged();
                 }
             }
+            _colorThamChieuThuaDat = Color.Success;
         }
         catch (Exception ex)
         {
@@ -233,7 +233,6 @@ public partial class ProcessingDataTransfer
             // Cập nhật thời gian, trạng thái hoàn thành và trạng thái xử lý
             _timeThamChieuThuaDat = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
             _isCompletedThamChieuThuaDat = true;
-            _colorThamChieuThuaDat = Color.Success;
             StateHasChanged();
         }
 
@@ -261,6 +260,7 @@ public partial class ProcessingDataTransfer
         try
         {
             await _dbContext.UpdateToBanDoAsync(_thamChieuToBanDos, _ghiChuToBanDo, _ngaySapNhap);
+            _colorUpdateToBanDo = Color.Success;
         }
         catch (Exception ex)
         {
@@ -306,6 +306,8 @@ public partial class ProcessingDataTransfer
         try
         {
             await _dbContext.UpdateDonViHanhChinhAsync(_capXaSau, _maDvhcBiSapNhap, ngaySapNhap: _ngaySapNhap);
+            _colorUpdateDvhc = Color.Success;
+            SetMessage("Đã hoàn thành", Severity.Success);
         }
         catch (Exception ex)
         {
@@ -317,7 +319,6 @@ public partial class ProcessingDataTransfer
         {
             _timeUpdateDvhc = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
             _isCompletedUpdateDvhc = true;
-            SetMessage("Đã hoàn thành", Severity.Success);
             StateHasChanged();
         }
     }
