@@ -16,7 +16,7 @@ public partial class ProcessingDataTransfer
     [Parameter] public bool IsAuditEnabled { get; set; }
     [Parameter] public EventCallback<bool> IsFinishedChanged { get; set; }
 
-    private ElisDataContext _dbContext = null!;
+    private ElisDataContext _dataContext = null!;
     private string? _connectionString;
     private bool _isFinished;
     private List<ThamChieuToBanDo> _thamChieuToBanDos = [];
@@ -36,7 +36,7 @@ public partial class ProcessingDataTransfer
         _connectionString = MemoryCache.Get<string>(CacheDataConnection.ConnectionString);
         if (!string.IsNullOrWhiteSpace(_connectionString))
         {
-            _dbContext = new ElisDataContext(_connectionString);
+            _dataContext = new ElisDataContext(_connectionString);
             _thamChieuToBanDos = MemoryCache.Get<List<ThamChieuToBanDo>>(CacheThamSoBanDo.ThamChieuToBanDo) ?? [];
             if (_thamChieuToBanDos.Count == 0)
             {
@@ -127,7 +127,7 @@ public partial class ProcessingDataTransfer
     /// <returns>Task đại diện cho thao tác không đồng bộ.</returns>
     private async Task CreateAuditTable()
     {
-        // Kiểm tra nếu audit được kích hoạt, _dbContext không null, và quá trình chưa hoàn thành hoặc đang xử lý
+        // Kiểm tra nếu audit được kích hoạt, _dataContext không null, và quá trình chưa hoàn thành hoặc đang xử lý
         if (!IsAuditEnabled || _isCompletedKhoiTaoDuLieu || _isProcessingKhoiTaoDuLieu)
             return;
         _isProcessingKhoiTaoDuLieu = true;
@@ -136,7 +136,8 @@ public partial class ProcessingDataTransfer
         try
         {
             // Tạo hoặc thay đổi bảng audit
-            await _dbContext.CreatedOrAlterAuditTable();
+            await using var dbContext = _dataContext;
+            await dbContext.CreatedOrAlterAuditTable();
             _colorKhoiTaoDuLieu = Color.Success;
         }
         catch (Exception ex)
@@ -174,8 +175,9 @@ public partial class ProcessingDataTransfer
         StateHasChanged();
         try
         {
+            await using var dbContext = _dataContext;
             // Lấy tổng số thửa đất
-            _totalThamChieuThuaDat = await _dbContext.GetCountThuaDatAsync(_maDvhcBiSapNhap);
+            _totalThamChieuThuaDat = await dbContext.GetCountThuaDatAsync(_maDvhcBiSapNhap);
             if (_totalThamChieuThuaDat == 0)
             {
                 const string message = "Không có thửa đất nào được tìm thấy.";
@@ -201,7 +203,7 @@ public partial class ProcessingDataTransfer
                 {
                     // Lấy danh sách Thửa Đất cần cập nhật và cập nhật ghi chú Thửa Đất
                     var thuaDatToBanDos =
-                        await _dbContext.UpdateAndGetThuaDatToBanDoAsync(dvhcBiSapNhap,
+                        await dbContext.UpdateAndGetThuaDatToBanDoAsync(dvhcBiSapNhap,
                             minMaThuaDat: minMaThuaDat,
                             limit: _limit,
                             formatGhiChuThuaDat: _ghiChuThuaDat,
@@ -210,10 +212,10 @@ public partial class ProcessingDataTransfer
                         break;
 
                     // Tạo hoặc cập nhật thông tin Thửa Đất Cũ
-                    await _dbContext.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu);
+                    await dbContext.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu);
 
                     // Cập nhật Ghi chú Giấy chứng nhận
-                    await _dbContext.UpdateGhiChuGiayChungNhan(thuaDatToBanDos, _ghiChuGiayChungNhan, _ngaySapNhap);
+                    await dbContext.UpdateGhiChuGiayChungNhan(thuaDatToBanDos, _ghiChuGiayChungNhan, _ngaySapNhap);
 
                     minMaThuaDat = thuaDatToBanDos[^1].MaThuaDat;
                     _currentThamChieuThuaDat += thuaDatToBanDos.Count;
@@ -259,7 +261,8 @@ public partial class ProcessingDataTransfer
         StateHasChanged();
         try
         {
-            await _dbContext.UpdateToBanDoAsync(_thamChieuToBanDos, _ghiChuToBanDo, _ngaySapNhap);
+            await using var dbContext = _dataContext;
+            await dbContext.UpdateToBanDoAsync(_thamChieuToBanDos, _ghiChuToBanDo, _ngaySapNhap);
             _colorUpdateToBanDo = Color.Success;
         }
         catch (Exception ex)
@@ -305,7 +308,8 @@ public partial class ProcessingDataTransfer
 
         try
         {
-            await _dbContext.UpdateDonViHanhChinhAsync(_capXaSau, _maDvhcBiSapNhap, ngaySapNhap: _ngaySapNhap);
+            await using var dbContext = _dataContext;
+            await dbContext.UpdateDonViHanhChinhAsync(_capXaSau, _maDvhcBiSapNhap, ngaySapNhap: _ngaySapNhap);
             _colorUpdateDvhc = Color.Success;
             SetMessage("Đã hoàn thành", Severity.Success);
         }

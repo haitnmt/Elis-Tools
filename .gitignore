@@ -64,3 +64,7 @@
 /src/**/bin/
 /obj/
 /src/**/obj/
+
+#MacOS .DS_Store files
+.DS_Store
+/src/**/.DS_Store
