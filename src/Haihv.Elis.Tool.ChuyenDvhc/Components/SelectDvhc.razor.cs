@@ -1,4 +1,5 @@
 using Haihv.Elis.Tool.ChuyenDvhc.Data;
+using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Caching.Memory;
@@ -142,5 +143,3 @@ public partial class SelectDvhc : ComponentBase
         CapXaChanged.InvokeAsync(CapXas);
     }
 }
-
-public sealed record DvhcRecord(int MaDvhc, int Ma, string Ten);

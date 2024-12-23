@@ -48,35 +48,15 @@
     }
 
     @* Tạo hoặc cập nhật thửa đất lịch sử *@
-    <TimeLineProcess Label="Cập nhật thửa đất lịch sử"
-                     ColorTimeLine="_colorThuaDatLichSu"
-                     IsCompleted="_isCompletedThuaDatLichSu"
-                     Time="@_timeThuaDatLichSu"
-                     Error="@_errorThuaDatLichSu"
-                     MaxCount="_totalThuaDatLichSu"
-                     SuccessMessage="@_messageThuaDatLichSuSuccess"
-                     CurrentCount="_currentThuaDatLichSu"/>
+    <TimeLineProcess Label="Tạo và cập nhật tham chiếu thửa đất"
+                     ColorTimeLine="_colorThamChieuThuaDat"
+                     IsCompleted="_isCompletedThamChieuThuaDat"
+                     Time="@_timeThamChieuThuaDat"
+                     Error="@_errorThamChieuThuaDat"
+                     MaxCount="_totalThamChieuThuaDat"
+                     SuccessMessage="@_messageSuccessThamChieuThuaDat"
+                     CurrentCount="_currentThamChieuThuaDat"/>
 
-
-    @* Cập nhật giấy chứng nhận *@
-    <TimeLineProcess Label="Cập nhật thông tin Giấy chứng nhận (Ghi chú)"
-                     ColorTimeLine="_colorUpdateGiayChungNhan"
-                     IsCompleted="_isCompletedUpdateGiayChungNhan"
-                     Time="@_timeUpdateGiayChungNhan"
-                     Error="@_errorUpdateGiayChungNhan"
-                     MaxCount="_totalUpdateGiayChungNhan"
-                     SuccessMessage="@_messageUpdateGiayChungNhanSuccess"
-                     CurrentCount="_currentUpdateGiayChungNhan"/>
-
-    @* Cập nhật thông tin thửa đất *@
-    <TimeLineProcess Label="Cập nhật thông tin thửa đất (Ghi chú)"
-                     ColorTimeLine="_colorUpdateThuaDat"
-                     IsCompleted="_isCompletedUpdateThuaDat"
-                     Time="@_timeUpdateThuaDat"
-                     Error="@_errorUpdateThuaDat"
-                     MaxCount="_totalUpdateThuaDat"
-                     SuccessMessage="@_messageUpdateThuaDatSuccess"
-                     CurrentCount="_currentUpdateThuaDat"/>
 
     @* Cập nhật thông tin tờ bản đồ *@
     <TimeLineProcess Label="Cập nhật thông tin tờ bản đồ (Ghi chú)"
@@ -84,9 +64,7 @@
                      IsCompleted="_isCompletedUpdateToBanDo"
                      Time="@_timeUpdateToBanDo"
                      Error="@_errorUpdateToBanDo"
-                     MaxCount="_totalUpdateToBanDo"
-                     SuccessMessage="@_messageUpdateToBanDoSuccess"
-                     CurrentCount="_currentUpdateToBanDo"/>
+                     SuccessMessage="@_messageUpdateToBanDoSuccess"/>
 
     @* Cập nhật thông tin đơn vị hành chính *@
     <TimeLineProcess Label="Cập nhật thông tin đơn vị hành chính"

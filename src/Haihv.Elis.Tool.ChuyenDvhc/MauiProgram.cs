@@ -12,21 +12,17 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
-                .ConfigureFonts(fonts =>
-                {
-                    fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
-                });
+                .ConfigureFonts(fonts => { fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"); });
             builder.Services.AddMemoryCache();
             builder.Services.AddMauiBlazorWebView();
-            
+
             // Đăng ký FileService
             builder.Services.AddSingleton<IFileService, FileService>();
-            
+
             // Đăng ký MudBlazor
             builder.Services.AddMudServices(config =>
             {
                 config.SnackbarConfiguration.PositionClass = Defaults.Classes.Position.TopRight;
-
                 config.SnackbarConfiguration.PreventDuplicates = false;
                 config.SnackbarConfiguration.NewestOnTop = false;
                 config.SnackbarConfiguration.ShowCloseIcon = true;
@@ -36,12 +32,11 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
                 config.SnackbarConfiguration.SnackbarVariant = Variant.Filled;
             });
 
-
 #if DEBUG
-    		builder.Services.AddBlazorWebViewDeveloperTools();
-    		builder.Logging.AddDebug();
+            builder.Services.AddBlazorWebViewDeveloperTools();
+            builder.Logging.AddDebug();
 #endif
-            
+
             return builder.Build();
         }
     }

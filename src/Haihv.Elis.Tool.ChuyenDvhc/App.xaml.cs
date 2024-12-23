@@ -1,4 +1,8 @@
-﻿namespace Haihv.Elis.Tool.ChuyenDvhc
+﻿using Microsoft.Maui;
+using Microsoft.Maui.Controls;
+using Microsoft.Maui.Devices;
+
+namespace Haihv.Elis.Tool.ChuyenDvhc
 {
     public partial class App
     {

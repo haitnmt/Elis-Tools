@@ -10,12 +10,17 @@ public sealed class ThuaDat
 {
     [Column("MaThuaDat", TypeName = "bigint")]
     public long MaThuaDat { get; set; }
+
     [Column("MaToBanDo", TypeName = "bigint")]
     public long MaToBanDo { get; set; }
+
     [Column("ThuaDatSo", TypeName = "char(10)")]
     [MaxLength(10)]
     public required string ThuaDatSo { get; set; }
+
     [Column("GhiChu", TypeName = "nvarchar(2000)")]
     [MaxLength(2000)]
     public string? GhiChu { get; set; }
 }
+
+public sealed record ThuaDatCapNhat(long MaThuaDat, string ThuaDatSo, string ToBanDo, string TenDonViHanhChinh);
