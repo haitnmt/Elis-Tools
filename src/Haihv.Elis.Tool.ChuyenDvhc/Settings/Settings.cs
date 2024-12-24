@@ -38,6 +38,5 @@ public static class ThamSoThayThe
                                                        $"là thửa đất số {SoThua} " +
                                                        $"tờ bản đồ số {ToBanDo} {DonViHanhChinh}";
 
-    public static string DefaultDonViHanhChinhBiSapNhap => $"Sau ngày {NgaySapNhap} " +
-                                                           $"đã sáp nhập vào {DonViHanhChinh}";
+    public static string DefaultDonViHanhChinhBiSapNhap => $"Nay là {DonViHanhChinh}";
 }

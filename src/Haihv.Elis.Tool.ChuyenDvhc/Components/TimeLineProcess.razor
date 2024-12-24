@@ -28,7 +28,8 @@
                 else
                 {
                     <MudProgressLinear Size="Size.Medium" Color="Color.Primary" Rounded="true"
-                                       Indeterminate="@(MaxCount == 0)" Max="MaxCount" Value="CurrentCount"/>
+                                       Indeterminate="@(MaxCount == 0)" Max="MaxCount"
+                                       Buffer="@(BufferCount > 0 && MaxCount > 0)" Value="CurrentCount"/>
                     <MudText Color="Color.Primary" Typo="Typo.body2">Đang thực hiện</MudText>
                 }
             }
@@ -44,5 +45,6 @@
     [Parameter] public Color ColorTimeLine { get; set; } = Color.Default;
     [Parameter] public long MaxCount { get; set; }
     [Parameter] public long CurrentCount { get; set; }
+    [Parameter] public long BufferCount { get; set; }
     [Parameter] public string SuccessMessage { get; set; } = "Đã hoàn thành";
 }

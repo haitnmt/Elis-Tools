@@ -69,6 +69,7 @@
                                           Margin="Margin.Dense"
                                           Required="true"
                                           RequiredError="Không được để trống"
+                                          OnBlur="OnTenDonViHanhChinhMoiChange"
                                           Label="Tên đơn vị hành chính sau sáp nhập"/>
                         </MudStack>
                     </MudCardContent>
@@ -225,5 +226,10 @@
 
         MemoryCache.Set(CacheThamSoDvhc.NgaySatNhap, _ngaySatNhap);
         StateHasChanged();
+    }
+
+    private void OnTenDonViHanhChinhMoiChange()
+    {
+        MemoryCache.Set(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
     }
 }

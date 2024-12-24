@@ -13,6 +13,10 @@
             <MudSpacer/>
             @if (DvhcTruocs != null && DvhcTruocs.Any() && DvhcSau != null)
             {
+                <MudRadioGroup @bind-Value="_usePrefix">
+                    <MudRadio Value="true" Color="Color.Primary" Dense="true">Sử dụng tiền tố</MudRadio>
+                    <MudRadio Value="false" Color="Color.Secondary" Dense="true">Sử dụng tăng dần</MudRadio>
+                </MudRadioGroup>
                 <MudButton Disabled="@_loadingToBanDos" OnClick="LoadBanDoFromDataAsync"
                            Color="Color.Primary">
                     @if (_loadingToBanDos)
@@ -74,6 +78,7 @@
     private string _heightGrid = "null";
     private const string MaxHeight = "null";
     private bool _loadingToBanDos = false;
+    private bool _usePrefix = false;
 
 
     protected override async Task OnInitializedAsync()
@@ -153,7 +158,9 @@
                 SoToBanDoTruoc = $"{tbd.SoTo} [{tbd.TyLe}]",
                 SoToBanDoSau = tbd.SoTo
             }));
-            var soToBanDoTiepTheo = tbds
+            var soToBanDoTiepTheo = _usePrefix
+                ? 0
+                : tbds
                 .Where(t => int.TryParse(t.SoTo, out _))
                 .Select(t => int.Parse(t.SoTo))
                 .Max();
@@ -164,6 +171,11 @@
             foreach (var maDvhc in maDvhcTruocs)
             {
                 var tenDvhc = _dvhcTruocs.First(d => d.MaDvhc == maDvhc).Ten;
+                var prefix = string.Empty;
+                if (soToBanDoTiepTheo == 0)
+                {
+                    prefix = GetPrefix(tenDvhc);
+                }
                 tbds = await dbConText.ToBanDos
                     .Where(tbd => tbd.MaDvhc == maDvhc)
                     .OrderBy(tbd => tbd.TyLe)
@@ -177,7 +189,7 @@
                     SoToBanDoTruoc = $"{tbd.SoTo} [{tbd.TyLe}]",
                     TenDvhcSau = _tenDvhcSau ?? _dvhcSau.Ten,
                     MaDvhcSau = _dvhcSau.MaDvhc,
-                    SoToBanDoSau = soToBanDoTiepTheo++.ToString()
+                    SoToBanDoSau = string.IsNullOrWhiteSpace(prefix) ? soToBanDoTiepTheo++.ToString() : $"{prefix}{tbd.SoTo}"
                 }));
             }
 
@@ -193,6 +205,18 @@
         {
             _loadingToBanDos = false;
         }
+    }
+
+    private static string GetPrefix(string tenDvhc)
+    {
+        // Loại bỏ các từ chỉ cấp xã: xã, thị trấn, phường,
+        tenDvhc = tenDvhc.Replace("Xã", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("Thị trấn", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Replace("Phường", string.Empty, StringComparison.OrdinalIgnoreCase)
+            .Trim();
+        var words = tenDvhc.Split(' ', StringSplitOptions.RemoveEmptyEntries);
+        // Lấy các chữ cái đầu của các từ và trả về kết quả
+        return string.Join("", words.Select(w => w[0])).ToLower();
     }
 
     private void CheckCompleted()

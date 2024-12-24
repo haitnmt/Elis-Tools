@@ -115,8 +115,8 @@ public static class ThuaDatExtensions
             // Thêm vào danh sách kết quả
             thuaDatCapNhats.Add(new ThuaDatCapNhat(
                 maThuaDat,
-                result.GetString(1),
-                result.GetString(2),
+                result.GetString(1).Trim(),
+                result.GetString(2).Trim(),
                 dvhcBiSapNhap.Ten));
         }
 

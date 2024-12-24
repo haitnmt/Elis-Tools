@@ -25,26 +25,25 @@ public static class ThuaDatCuExtensions
         if (string.IsNullOrWhiteSpace(formatToBanDoCu))
             formatToBanDoCu = ThamSoThayThe.DefaultToBanDoCu;
 
-        foreach (var thuaDatCapNhat in from thuaDatCapNhat in thuaDatCapNhats
-                 let toBanDoCu = formatToBanDoCu
-                     .Replace(ThamSoThayThe.ToBanDo, thuaDatCapNhat.ToBanDo)
-                     .Replace(ThamSoThayThe.DonViHanhChinh, thuaDatCapNhat.TenDonViHanhChinh)
-                 select thuaDatCapNhat)
+        foreach (var thuaDatCapNhat in thuaDatCapNhats)
         {
+            var toBanDoCu = formatToBanDoCu
+                .Replace(ThamSoThayThe.ToBanDo, thuaDatCapNhat.ToBanDo)
+                .Replace(ThamSoThayThe.DonViHanhChinh, thuaDatCapNhat.TenDonViHanhChinh);
             var thuaDatCuInDb = await dataContext.ThuaDatCus.FindAsync(thuaDatCapNhat.MaThuaDat);
             if (thuaDatCuInDb == null)
             {
-                await dataContext.ThuaDatCus.AddAsync(new ThuaDatCu()
+                dataContext.ThuaDatCus.Add(new ThuaDatCu()
                 {
                     MaThuaDat = thuaDatCapNhat.MaThuaDat,
-                    ToBanDoCu = thuaDatCapNhat.ToBanDo
+                    ToBanDoCu = toBanDoCu
                 });
             }
             else
             {
                 thuaDatCuInDb.ToBanDoCu = string.IsNullOrWhiteSpace(thuaDatCuInDb.ToBanDoCu)
-                    ? thuaDatCapNhat.ToBanDo
-                    : $"{thuaDatCuInDb.ToBanDoCu} - [{thuaDatCapNhat.ToBanDo}]";
+                    ? toBanDoCu
+                    : $"{thuaDatCuInDb.ToBanDoCu} - [{toBanDoCu}]";
                 dataContext.ThuaDatCus.Update(thuaDatCuInDb);
             }
         }

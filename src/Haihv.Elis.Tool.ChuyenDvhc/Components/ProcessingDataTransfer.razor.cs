@@ -27,9 +27,9 @@ public partial class ProcessingDataTransfer
     private string _ngaySapNhap = string.Empty;
     private int _limit = 100;
 
-    private List<int> _maDvhcBiSapNhap = new();
-    private DvhcRecord? _capXaSau;
     private List<DvhcRecord?>? _capXaTruoc;
+    private List<int> _maDvhcBiSapNhap = [];
+    private DvhcRecord? _capXaSau;
 
     protected override void OnInitialized()
     {
@@ -45,7 +45,19 @@ public partial class ProcessingDataTransfer
             }
 
             _capXaTruoc = MemoryCache.Get<List<DvhcRecord?>?>(CacheThamSoDvhc.CapXaTruoc) ?? null;
+            if (_capXaTruoc == null || _capXaTruoc.Count == 0)
+            {
+                SetMessage("Dữ liệu đơn vị hành chính cấp xã trước không tồn tại.");
+                return;
+            }
+
             _capXaSau = MemoryCache.Get<DvhcRecord?>(CacheThamSoDvhc.CapXaSau) ?? null;
+            if (_capXaSau == null)
+            {
+                SetMessage("Dữ liệu đơn vị hành chính cấp xã sau không tồn tại.");
+                return;
+            }
+
             _maDvhcBiSapNhap = _capXaTruoc?.Where(x => x != null)
                 .Select(x => x!.MaDvhc)
                 .ToList() ?? [];
@@ -136,8 +148,7 @@ public partial class ProcessingDataTransfer
         try
         {
             // Tạo hoặc thay đổi bảng audit
-            await using var dbContext = _dataContext;
-            await dbContext.CreatedOrAlterAuditTable();
+            await _dataContext.CreatedOrAlterAuditTable();
             _colorKhoiTaoDuLieu = Color.Success;
         }
         catch (Exception ex)
@@ -164,6 +175,7 @@ public partial class ProcessingDataTransfer
     private string? _errorThamChieuThuaDat = string.Empty;
     private long _totalThamChieuThuaDat;
     private long _currentThamChieuThuaDat;
+    private long _bufferThamChieuThuaDat;
 
     private async Task CreateThamChieuThuaDat()
     {
@@ -175,9 +187,8 @@ public partial class ProcessingDataTransfer
         StateHasChanged();
         try
         {
-            await using var dbContext = _dataContext;
             // Lấy tổng số thửa đất
-            _totalThamChieuThuaDat = await dbContext.GetCountThuaDatAsync(_maDvhcBiSapNhap);
+            _totalThamChieuThuaDat = await _dataContext.GetCountThuaDatAsync(_maDvhcBiSapNhap);
             if (_totalThamChieuThuaDat == 0)
             {
                 const string message = "Không có thửa đất nào được tìm thấy.";
@@ -193,17 +204,21 @@ public partial class ProcessingDataTransfer
                 await UpdatingDonViHanhChinh();
                 return;
             }
+
             _currentThamChieuThuaDat = 0;
+            _bufferThamChieuThuaDat = Math.Min(_limit, _totalThamChieuThuaDat);
             StateHasChanged();
 
-            foreach (var dvhcBiSapNhap in _capXaTruoc.OfType<DvhcRecord>())
+            foreach (var dvhcBiSapNhap in _capXaTruoc.Where(x => x != null && _maDvhcBiSapNhap.Contains(x.MaDvhc)))
             {
+                if (dvhcBiSapNhap == null)
+                    continue;
                 var minMaThuaDat = long.MinValue;
                 while (true)
                 {
                     // Lấy danh sách Thửa Đất cần cập nhật và cập nhật ghi chú Thửa Đất
                     var thuaDatToBanDos =
-                        await dbContext.UpdateAndGetThuaDatToBanDoAsync(dvhcBiSapNhap,
+                        await _dataContext.UpdateAndGetThuaDatToBanDoAsync(dvhcBiSapNhap,
                             minMaThuaDat: minMaThuaDat,
                             limit: _limit,
                             formatGhiChuThuaDat: _ghiChuThuaDat,
@@ -212,16 +227,19 @@ public partial class ProcessingDataTransfer
                         break;
 
                     // Tạo hoặc cập nhật thông tin Thửa Đất Cũ
-                    await dbContext.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu);
+                    await _dataContext.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu);
 
                     // Cập nhật Ghi chú Giấy chứng nhận
-                    await dbContext.UpdateGhiChuGiayChungNhan(thuaDatToBanDos, _ghiChuGiayChungNhan, _ngaySapNhap);
+                    await _dataContext.UpdateGhiChuGiayChungNhan(thuaDatToBanDos, _ghiChuGiayChungNhan, _ngaySapNhap);
 
                     minMaThuaDat = thuaDatToBanDos[^1].MaThuaDat;
                     _currentThamChieuThuaDat += thuaDatToBanDos.Count;
+                    _bufferThamChieuThuaDat = _currentThamChieuThuaDat +
+                                              Math.Min(_limit, _totalThamChieuThuaDat - _currentThamChieuThuaDat);
                     StateHasChanged();
                 }
             }
+
             _colorThamChieuThuaDat = Color.Success;
         }
         catch (Exception ex)
@@ -261,8 +279,7 @@ public partial class ProcessingDataTransfer
         StateHasChanged();
         try
         {
-            await using var dbContext = _dataContext;
-            await dbContext.UpdateToBanDoAsync(_thamChieuToBanDos, _ghiChuToBanDo, _ngaySapNhap);
+            await _dataContext.UpdateToBanDoAsync(_thamChieuToBanDos, _ghiChuToBanDo, _ngaySapNhap);
             _colorUpdateToBanDo = Color.Success;
         }
         catch (Exception ex)
@@ -308,8 +325,13 @@ public partial class ProcessingDataTransfer
 
         try
         {
-            await using var dbContext = _dataContext;
-            await dbContext.UpdateDonViHanhChinhAsync(_capXaSau, _maDvhcBiSapNhap, ngaySapNhap: _ngaySapNhap);
+            var tenCapXaMoi = MemoryCache.Get<string>(CacheThamSoDvhc.TenDvhcSau) ?? string.Empty;
+            if (!string.IsNullOrWhiteSpace(tenCapXaMoi))
+            {
+                _capXaSau = _capXaSau with { Ten = tenCapXaMoi };
+            }
+
+            await _dataContext.UpdateDonViHanhChinhAsync(_capXaSau, _maDvhcBiSapNhap);
             _colorUpdateDvhc = Color.Success;
             SetMessage("Đã hoàn thành", Severity.Success);
         }
