@@ -40,6 +40,7 @@
         <AssemblyVersion>1.0.9119.0</AssemblyVersion>
         <FileVersion>1.0.9119.0</FileVersion>
         <NeutralLanguage>vi-VN</NeutralLanguage>
+        <ApplicationIcon>Resources\AppIcon\app.ico</ApplicationIcon>
     </PropertyGroup>
 
     <ItemGroup>
@@ -66,6 +67,19 @@
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.21" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />
         <PackageReference Include="MudBlazor" Version="8.0.0-preview.6"/>
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Update="app.ico">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Content>
+    </ItemGroup>
+
+    <ItemGroup>
+      <None Remove="Resources\AppIcon\app.ico" />
+      <Resource Include="Resources\AppIcon\app.ico">
+        <CopyToOutputDirectory>Always</CopyToOutputDirectory>
+      </Resource>
     </ItemGroup>
 
 </Project>

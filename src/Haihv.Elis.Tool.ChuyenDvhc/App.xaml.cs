@@ -1,8 +1,4 @@
-﻿using Microsoft.Maui;
-using Microsoft.Maui.Controls;
-using Microsoft.Maui.Devices;
-
-namespace Haihv.Elis.Tool.ChuyenDvhc
+﻿namespace Haihv.Elis.Tool.ChuyenDvhc
 {
     public partial class App
     {
@@ -22,7 +18,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
                 Height = 750 * scale,
                 Width = 960 * scale,
                 MinimumHeight = 750,
-                MinimumWidth = 960
+                MinimumWidth = 960,
             };
         }
     }

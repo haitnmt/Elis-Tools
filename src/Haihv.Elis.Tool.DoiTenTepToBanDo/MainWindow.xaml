@@ -3,10 +3,49 @@
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
         xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-        xmlns:local="clr-namespace:Haihv.Elis.Tool.DoiTenTepToBanDo"
+        xmlns:doiTenTepToBanDo="clr-namespace:Haihv.Elis.Tool.DoiTenTepToBanDo"
         mc:Ignorable="d"
-        Title="MainWindow" Height="450" Width="800">
+        Icon="app.ico"
+        Title="Đổi tên các tệp Bản đồ" 
+        WindowStartupLocation="CenterScreen"
+        Height="860" Width="1100"
+        MinHeight="800" MinWidth="1024">
     <Grid>
-
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*" />
+            <ColumnDefinition Width="*" />
+        </Grid.ColumnDefinitions>
+        <GroupBox Grid.Column="0" Header="Các tệp bản đồ cần đổi tên">
+            <StackPanel Orientation="Horizontal">
+                <StackPanel Orientation="Vertical">
+                    <StackPanel Orientation="Horizontal">
+                        <StackPanel Orientation="Vertical">
+                            <doiTenTepToBanDo:FolderTree />
+                        </StackPanel>
+                        <StackPanel Orientation="Vertical">
+                            <doiTenTepToBanDo:FileList />
+                        </StackPanel>
+                    </StackPanel>
+                </StackPanel>
+            </StackPanel>
+        </GroupBox>
+       <GridSplitter Grid.Column="0" HorizontalAlignment="Right" VerticalAlignment="Stretch" Width="0" />
+       <GroupBox Grid.Column="1" Header="Kết quả">
+           <StackPanel Orientation="Horizontal">
+               <StackPanel Orientation="Vertical">
+                   <StackPanel Orientation="Horizontal">
+            
+                       <StackPanel Orientation="Vertical">
+                           <Label Content="Chọn thư mục chứa kết quả" />
+                           <doiTenTepToBanDo:FolderTree />
+                       </StackPanel>
+                       <StackPanel Orientation="Vertical">
+                           <Label Content="Xem trước kết quả" />
+                           <doiTenTepToBanDo:FileList />
+                       </StackPanel>
+                   </StackPanel>
+               </StackPanel>
+           </StackPanel>
+       </GroupBox>
     </Grid>
 </Window>

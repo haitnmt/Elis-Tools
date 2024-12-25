@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace Haihv.Elis.Tool.ChuyenDvhc.Services;
 
 public interface IFileService
