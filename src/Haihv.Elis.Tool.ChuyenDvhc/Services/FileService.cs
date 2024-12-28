@@ -1,4 +1,6 @@
-﻿namespace Haihv.Elis.Tool.ChuyenDvhc.Services;
+﻿using System.Text;
+
+namespace Haihv.Elis.Tool.ChuyenDvhc.Services;
 
 public class FileService : IFileService
 {
@@ -8,12 +10,27 @@ public class FileService : IFileService
         {
             if (!File.Exists(filePath))
             {
-                Console.WriteLine("File not found, creating new file");
+                Console.WriteLine("File not found!");
                 return string.Empty;
             }
 
-            var stream = File.OpenRead(filePath);
-            using var reader = new StreamReader(stream);
+            // Sử dụng using để đảm bảo giải phóng tài nguyên
+            await using var fileStream = new FileStream(
+                filePath,
+                FileMode.Open,
+                FileAccess.Read,
+                FileShare.Read,
+                bufferSize: 4096,
+                useAsync: true);
+
+            // Sử dụng UTF8 encoding để đọc chính xác
+            using var reader = new StreamReader(
+                fileStream,
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                detectEncodingFromByteOrderMarks: true,
+                bufferSize: 4096,
+                leaveOpen: false);
+
             return await reader.ReadToEndAsync();
         }
         catch (Exception ex)
@@ -27,12 +44,30 @@ public class FileService : IFileService
     {
         try
         {
-            
-            await using var stream = File.Exists(filePath) ? 
-                File.OpenWrite(filePath) :
-                File.Create(filePath);
-            await using var writer = new StreamWriter(stream);
+            // Đảm bảo directory tồn tại
+            var directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+
+            // Sử dụng FileMode.Create để ghi đè file cũ nếu tồn tại
+            await using var fileStream = new FileStream(
+                filePath,
+                FileMode.Create,
+                FileAccess.Write,
+                FileShare.None,
+                bufferSize: 4096,
+                useAsync: true);
+
+            // Sử dụng UTF8 encoding không có BOM
+            await using var writer = new StreamWriter(
+                fileStream,
+                new UTF8Encoding(encoderShouldEmitUTF8Identifier: false),
+                bufferSize: 4096,
+                leaveOpen: false);
             await writer.WriteAsync(content);
+            await writer.FlushAsync(); // Đảm bảo dữ liệu được ghi xuống disk
         }
         catch (Exception ex)
         {

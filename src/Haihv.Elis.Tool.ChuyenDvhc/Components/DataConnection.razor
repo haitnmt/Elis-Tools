@@ -1,4 +1,5 @@
 ﻿@using System.Text.Json
+@using System.Text.Json.Serialization
 @using Haihv.Elis.Tool.ChuyenDvhc.Data
 @using Haihv.Elis.Tool.ChuyenDvhc.Extensions
 @using Haihv.Elis.Tool.ChuyenDvhc.Services
@@ -59,6 +60,13 @@
         </MudAlert>
         @if(IsConnected)
         {
+            if (!string.IsNullOrWhiteSpace(_errorWriteFile))
+            {
+                <MudAlert Severity="Severity.Warning"
+                          Dense="true">
+                    @_errorWriteFile
+                </MudAlert>
+            }
             <MudAlert Severity="Severity.Warning" 
                       Dense="true">
                 Vui lòng sao lưu dữ liệu trước khi thực hiện các bước tiếp theo!
@@ -140,10 +148,16 @@
     
     private class DataConnectionModel
     {
+        [JsonPropertyName("serverAddress")]
         public string ServerAddress { get; set; } = "localhost";
+        [JsonPropertyName("databaseName")]
         public string DatabaseName { get; set; } = "elis";
+        [JsonPropertyName("userName")]
         public string UserName { get; set; } = "sa";
+        [JsonPropertyName("password")]
         public string Password { get; set; } = "";
+
+        [JsonPropertyName("trustedConnection")]
         public bool TrustedConnection { get; set; } = true;
     }
 
@@ -152,7 +166,8 @@
         try
         {
             var json = await FileService.ReadFileAsync(_filePath);
-            var connectionInfo = JsonSerializer.Deserialize<DataConnectionModel>(json.Decrypt());
+            var jsonDecrypted = json.Decrypt();
+            var connectionInfo = JsonSerializer.Deserialize<DataConnectionModel>(jsonDecrypted);
             if (connectionInfo != null)
             {
                 _serverAddress = connectionInfo.ServerAddress;
@@ -176,17 +191,17 @@
     
     private async Task SaveConnectionInfoAsync()
     {
-        var connectionInfo = new DataConnectionModel
-        {
-            ServerAddress = _serverAddress,
-            DatabaseName = _databaseName,
-            UserName = _userName,
-            Password = _password,
-            TrustedConnection = _trustedConnection
-        };
-        var json = JsonSerializer.Serialize(connectionInfo).Encrypt();
         try
         {
+            var connectionInfo = new DataConnectionModel
+            {
+                ServerAddress = _serverAddress,
+                DatabaseName = _databaseName,
+                UserName = _userName,
+                Password = _password,
+                TrustedConnection = _trustedConnection
+            };
+            var json = JsonSerializer.Serialize(connectionInfo).Encrypt();
             await FileService.WriteFileAsync(_filePath, json);
         }
         catch (Exception ex)

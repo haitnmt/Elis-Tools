@@ -138,4 +138,87 @@ public static class ThuaDatExtensions
         await dbContext.SaveChangesAsync();
         return thuaDatCapNhats;
     }
+
+    public static async Task<long> CreateTempThuaDatAsync(this ElisDataContext dbContext, long maToBanDo)
+    {
+        try
+        {
+            var tempThuaDat = new ThuaDat
+            {
+                MaThuaDat = long.MaxValue,
+                MaToBanDo = maToBanDo,
+                ThuaDatSo = "Temp",
+                GhiChu = "Thửa đất tạm thời"
+            };
+
+            // Kiểm tra xem Thửa Đất đã tồn tại chưa
+            var thuaDat = await dbContext.ThuaDats.FindAsync(tempThuaDat.MaThuaDat);
+
+            if (thuaDat != null)
+            {
+                // Nếu Thửa Đất đã tồn tại thì cập nhật thông tin
+                thuaDat.MaToBanDo = tempThuaDat.MaToBanDo;
+                thuaDat.ThuaDatSo = tempThuaDat.ThuaDatSo;
+                thuaDat.GhiChu = tempThuaDat.GhiChu;
+                dbContext.ThuaDats.Update(thuaDat);
+            }
+            else
+            {
+                // Nếu Thửa Đất chưa tồn tại thì thêm mới
+                dbContext.ThuaDats.Add(tempThuaDat);
+            }
+
+            await dbContext.SaveChangesAsync();
+            return tempThuaDat.MaThuaDat;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return long.MinValue;
+        }
+    }
+
+    public static async Task<List<long>> GetMaThuaDatAsync(this ElisDataContext dataContext, int maDvhc)
+    {
+        if (maDvhc <= 0) return [];
+        await using var command = dataContext.Database.GetDbConnection().CreateCommand();
+        // Tạo câu lệnh SQL
+        const string sql = $"""
+                            SELECT ThuaDat.MaThuaDat
+                            FROM   ThuaDat INNER JOIN ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
+                            WHERE ToBanDo.MaDVHC = @MaDvhc
+                            ORDER BY ThuaDat.MaThuaDat
+                            """;
+        command.CommandText = sql;
+        // Tham số @MaDvhc
+        var parameterMaDvhc = command.CreateParameter();
+        parameterMaDvhc.ParameterName = "@MaDvhc";
+        parameterMaDvhc.Value = maDvhc;
+        command.Parameters.Add(parameterMaDvhc);
+
+        // Thực thi câu lệnh SQL
+        var result = await command.ExecuteReaderAsync();
+
+        // Đọc kết quả trả về
+        List<long> maThuaDats = [];
+        while (await result.ReadAsync())
+        {
+            maThuaDats.Add(result.GetInt64(0));
+        }
+
+        return maThuaDats;
+    }
+
+    public static async Task RenewMaThuaDatAsync(this ElisDataContext dbContext, long maThuaDat, long maThuaDatTemp)
+    {
+        // var thuaDat = await dbContext.ThuaDats.FindAsync(maThuaDat);
+        // var thuaDatTemp = await dbContext.ThuaDats.FindAsync(maThuaDatTemp);
+        // if (thuaDat == null || thuaDatTemp == null) return;
+        // thuaDat.MaToBanDo = thuaDatTemp.MaToBanDo;
+        // thuaDat.ThuaDatSo = thuaDatTemp.ThuaDatSo;
+        // thuaDat.GhiChu = thuaDatTemp.GhiChu;
+        // dbContext.ThuaDats.Update(thuaDat);
+        // dbContext.ThuaDats.Remove(thuaDatTemp);
+        // await dbContext.SaveChangesAsync();
+    }
 }
