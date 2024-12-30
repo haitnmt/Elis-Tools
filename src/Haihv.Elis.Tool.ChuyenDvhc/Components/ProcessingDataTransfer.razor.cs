@@ -25,6 +25,7 @@ public partial class ProcessingDataTransfer
     private string _ghiChuThuaDat = string.Empty;
     private string _ghiChuGiayChungNhan = string.Empty;
     private string _ngaySapNhap = string.Empty;
+    private bool _renewPrimaryKey = false;
     private int _limit = 100;
 
     private List<DvhcRecord?>? _capXaTruoc;
@@ -73,6 +74,7 @@ public partial class ProcessingDataTransfer
             _ngaySapNhap = MemoryCache.TryGetValue(CacheThamSoDvhc.NgaySatNhap, out DateTime ngaySapNhap)
                 ? ngaySapNhap.ToString(ThamSoThayThe.DinhDangNgaySapNhap)
                 : DateTime.Now.ToString(ThamSoThayThe.DinhDangNgaySapNhap);
+            _renewPrimaryKey = MemoryCache.Get<bool>(CacheThamSoDvhc.RenewPrimaryKey);
         }
         else
         {

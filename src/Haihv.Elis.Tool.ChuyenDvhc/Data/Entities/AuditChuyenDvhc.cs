@@ -4,41 +4,25 @@ using System.ComponentModel.DataAnnotations.Schema;
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 
 [Table("AuditChuyenDvhc")]
-public sealed class AuditData
+public sealed class AuditChuyenDvhc
 {
-    [Column("Id", TypeName = "uniqueidentifier")]
-    public Guid Id { get; set; } = Guid.CreateVersion7();
+    [Key] [Column("Id")] public Guid Id { get; set; }
 
-    [Column("MaDvhcTruoc", TypeName = "int")]
-    public int MaDvhcTruoc { get; set; }
-
-    [Column("TenDvhcTruoc", TypeName = "nvarchar(255)")]
+    [Required]
+    [Column("Table")]
     [MaxLength(255)]
-    public string TenDvhcTruoc { get; set; } = string.Empty;
+    public string Table { get; set; } = string.Empty;
 
-    [Column("ToBanDoTruoc", TypeName = "nvarchar(10)")]
-    [MaxLength(10)]
-    public string ToBanDoTruoc { get; set; } = string.Empty;
+    [Required]
+    [Column("RowId")]
+    [MaxLength(36)]
+    public string RowId { get; set; } = string.Empty;
 
-    [Column("SoThuaDatTruoc", TypeName = "nvarchar(10)")]
-    [MaxLength(10)]
-    public string SoThuaDatTruoc { get; set; } = string.Empty;
+    [Column("OldValue")] public string OldValue { get; set; } = string.Empty;
 
-    [Column("MaDvhcSau", TypeName = "int")]
-    public int MaDvhcSau { get; set; }
+    [Column("NewValue")] public string NewValue { get; set; } = string.Empty;
 
-    [Column("TenDvhcSau", TypeName = "nvarchar(255)")]
-    [MaxLength(255)]
-    public string TenDvhcSau { get; set; } = string.Empty;
+    [Column("MaDvhc")] public int MaDvhc { get; set; }
 
-    [Column("ToBanDoSau", TypeName = "nvarchar(10)")]
-    [MaxLength(10)]
-    public string ToBanDoSau { get; set; } = string.Empty;
-
-    [Column("SoThuaDatSau", TypeName = "nvarchar(10)")]
-    [MaxLength(10)]
-    public string SoThuaDatSau { get; set; } = string.Empty;
-
-    [Column("NgayChuyen", TypeName = "datetime")]
-    public DateTime NgayChuyen { get; set; } = DateTime.Now;
+    [Column("ActivityTime")] public DateTime ActivityTime { get; set; } = DateTime.Now;
 }

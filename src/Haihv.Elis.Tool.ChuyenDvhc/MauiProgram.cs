@@ -1,4 +1,6 @@
-﻿using Haihv.Elis.Tool.ChuyenDvhc.Services;
+﻿using System.Diagnostics.CodeAnalysis;
+using Haihv.Elis.Tool.ChuyenDvhc.Extensions;
+using Haihv.Elis.Tool.ChuyenDvhc.Services;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
 using MudBlazor.Services;
@@ -7,13 +9,14 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
 {
     public static class MauiProgram
     {
+        [Experimental("EXTEXP0018")]
         public static MauiApp CreateMauiApp()
         {
             var builder = MauiApp.CreateBuilder();
             builder
                 .UseMauiApp<App>()
                 .ConfigureFonts(fonts => { fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"); });
-            builder.Services.AddMemoryCache();
+            builder.Services.AddHybridCaching();
             builder.Services.AddMauiBlazorWebView();
 
             // Đăng ký FileService

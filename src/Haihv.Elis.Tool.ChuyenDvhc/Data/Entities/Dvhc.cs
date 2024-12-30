@@ -1,14 +1,14 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 
 [Table("DVHC")]
-[PrimaryKey("MaDvhc")]
 public sealed class Dvhc
 {
-    [Column("MaDVHC", TypeName = "int")] public int MaDvhc { get; set; }
+    [Column("MaDVHC", TypeName = "int")]
+    [Key]
+    public int MaDvhc { get; set; }
 
     [Column("Ten", TypeName = "nvarchar(50")]
     [MaxLength(50)]

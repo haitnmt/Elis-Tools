@@ -5,6 +5,8 @@ public static class FilePath
     public static string PathConnectionString =>
         Path.Combine(PathRootConfig(), "ConnectionInfo.inf");
 
+    public static string CacheOnDisk => Path.Combine(PathRootConfig(), "Cache");
+
     private static string PathRootConfig()
     {
         var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ElisTool");

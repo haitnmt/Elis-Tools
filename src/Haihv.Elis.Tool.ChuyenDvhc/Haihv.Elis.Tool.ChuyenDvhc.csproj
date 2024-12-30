@@ -63,6 +63,7 @@
 
     <ItemGroup>
         <PackageReference Include="Microsoft.EntityFrameworkCore.SqlServer" Version="9.0.0" />
+        <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="9.0.0-preview.9.24556.5"/>
         <PackageReference Include="Microsoft.Maui.Controls" Version="9.0.21" />
         <PackageReference Include="Microsoft.AspNetCore.Components.WebView.Maui" Version="9.0.21" />
         <PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.0" />

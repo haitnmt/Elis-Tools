@@ -7,6 +7,8 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 
 public static class ThuaDatExtensions
 {
+    public const long DefaultTempMaThuaDat = long.MaxValue;
+
     /// <summary>
     /// Lấy số lượng Thửa Đất dựa trên danh sách Mã Tờ Bản Đồ.
     /// </summary>
@@ -17,7 +19,7 @@ public static class ThuaDatExtensions
     /// Danh sách Mã Đơn Vị Hành Chính đang bị sập nhập.
     /// </param>
     /// <returns>Số lượng Thửa Đất.</returns>
-    public static async Task<int> GetCountThuaDatAsync(this DbContext dbContext, List<int> maDvhcBiSapNhap)
+    public static async Task<int> GetCountThuaDatAsync(this ElisDataContext dbContext, List<int> maDvhcBiSapNhap)
     {
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
         var parameters = new List<string>();
@@ -139,14 +141,24 @@ public static class ThuaDatExtensions
         return thuaDatCapNhats;
     }
 
-    public static async Task<long> CreateTempThuaDatAsync(this ElisDataContext dbContext, long maToBanDo)
+    /// <summary>
+    /// Tạo Thửa Đất tạm thời.
+    /// </summary>
+    /// <param name="dbContext">Ngữ cảnh cơ sở dữ liệu.</param>
+    /// <param name="maToBanDo">Mã Tờ Bản Đồ.</param>
+    /// <param name="maThuaDatTemp">Mã Thửa Đất tạm thời (tùy chọn).</param>
+    /// <returns>Mã Thửa Đất tạm thời.</returns>
+    public static async Task<long> CreateTempThuaDatAsync(this ElisDataContext dbContext,
+        long? maToBanDo = null,
+        long? maThuaDatTemp = null)
     {
         try
         {
+            maToBanDo = await dbContext.CreateTempToBanDoAsync(maToBanDo);
             var tempThuaDat = new ThuaDat
             {
-                MaThuaDat = long.MaxValue,
-                MaToBanDo = maToBanDo,
+                MaThuaDat = maThuaDatTemp ?? DefaultTempMaThuaDat,
+                MaToBanDo = maToBanDo.Value,
                 ThuaDatSo = "Temp",
                 GhiChu = "Thửa đất tạm thời"
             };
@@ -155,21 +167,13 @@ public static class ThuaDatExtensions
             var thuaDat = await dbContext.ThuaDats.FindAsync(tempThuaDat.MaThuaDat);
 
             if (thuaDat != null)
-            {
-                // Nếu Thửa Đất đã tồn tại thì cập nhật thông tin
-                thuaDat.MaToBanDo = tempThuaDat.MaToBanDo;
-                thuaDat.ThuaDatSo = tempThuaDat.ThuaDatSo;
-                thuaDat.GhiChu = tempThuaDat.GhiChu;
-                dbContext.ThuaDats.Update(thuaDat);
-            }
-            else
-            {
-                // Nếu Thửa Đất chưa tồn tại thì thêm mới
-                dbContext.ThuaDats.Add(tempThuaDat);
-            }
+                return await dbContext.CreateTempThuaDatLsAsync(maToBanDo, maThuaDatTemp);
 
+            // Nếu Thửa Đất chưa tồn tại thì thêm mới
+            dbContext.ThuaDats.Add(tempThuaDat);
             await dbContext.SaveChangesAsync();
-            return tempThuaDat.MaThuaDat;
+
+            return await dbContext.CreateTempThuaDatLsAsync(maToBanDo, maThuaDatTemp);
         }
         catch (Exception e)
         {
@@ -178,17 +182,83 @@ public static class ThuaDatExtensions
         }
     }
 
-    public static async Task<List<long>> GetMaThuaDatAsync(this ElisDataContext dataContext, int maDvhc)
+    /// <summary>
+    /// Tạo Thửa Đất Lịch Sử tạm thời.
+    /// </summary>
+    /// <param name="dbContext">Ngữ cảnh cơ sở dữ liệu.</param>
+    /// <param name="maToBanDo">Mã Tờ Bản Đồ.</param>
+    /// <param name="maThuaDatTemp">Mã Thửa Đất tạm thời (tùy chọn).</param>
+    private static async Task<long> CreateTempThuaDatLsAsync(this ElisDataContext dbContext,
+        long? maToBanDo = null,
+        long? maThuaDatTemp = null)
+    {
+        try
+        {
+            maToBanDo ??= await dbContext.CreateTempToBanDoAsync(maToBanDo);
+            var tempThuaDatLs = new ThuaDatLichSu
+            {
+                MaThuaDatLs = maThuaDatTemp ?? DefaultTempMaThuaDat,
+                MaToBanDo = maToBanDo.Value,
+                ThuaDatSo = "Temp",
+                GhiChu = "Thửa đất tạm thời"
+            };
+
+            // Kiểm tra xem Thửa Đất đã tồn tại chưa
+            var thuaDatLs = await dbContext.ThuaDatLichSus.FindAsync(tempThuaDatLs.MaThuaDatLs);
+
+            if (thuaDatLs != null)
+                return tempThuaDatLs.MaThuaDatLs;
+
+            // Nếu Thửa Đất chưa tồn tại thì thêm mới
+            dbContext.ThuaDatLichSus.Add(tempThuaDatLs);
+            await dbContext.SaveChangesAsync();
+
+            return tempThuaDatLs.MaThuaDatLs;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return long.MinValue;
+        }
+    }
+
+    /// <summary>
+    /// Lấy danh sách Mã Thửa Đất dựa trên Mã Đơn Vị Hành Chính.
+    /// </summary>
+    /// <param name="dataContext">Ngữ cảnh cơ sở dữ liệu.</param>
+    /// <param name="maDvhc">Mã Đơn Vị Hành Chính.</param>
+    /// <returns>Danh sách Mã Thửa Đất.</returns>
+    public static async Task<SortedSet<long>> GetMaThuaDatOrLichSuAsync(this ElisDataContext dataContext, int maDvhc)
+    {
+        if (maDvhc <= 0) return [];
+        // Lấy danh sách Mã Thửa Đất
+        var maThuaDats = await dataContext.GetMaThuaDatAsync(maDvhc);
+
+        // Lấy danh sách Mã Thửa Đất Lịch sử
+        maThuaDats.UnionWith(await dataContext.GetMaThuaDatLichSuAsync(maDvhc));
+
+        // Trả về danh sách Mã Thửa Đất
+        return maThuaDats;
+    }
+
+    /// <summary>
+    /// Lấy danh sách Mã Thửa Đất dựa trên Mã Đơn Vị Hành Chính.
+    /// </summary>
+    /// <param name="dataContext">Ngữ cảnh cơ sở dữ liệu.</param>
+    /// <param name="maDvhc">Mã Đơn Vị Hành Chính.</param>
+    /// <returns>Danh sách Mã Thửa Đất.</returns>
+    private static async Task<SortedSet<long>> GetMaThuaDatAsync(this ElisDataContext dataContext, int maDvhc)
     {
         if (maDvhc <= 0) return [];
         await using var command = dataContext.Database.GetDbConnection().CreateCommand();
+        // Lấy danh sách Mã Thửa Đất dựa trên Mã Đơn Vị Hành Chính
         // Tạo câu lệnh SQL
-        const string sql = $"""
-                            SELECT ThuaDat.MaThuaDat
-                            FROM   ThuaDat INNER JOIN ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
-                            WHERE ToBanDo.MaDVHC = @MaDvhc
-                            ORDER BY ThuaDat.MaThuaDat
-                            """;
+        const string sql = """
+                           SELECT ThuaDat.MaThuaDat
+                           FROM   ThuaDat INNER JOIN ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
+                           WHERE ToBanDo.MaDVHC = @MaDvhc
+                           ORDER BY ThuaDat.MaThuaDat
+                           """;
         command.CommandText = sql;
         // Tham số @MaDvhc
         var parameterMaDvhc = command.CreateParameter();
@@ -200,7 +270,7 @@ public static class ThuaDatExtensions
         var result = await command.ExecuteReaderAsync();
 
         // Đọc kết quả trả về
-        List<long> maThuaDats = [];
+        SortedSet<long> maThuaDats = [];
         while (await result.ReadAsync())
         {
             maThuaDats.Add(result.GetInt64(0));
@@ -209,16 +279,99 @@ public static class ThuaDatExtensions
         return maThuaDats;
     }
 
-    public static async Task RenewMaThuaDatAsync(this ElisDataContext dbContext, long maThuaDat, long maThuaDatTemp)
+    /// <summary>
+    /// Lấy danh sách Mã Thửa Đất Lịch sử dựa trên Mã Đơn Vị Hành Chính.
+    /// </summary>
+    /// <param name="dataContext">Ngữ cảnh cơ sở dữ liệu.</param>
+    /// <param name="maDvhc">Mã Đơn Vị Hành Chính.</param>
+    /// <returns>Danh sách Mã Thửa Đất.</returns>
+    private static async Task<SortedSet<long>> GetMaThuaDatLichSuAsync(this ElisDataContext dataContext, int maDvhc)
     {
-        // var thuaDat = await dbContext.ThuaDats.FindAsync(maThuaDat);
-        // var thuaDatTemp = await dbContext.ThuaDats.FindAsync(maThuaDatTemp);
-        // if (thuaDat == null || thuaDatTemp == null) return;
-        // thuaDat.MaToBanDo = thuaDatTemp.MaToBanDo;
-        // thuaDat.ThuaDatSo = thuaDatTemp.ThuaDatSo;
-        // thuaDat.GhiChu = thuaDatTemp.GhiChu;
-        // dbContext.ThuaDats.Update(thuaDat);
-        // dbContext.ThuaDats.Remove(thuaDatTemp);
-        // await dbContext.SaveChangesAsync();
+        if (maDvhc <= 0) return [];
+        await using var command = dataContext.Database.GetDbConnection().CreateCommand();
+        // Lấy danh sách Mã Thửa Đất dựa trên Mã Đơn Vị Hành Chính
+        // Tạo câu lệnh SQL
+        const string sql = """
+                           SELECT ThuaDatLS.MaThuaDatLS
+                           FROM   ThuaDatLS INNER JOIN ToBanDo ON ThuaDatLS.MaToBanDo = ToBanDo.MaToBanDo
+                           WHERE ToBanDo.MaDVHC = @MaDvhc
+                           ORDER BY ThuaDatLS.MaThuaDatLS
+                           """;
+        command.CommandText = sql;
+        // Tham số @MaDvhc
+        var parameterMaDvhc = command.CreateParameter();
+        parameterMaDvhc.ParameterName = "@MaDvhc";
+        parameterMaDvhc.Value = maDvhc;
+        command.Parameters.Add(parameterMaDvhc);
+
+        // Thực thi câu lệnh SQL
+        var result = await command.ExecuteReaderAsync();
+
+        // Đọc kết quả trả về
+        SortedSet<long> maThuaDats = [];
+        while (await result.ReadAsync())
+        {
+            maThuaDats.Add(result.GetInt64(0));
+        }
+
+        return maThuaDats;
+    }
+
+
+    public static async Task RenewMaThuaDatOrLichSuAsync(this ElisDataContext dbContext,
+        long maThuaDat,
+        long newMaThuaDat,
+        long? maThuaDatTemp = null)
+    {
+        await dbContext.RenewMaThuaDatAsync(maThuaDat, newMaThuaDat, maThuaDatTemp);
+        await dbContext.RenewMaThuaDatLsAsync(maThuaDat, newMaThuaDat, maThuaDatTemp);
+    }
+
+    /// <summary>
+    /// Cập nhật mã Thửa Đất.
+    /// </summary>
+    /// <param name="dbContext">Ngữ cảnh cơ sở dữ liệu.</param>
+    /// <param name="maThuaDat">Mã Thửa Đất hiện tại.</param>
+    /// <param name="newMaThuaDat">Mã Thửa Đất mới.</param>
+    /// <param name="maThuaDatTemp">Mã Thửa Đất tạm thời (tùy chọn).</param>
+    private static async Task RenewMaThuaDatAsync(this ElisDataContext dbContext,
+        long maThuaDat,
+        long newMaThuaDat,
+        long? maThuaDatTemp = null)
+    {
+        maThuaDatTemp ??= DefaultTempMaThuaDat;
+        // Cập nhật mã đăng ký theo mã tạm thời:
+        await dbContext.UpdateMaThuaDatOnDangKyThuaDatAsync(maThuaDat);
+        // Cập nhật mã thửa đất mới:
+        var thuaDat = await dbContext.ThuaDats.FindAsync(maThuaDat);
+        if (thuaDat == null) return;
+        thuaDat.MaThuaDat = newMaThuaDat;
+        dbContext.ThuaDats.Update(thuaDat);
+        await dbContext.SaveChangesAsync();
+
+        // Cập nhật lại mã đăng ký theo mã thửa đất mới:
+        await dbContext.UpdateMaThuaDatOnDangKyThuaDatAsync(maThuaDatTemp.Value, newMaThuaDat);
+
+        // Cập nhật thông thửa đất cũ:
+        await dbContext.UpdateMaThuaDatCuAsync(maThuaDat, newMaThuaDat);
+    }
+
+    private static async Task RenewMaThuaDatLsAsync(this ElisDataContext dbContext,
+        long maThuaDatLs,
+        long newMaThuaDatLs,
+        long? maThuaDatTemp = null)
+    {
+        maThuaDatTemp ??= DefaultTempMaThuaDat;
+        // Cập nhật mã đăng ký theo mã tạm thời:
+        await dbContext.UpdateMaThuaDatLsOnDangKyThuaDatLsAsync(maThuaDatLs);
+        // Cập nhật mã thửa đất mới:
+        var thuaDatLs = await dbContext.ThuaDatLichSus.FindAsync(maThuaDatLs);
+        if (thuaDatLs == null) return;
+        thuaDatLs.MaThuaDatLs = newMaThuaDatLs;
+        dbContext.ThuaDatLichSus.Update(thuaDatLs);
+        await dbContext.SaveChangesAsync();
+
+        // Cập nhật lại mã đăng ký theo mã thửa đất mới:
+        await dbContext.UpdateMaThuaDatLsOnDangKyThuaDatLsAsync(maThuaDatTemp.Value, newMaThuaDatLs);
     }
 }

@@ -10,17 +10,16 @@ public static class ThuaDatCuExtensions
     /// </summary>
     /// <param name="dataContext">Ngữ cảnh dữ liệu Elis.</param>
     /// <param name="thuaDatCapNhats">
-    /// Danh sách Thửa Đất cần cập nhật.
+    ///     Danh sách Thửa Đất cần cập nhật.
     /// </param>
     /// <param name="formatToBanDoCu">
-    /// Định dạng tờ bản đồ cũ.
+    ///     Định dạng tờ bản đồ cũ.
     /// </param>
     /// <returns>Trả về true nếu có bản ghi được tạo hoặc cập nhật, ngược lại trả về false.</returns>
-    public static async Task<bool> CreateOrUpdateThuaDatCuAsync(this ElisDataContext dataContext,
+    public static async Task CreateOrUpdateThuaDatCuAsync(this ElisDataContext dataContext,
         List<ThuaDatCapNhat> thuaDatCapNhats, string? formatToBanDoCu = null)
     {
-        if (thuaDatCapNhats.Count == 0)
-            return false;
+        if (thuaDatCapNhats.Count == 0) return;
 
         if (string.IsNullOrWhiteSpace(formatToBanDoCu))
             formatToBanDoCu = ThamSoThayThe.DefaultToBanDoCu;
@@ -49,6 +48,20 @@ public static class ThuaDatCuExtensions
         }
 
         await dataContext.SaveChangesAsync();
-        return true;
+    }
+
+    /// <summary>
+    /// Cập nhật mã Thửa Đất Cũ.
+    /// </summary>
+    /// <param name="dataContext">Ngữ cảnh dữ liệu Elis.</param>
+    /// <param name="value">Giá trị mã Thửa Đất cũ.</param>
+    /// <param name="newValue">Giá trị mã Thửa Đất mới.</param>
+    public static async Task UpdateMaThuaDatCuAsync(this ElisDataContext dataContext, long value, long newValue)
+    {
+        var thuaDatCu = await dataContext.ThuaDatCus.FindAsync(value);
+        if (thuaDatCu == null) return;
+        thuaDatCu.MaThuaDat = newValue;
+        dataContext.ThuaDatCus.Update(thuaDatCu);
+        await dataContext.SaveChangesAsync();
     }
 }

@@ -24,6 +24,7 @@ public sealed class ElisDataContext(string connectionString) : DbContext
     public DbSet<ThuaDatTaiSan> ThuaDatTaiSans { get; set; } = null!;
     public DbSet<TaiSanLichSu> TaiSanLichSus { get; set; } = null!;
 
+    public DbSet<AuditChuyenDvhc> AuditChuyenDvhcs { get; set; } = null!;
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

@@ -1,13 +1,13 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 
 [Table("DangKyQSDD")]
-[PrimaryKey("MaDangKy")]
 public class DangKy
 {
     [Column("MaDangKy", TypeName = "bigint")]
+    [Key]
     public long MaDangKy { get; set; }
 
     [Column("MaThuaDat", TypeName = "bigint")]
@@ -18,10 +18,10 @@ public class DangKy
 }
 
 [Table("DangKyQSDDLS")]
-[PrimaryKey("MaDangKyLS")]
 public class DangKyLichSu
 {
     [Column("MaDangKyLS", TypeName = "bigint")]
+    [Key]
     public long MaDangKyLs { get; set; }
 
     [Column("MaThuaDatLS", TypeName = "bigint")]
@@ -32,20 +32,22 @@ public class DangKyLichSu
 }
 
 [Table("DangKy_TheChap")]
-[PrimaryKey("Ma")]
 public class DangKyTheChap
 {
-    [Column("Ma", TypeName = "bigint")] public long Ma { get; set; }
+    [Column("Ma", TypeName = "bigint")]
+    [Key]
+    public long Ma { get; set; }
 
     [Column("MaDangKy", TypeName = "bigint")]
     public long MaDangKy { get; set; }
 }
 
 [Table("DangKy_GopVon")]
-[PrimaryKey("Ma")]
 public class DangKyGopVon
 {
-    [Column("Ma", TypeName = "bigint")] public long Ma { get; set; }
+    [Column("Ma", TypeName = "bigint")]
+    [Key]
+    public long Ma { get; set; }
 
     [Column("MaDangKy", TypeName = "bigint")]
     public long MaDangKy { get; set; }

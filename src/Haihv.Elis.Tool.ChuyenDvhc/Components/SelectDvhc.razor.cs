@@ -2,13 +2,16 @@ using Haihv.Elis.Tool.ChuyenDvhc.Data;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Microsoft.AspNetCore.Components;
 using Microsoft.EntityFrameworkCore;
+using Haihv.Elis.Tool.ChuyenDvhc.Settings;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.Memory;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Components;
 
 public partial class SelectDvhc : ComponentBase
 {
-    [Inject] private IMemoryCache Cache { get; set; } = null!;
+    [Inject] private HybridCache HybridCache { get; set; } = null!;
+    [Inject] private IMemoryCache MemoryCache { get; set; } = null!;
     [Parameter] public bool IsConnected { get; set; }
     [Parameter] public bool IsBefore { get; set; }
     [Parameter] public DvhcRecord? CapTinh { get; set; }
@@ -31,37 +34,46 @@ public partial class SelectDvhc : ComponentBase
 
     private IEnumerable<DvhcRecord> _capXas = [];
 
-    protected override void OnParametersSet()
+    protected override Task OnParametersSetAsync()
     {
-        if (!IsConnected || _capTinhs.Any()) return;
-        _connectionString = Cache.Get<string>("ConnectionString");
-        if (!string.IsNullOrWhiteSpace(_connectionString))
+        if (!IsConnected || _capTinhs.Any()) return Task.CompletedTask;
+        if (string.IsNullOrWhiteSpace(_connectionString))
         {
-            _dataContext = new ElisDataContext(_connectionString);
+            _connectionString = MemoryCache.Get<string>(CacheDataConnection.ConnectionString);
+            if (!string.IsNullOrWhiteSpace(_connectionString))
+            {
+                _dataContext = new ElisDataContext(_connectionString);
+            }
         }
 
-        if (CapHuyen == null || _tenHuyen == CapHuyen.Ten) return;
+        if (CapHuyen == null || _tenHuyen == CapHuyen.Ten) return Task.CompletedTask;
         _tenHuyen = CapHuyen.Ten;
         _ = GetCapXa();
+        return Task.CompletedTask;
     }
 
-    private async Task<IEnumerable<DvhcRecord>> GetCapTinh(string? value, CancellationToken token)
+    private async Task<IEnumerable<DvhcRecord>> GetCapTinh(string? value, CancellationToken cancellationToken = default)
     {
         if (_capTinhs.Any())
             return string.IsNullOrWhiteSpace(value)
                 ? _capTinhs
                 : _capTinhs.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
-        var dvhcRecords = await Cache.GetOrCreateAsync("CapTinh", async _ =>
-        {
-            var dvhcs = await _dataContext.Dvhcs
-                .Where(d => d.MaHuyen == 0 && d.MaXa == 0)
-                .OrderBy(d => d.MaTinh).ToListAsync(cancellationToken: token);
-            return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.MaTinh, d.Ten));
-        });
-        _capTinhs = dvhcRecords ?? [];
+        var dvhcRecords =
+            await HybridCache.GetOrCreateAsync("CapTinh", async _ => await GetCapTinhFromData(cancellationToken),
+                cancellationToken: cancellationToken);
+
+        _capTinhs = dvhcRecords;
         return string.IsNullOrWhiteSpace(value)
             ? _capTinhs
             : _capTinhs.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+    }
+
+    private async Task<IEnumerable<DvhcRecord>> GetCapTinhFromData(CancellationToken cancellationToken = default)
+    {
+        var dvhcs = await _dataContext.Dvhcs
+            .Where(d => d.MaHuyen == 0 && d.MaXa == 0)
+            .OrderBy(d => d.MaTinh).ToListAsync(cancellationToken);
+        return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.MaTinh, d.Ten));
     }
 
     private async Task SetCacheCapTinh()
@@ -70,43 +82,45 @@ public partial class SelectDvhc : ComponentBase
             .Where(d => d.MaHuyen == 0 && d.MaXa == 0)
             .OrderBy(d => d.MaTinh).ToListAsync();
         _capTinhs = dvhcRecords.Select(d => new DvhcRecord(d.MaDvhc, d.MaTinh, d.Ten));
-        Cache.Set("CapTinh", _capTinhs);
+        await HybridCache.SetAsync("CapTinh", _capTinhs);
     }
 
-    private async Task<IEnumerable<DvhcRecord>> GetCapHuyen(string? value, CancellationToken token)
+    private async Task<IEnumerable<DvhcRecord>> GetCapHuyen(string? value,
+        CancellationToken cancellationToken = default)
     {
         if (CapTinh is not { Ma: > 0 }) return [];
         if (_capHuyens.Any())
             return string.IsNullOrWhiteSpace(value)
                 ? _capHuyens
                 : _capHuyens.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
-        var dvhcRecords = await Cache.GetOrCreateAsync($"CapHuyen:{CapTinh.Ma}", async _ =>
+        var dvhcRecords = await HybridCache.GetOrCreateAsync($"CapHuyen:{CapTinh.Ma}", async _ =>
         {
             var dvhcs = await _dataContext.Dvhcs
                 .Where(d => d.MaTinh == CapTinh.Ma && d.MaXa == 0 && d.MaHuyen != 0)
-                .OrderBy(d => d.MaTinh).ToListAsync(cancellationToken: token);
+                .OrderBy(d => d.MaTinh).ToListAsync(cancellationToken: cancellationToken);
             return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.MaHuyen, d.Ten));
-        });
+        }, cancellationToken: cancellationToken);
 
-        _capHuyens = dvhcRecords ?? [];
+        _capHuyens = dvhcRecords;
         return string.IsNullOrWhiteSpace(value)
             ? _capHuyens
             : _capHuyens.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
     }
 
-    private async Task GetCapXa()
+    private async Task GetCapXa(CancellationToken cancellationToken = default)
     {
         if (CapHuyen is not { Ma: > 0 }) return;
 
-        var dvhcRecords = await Cache.GetOrCreateAsync($"CapXa:{CapHuyen.Ma}", async _ =>
+        var dvhcRecords = await HybridCache.GetOrCreateAsync($"CapXa:{CapHuyen.Ma}", async _ =>
         {
             var dvhcs = await _dataContext.Dvhcs
                 .Where(d => d.MaHuyen == CapHuyen.Ma && d.MaXa != 0)
-                .OrderBy(d => d.MaTinh).ToListAsync();
+                .OrderBy(d => d.MaTinh).ToListAsync(cancellationToken);
             return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.MaXa, d.Ten));
-        });
-        _capXas = dvhcRecords ?? [];
+        }, cancellationToken: cancellationToken);
+        _capXas = dvhcRecords;
     }
+
 
     private static string? DvhcToString(DvhcRecord? dvhcRecord)
     {

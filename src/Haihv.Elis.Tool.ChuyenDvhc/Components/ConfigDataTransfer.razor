@@ -1,6 +1,6 @@
 ﻿@using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities
 @using Haihv.Elis.Tool.ChuyenDvhc.Settings
-@using Microsoft.Extensions.Caching.Memory
+@using Microsoft.Extensions.Caching.Hybrid
 
 <MudExpansionPanels MultiExpansion="true">
 
@@ -71,6 +71,22 @@
                                           RequiredError="Không được để trống"
                                           OnBlur="OnTenDonViHanhChinhMoiChange"
                                           Label="Tên đơn vị hành chính sau sáp nhập"/>
+                            @if (_capXaTruoc.Count == 1 && _capXaSau != null && _capXaTruoc[0]?.MaDvhc == _capXaSau.MaDvhc)
+                            {
+                                _renewPrimaryKey = false;
+                                <MudCheckBox T="bool"
+                                             Value="@_renewPrimaryKey"
+                                             ValueChanged="OnRenewPrimaryKeyChange"
+                                             Dense="true"
+                                             Label="Làm mới các mã theo Đơn vị hành chính"/>
+                            }
+                            else
+                            {
+                                if (!_renewPrimaryKey)
+                                {
+                                    _ = OnRenewPrimaryKeyChange(true);
+                                }
+                            }
                         </MudStack>
                     </MudCardContent>
                 </MudCard>
@@ -87,7 +103,7 @@
 
 @code
 {
-    [Inject] IMemoryCache MemoryCache { get; set; } = null!;
+    [Inject] HybridCache HybridCache { get; set; } = null!;
     [Parameter] public bool IsConnected { get; set; }
     [Parameter] public bool IsCompleted { get; set; }
     [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
@@ -102,21 +118,22 @@
     private List<DvhcRecord?> _capXaTruoc = [];
     private DvhcRecord? _capXaSau;
     private DateTime? _ngaySatNhap;
-
+    private bool _renewPrimaryKey = true;
 
     protected override async Task OnInitializedAsync()
     {
-        _ngaySatNhap = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.NgaySatNhap, _ => Task.FromResult(DateTime.Today));
-        _capTinhTruoc = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapTinhTruoc, _ => Task.FromResult(_capHuyenTruoc));
-        _capTinhSau = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapTinhSau, _ => Task.FromResult(_capTinhSau));
-        _capHuyenTruoc = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapHuyenTruoc, _ => Task.FromResult(_capHuyenTruoc));
-        _capHuyenSau = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapHuyenSau, _ => Task.FromResult(_capHuyenSau));
-        _capXaTruoc = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapXaTruoc, _ => Task.FromResult(_capXaTruoc)) ?? [];
-        _capXaSau = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.CapXaSau, _ => Task.FromResult(_capXaSau));
-        _tenDvhcSau = await MemoryCache.GetOrCreateAsync(CacheThamSoDvhc.TenDvhcSau, _ => Task.FromResult(_tenDvhcSau)) ?? string.Empty;
+        _ngaySatNhap = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.NgaySatNhap, _ => ValueTask.FromResult(DateTime.Today));
+        _capTinhTruoc = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.CapTinhTruoc, _ => ValueTask.FromResult(_capHuyenTruoc));
+        _capTinhSau = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.CapTinhSau, _ => ValueTask.FromResult(_capTinhSau));
+        _capHuyenTruoc = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.CapHuyenTruoc, _ => ValueTask.FromResult(_capHuyenTruoc));
+        _capHuyenSau = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.CapHuyenSau, _ => ValueTask.FromResult(_capHuyenSau));
+        _capXaTruoc = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.CapXaTruoc, _ => ValueTask.FromResult(_capXaTruoc));
+        _capXaSau = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.CapXaSau, _ => ValueTask.FromResult(_capXaSau));
+        _tenDvhcSau = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.TenDvhcSau, _ => ValueTask.FromResult(_tenDvhcSau));
+        _renewPrimaryKey = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.RenewPrimaryKey, _ => ValueTask.FromResult(_renewPrimaryKey));
     }
 
-    private void CapTinhChanged(DvhcRecord? capTinh)
+    private async Task CapTinhChanged(DvhcRecord? capTinh)
     {
         if (capTinh == null) return;
         _capTinhTruoc = capTinh;
@@ -124,13 +141,13 @@
         _capHuyenTruoc = null;
         _capXaTruoc = [];
         // Set Cache
-        MemoryCache.Set(CacheThamSoDvhc.CapTinhTruoc, _capTinhTruoc);
-        MemoryCache.Set(CacheThamSoDvhc.CapTinhSau, _capTinhSau);
-        MemoryCache.Set(CacheThamSoDvhc.CapHuyenTruoc, _capHuyenTruoc);
-        MemoryCache.Set(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapTinhTruoc, _capTinhTruoc);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapTinhSau, _capTinhSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapHuyenTruoc, _capHuyenTruoc);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
     }
 
-    private void CapHuyenChanged(DvhcRecord? capHuyen)
+    private async Task CapHuyenChanged(DvhcRecord? capHuyen)
     {
         if (capHuyen == null) return;
         _capHuyenTruoc = capHuyen;
@@ -138,12 +155,12 @@
         _capXaTruoc = [];
 
         // Set Cache
-        MemoryCache.Set(CacheThamSoDvhc.CapHuyenTruoc, _capHuyenTruoc);
-        MemoryCache.Set(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
-        MemoryCache.Set(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapHuyenTruoc, _capHuyenTruoc);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
     }
 
-    private void CapXaChanged(IEnumerable<DvhcRecord?>? capXa)
+    private async Task CapXaChanged(IEnumerable<DvhcRecord?>? capXa)
     {
         if (capXa == null) return;
         _capXaTruoc = capXa.ToList();
@@ -152,34 +169,34 @@
         if (string.IsNullOrWhiteSpace(_tenDvhcSau))
             _tenDvhcSau = _capXaTruoc.Count > 0 ? _capXaTruoc[0]?.Ten ?? string.Empty : string.Empty;
         // Set Cache
-        MemoryCache.Set(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
-        MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
-        MemoryCache.Set(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapXaSau, _capXaSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
     }
 
-    private void CapTinhSauChanged(DvhcRecord? capTinh)
+    private async Task CapTinhSauChanged(DvhcRecord? capTinh)
     {
         if (_capTinhSau != null && (capTinh == null || capTinh.MaDvhc == _capTinhSau.MaDvhc)) return;
         _capTinhSau = capTinh;
         _capHuyenSau = null;
         _capXaSau = null;
         // Set Cache
-        MemoryCache.Set(CacheThamSoDvhc.CapTinhSau, _capTinhSau);
-        MemoryCache.Set(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
-        MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapTinhSau, _capTinhSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapXaSau, _capXaSau);
     }
 
-    private void CapHuyenSauChanged(DvhcRecord? capHuyen)
+    private async Task CapHuyenSauChanged(DvhcRecord? capHuyen)
     {
         if (_capHuyenSau != null && (capHuyen == null || capHuyen.MaDvhc == _capHuyenSau.MaDvhc)) return;
         _capHuyenSau = capHuyen;
         _capXaSau = null;
         // Set Cache
-        MemoryCache.Set(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
-        MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapXaSau, _capXaSau);
     }
 
-    private void CapXaSauChanged(IEnumerable<DvhcRecord?>? capXa)
+    private async Task CapXaSauChanged(IEnumerable<DvhcRecord?>? capXa)
     {
         if (capXa == null) return;
         var dvhcSau = capXa.ToList();
@@ -187,8 +204,8 @@
         _capXaSau = dvhcSau[0];
         _tenDvhcSau = _capXaSau?.Ten ?? string.Empty;
         // Set Cache
-        MemoryCache.Set(CacheThamSoDvhc.CapXaSau, _capXaSau);
-        MemoryCache.Set(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.CapXaSau, _capXaSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
         IsCompletedChangedHandler();
     }
 
@@ -216,20 +233,26 @@
         IsCompletedChangedHandler();
     }
 
-    private void NgaySatNhapChange(DateTime? ngaySatNhap)
+    private async Task NgaySatNhapChange(DateTime? ngaySatNhap)
     {
         _ngaySatNhap = ngaySatNhap;
         if (ngaySatNhap == null || ngaySatNhap.Value.Date == DateTime.Today)
         {
-            MemoryCache.Remove(CacheThamSoDvhc.NgaySatNhap);
+            await HybridCache.RemoveAsync(CacheThamSoDvhc.NgaySatNhap);
         }
 
-        MemoryCache.Set(CacheThamSoDvhc.NgaySatNhap, _ngaySatNhap);
+        await HybridCache.SetAsync(CacheThamSoDvhc.NgaySatNhap, _ngaySatNhap);
         StateHasChanged();
     }
 
-    private void OnTenDonViHanhChinhMoiChange()
+    private async Task OnTenDonViHanhChinhMoiChange()
     {
-        MemoryCache.Set(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
+        await HybridCache.SetAsync(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
+    }
+
+    private async Task OnRenewPrimaryKeyChange(bool renewPrimaryKey)
+    {
+        _renewPrimaryKey = renewPrimaryKey;
+        await HybridCache.SetAsync(CacheThamSoDvhc.RenewPrimaryKey, _renewPrimaryKey);
     }
 }

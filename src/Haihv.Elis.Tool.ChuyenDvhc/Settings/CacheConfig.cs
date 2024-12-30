@@ -20,6 +20,7 @@ public static class CacheThamSoDvhc
     public static string CapXaSau => RootKey + "CapXaSau";
     public static string NgaySatNhap => RootKey + "NgaySapNhap";
     public static string TenDvhcSau => RootKey + "DvhcMoi";
+    public static string RenewPrimaryKey => RootKey + "RenewPrimaryKey";
 }
 
 public static class CacheThamSoBanDo

@@ -20,33 +20,40 @@ public static class DataInitializer
         var columns = new Dictionary<string, string>
         {
             { "Id", "uniqueidentifier" },
-            { "MaDvhcTruoc", "int" },
-            { "TenDvhcTruoc", "nvarchar(255)" },
-            { "ToBanDoTruoc", "nvarchar(10)" },
-            { "SoThuaDatTruoc", "nvarchar(10)" },
-            { "MaDvhcSau", "int" },
-            { "TenDvhcSau", "nvarchar(255)" },
-            { "ToBanDoSau", "nvarchar(10)" },
-            { "SoThuaDatSau", "nvarchar(10)" },
-            { "NgayChuyen", "datetime" }
+            { "Table", "nvarchar(255)" },
+            { "RowId", "nvarchar(36)" },
+            { "OldValue", "nvarchar(max)" },
+            { "NewValue", "nvarchar(max)" },
+            { "MaDvhc", "int" },
+            { "ActivityTime", "datetime" }
         };
 
+
+        // Kiểm tra xem bảng AuditChuyenDvhc có tồn tại hay không
         if (!await CheckTableExistAsync(dbContext, TableName))
         {
-            var createTableSql = columns.Aggregate($"CREATE TABLE {TableName} (",
-                (current, column) => current + $"{column.Key} {column.Value},");
+            // Nếu bảng không tồn tại thì tạo bảng mới
+            var createTableSql = columns.Aggregate($"CREATE TABLE [{TableName}] (",
+                (current, column) => current + $"[{column.Key}] {column.Value},");
             createTableSql = createTableSql.TrimEnd(',') + ")";
             await dbContext.Database.ExecuteSqlRawAsync(createTableSql);
         }
         else
         {
+            // Xóa các cột không cần thiết
+            var columnsInDb = await dbContext.GetColumnNamesAsync(TableName);
+            foreach (var column in columnsInDb.Where(column => !columns.ContainsKey(column)))
+            {
+                var sql = $"ALTER TABLE [{TableName}] DROP COLUMN [{column}]";
+                await dbContext.Database.ExecuteSqlRawAsync(sql);
+            }
+
+            // Nếu bảng tồn tại thì kiểm tra và thêm cột mới
             foreach (var column in columns)
             {
-                if (!await CheckColumnExistAsync(dbContext, TableName, column.Key))
-                {
-                    await dbContext.Database.ExecuteSqlAsync(
-                        $"ALTER TABLE {TableName} ADD {column.Key} {column.Value}");
-                }
+                if (await dbContext.CheckColumnExistAsync(TableName, column.Key)) continue;
+                var sql = $"ALTER TABLE [{TableName}] ADD [{column.Key}] {column.Value}";
+                await dbContext.Database.ExecuteSqlRawAsync(sql);
             }
         }
     }
@@ -57,7 +64,7 @@ public static class DataInitializer
     /// <param name="dbContext">Ngữ cảnh cơ sở dữ liệu.</param>
     /// <param name="tableName">Tên bảng cần kiểm tra.</param>
     /// <returns>Trả về true nếu bảng tồn tại, ngược lại trả về false.</returns>
-    private static async Task<bool> CheckTableExistAsync(DbContext dbContext, string tableName)
+    private static async Task<bool> CheckTableExistAsync(this DbContext dbContext, string tableName)
     {
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
         command.CommandText = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @TableName";
@@ -79,7 +86,7 @@ public static class DataInitializer
     /// <param name="tableName">Tên bảng.</param>
     /// <param name="columnName">Tên cột.</param>
     /// <returns>Trả về true nếu cột tồn tại, ngược lại trả về false.</returns>
-    private static async Task<bool> CheckColumnExistAsync(DbContext dbContext, string tableName, string columnName)
+    private static async Task<bool> CheckColumnExistAsync(this DbContext dbContext, string tableName, string columnName)
     {
         await using var command = dbContext.Database.GetDbConnection().CreateCommand();
         command.CommandText =
@@ -94,5 +101,21 @@ public static class DataInitializer
         }
 
         return isColumnExist;
+    }
+
+    private static async Task<List<string>> GetColumnNamesAsync(this DbContext dbContext, string tableName)
+    {
+        await using var command = dbContext.Database.GetDbConnection().CreateCommand();
+        command.CommandText = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
+        command.Parameters.Add(new SqlParameter("@TableName", tableName));
+        await dbContext.Database.OpenConnectionAsync();
+        var columns = new List<string>();
+        await using var reader = await command.ExecuteReaderAsync();
+        while (await reader.ReadAsync())
+        {
+            columns.Add(reader.GetString(0));
+        }
+
+        return columns;
     }
 }

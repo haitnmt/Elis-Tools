@@ -1,5 +1,5 @@
 ﻿@using Haihv.Elis.Tool.ChuyenDvhc.Settings
-@using Microsoft.Extensions.Caching.Memory
+@using Microsoft.Extensions.Caching.Hybrid
 
 <MudExpansionPanel Expanded="false" Dense="true">
     <TitleContent>
@@ -21,7 +21,8 @@
                     <MudText Align="Align.Start" Typo="Typo.body2">@ThamSoThayThe.NgaySapNhap: Ngày sáp nhập</MudText>
                     <MudText Align="Align.Start" Typo="Typo.body2">@ThamSoThayThe.SoThua: Số thửa đất</MudText>
                     <MudText Align="Align.Start" Typo="Typo.body2">@ThamSoThayThe.ToBanDo: Số tờ bản đồ</MudText>
-                    <MudText Align="Align.Start" Typo="Typo.body2">@ThamSoThayThe.DonViHanhChinh: Tên đơn vị hành chính</MudText>
+                    <MudText Align="Align.Start" Typo="Typo.body2">@ThamSoThayThe.DonViHanhChinh: Tên đơn vị hành chính
+                    </MudText>
                 </TooltipContent>
             </MudTooltip>
         </MudStack>
@@ -54,7 +55,7 @@
 
 @code
 {
-    [Inject] IMemoryCache MemoryCache { get; set; } = null!;
+    [Inject] HybridCache HybridCache { get; set; } = null!;
     [Parameter] public bool IsCompleted { get; set; }
     [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
     private string _toBanDoCu = ThamSoThayThe.DefaultToBanDoCu;
@@ -73,14 +74,13 @@
     /// <returns>Task đại diện cho thao tác không đồng bộ.</returns>
     private async Task SetAllCache()
     {
-        _toBanDoCu = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.ToBanDoCu,
-        _ => Task.FromResult(_toBanDoCu)) ?? _toBanDoCu;
-        _ghiChuToBanDo = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuToBanDo,
-        _ => Task.FromResult(_ghiChuToBanDo)) ?? _ghiChuToBanDo;
-        _ghiChuThuaDat = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuThuaDat,
-        _ => Task.FromResult(_ghiChuThuaDat)) ?? _ghiChuThuaDat;
-        _ghiChuGiayChungNhan = await MemoryCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuGiayChungNhan,
-        _ => Task.FromResult(_ghiChuGiayChungNhan)) ?? _ghiChuGiayChungNhan;
+        _toBanDoCu = await HybridCache.GetOrCreateAsync(CacheThamSoDuLieu.ToBanDoCu, _ => ValueTask.FromResult(_toBanDoCu));
+        _ghiChuToBanDo = await HybridCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuToBanDo, _ =>
+            ValueTask.FromResult(_ghiChuToBanDo));
+        _ghiChuThuaDat = await HybridCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuThuaDat, _ =>
+            ValueTask.FromResult(_ghiChuThuaDat));
+        _ghiChuGiayChungNhan = await HybridCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuGiayChungNhan, _ =>
+            ValueTask.FromResult(_ghiChuGiayChungNhan));
         SetCompleted();
     }
 
@@ -88,10 +88,10 @@
     /// Thiết lập giá trị cache cho Tờ bản đồ cũ.
     /// </summary>
     /// <param name="textChanged">Giá trị mới của Tờ bản đồ cũ.</param>
-    private void SetToBanDoCuCache(string textChanged)
+    private async Task SetToBanDoCuCache(string textChanged)
     {
         _toBanDoCu = textChanged;
-        MemoryCache.Set(CacheThamSoDuLieu.ToBanDoCu, textChanged);
+        await HybridCache.SetAsync(CacheThamSoDuLieu.ToBanDoCu, textChanged);
         SetCompleted();
     }
 
@@ -100,10 +100,10 @@
     /// Thiết lập giá trị cache cho Ghi chú Tờ bản đồ.
     /// </summary>
     /// <param name="textChanged">Giá trị mới của Ghi chú Tờ bản đồ.</param>
-    private void SetGhiChuToBanDoCache(string textChanged)
+    private async Task SetGhiChuToBanDoCache(string textChanged)
     {
         _ghiChuToBanDo = textChanged;
-        MemoryCache.Set(CacheThamSoDuLieu.GhiChuToBanDo, textChanged);
+        await HybridCache.SetAsync(CacheThamSoDuLieu.GhiChuToBanDo, textChanged);
         SetCompleted();
     }
 
@@ -111,10 +111,10 @@
     /// Thiết lập giá trị cache cho Ghi chú Thửa đất.
     /// </summary>
     /// <param name="textChanged">Giá trị mới của Ghi chú Thửa đất.</param>
-    private void SetGhiChuThuaDatCache(string textChanged)
+    private async Task SetGhiChuThuaDatCache(string textChanged)
     {
         _ghiChuThuaDat = textChanged;
-        MemoryCache.Set(CacheThamSoDuLieu.GhiChuThuaDat, textChanged);
+        await HybridCache.SetAsync(CacheThamSoDuLieu.GhiChuThuaDat, textChanged);
         SetCompleted();
     }
 
@@ -122,10 +122,10 @@
     /// Thiết lập giá trị cache cho Ghi chú Giấy chứng nhận.
     /// </summary>
     /// <param name="textChanged">Giá trị mới của Ghi chú Giấy chứng nhận.</param>
-    private void SetGhiChuGiayChungNhanCache(string textChanged)
+    private async Task SetGhiChuGiayChungNhanCache(string textChanged)
     {
         _ghiChuGiayChungNhan = textChanged;
-        MemoryCache.Set(CacheThamSoDuLieu.GhiChuGiayChungNhan, textChanged);
+        await HybridCache.SetAsync(CacheThamSoDuLieu.GhiChuGiayChungNhan, textChanged);
         SetCompleted();
     }
 

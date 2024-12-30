@@ -64,7 +64,7 @@
 </MudExpansionPanel>
 
 @code {
-    [Inject] IMemoryCache Cache { get; set; } = null!;
+    [Inject] IMemoryCache MemoryCache { get; set; } = null!;
     [Parameter] public IEnumerable<DvhcRecord>? DvhcTruocs { get; set; }
     [Parameter] public DvhcRecord? DvhcSau { get; set; }
     [Parameter] public string? TenDvhcSau { get; set; }
@@ -83,7 +83,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        _thamChieuToBanDos = await Cache.GetOrCreateAsync(CacheThamSoBanDo.ThamChieuToBanDo,
+        _thamChieuToBanDos = await MemoryCache.GetOrCreateAsync(CacheThamSoBanDo.ThamChieuToBanDo,
             _ => Task.FromResult(_thamChieuToBanDos)) ?? [];
         _heightGrid = _thamChieuToBanDos.Count > 10 ? MaxHeight : "null";
     }
@@ -135,7 +135,7 @@
             }
 
             _loadingToBanDos = true;
-            var connectionString = Cache.Get(CacheDataConnection.ConnectionString)?.ToString();
+            var connectionString = MemoryCache.Get(CacheDataConnection.ConnectionString)?.ToString();
             if (string.IsNullOrWhiteSpace(connectionString))
             {
                 return;
@@ -223,9 +223,9 @@
     {
         IsCompleted = _thamChieuToBanDos.Any();
         if (IsCompleted)
-            Cache.Set(CacheThamSoBanDo.ThamChieuToBanDo, _thamChieuToBanDos);
+            MemoryCache.Set(CacheThamSoBanDo.ThamChieuToBanDo, _thamChieuToBanDos);
         else
-            Cache.Remove(CacheThamSoBanDo.ThamChieuToBanDo);
+            MemoryCache.Remove(CacheThamSoBanDo.ThamChieuToBanDo);
         IsCompletedChanged.InvokeAsync(IsCompleted);
     }
 }

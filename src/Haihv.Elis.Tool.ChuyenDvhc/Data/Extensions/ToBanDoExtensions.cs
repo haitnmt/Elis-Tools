@@ -5,6 +5,8 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 
 public static class ToBanDoExtensions
 {
+    private const long DefaultTempMaToBanDo = long.MaxValue;
+
     /// <summary>
     /// Cập nhật thông tin tờ bản đồ.
     /// </summary>
@@ -62,5 +64,36 @@ public static class ToBanDoExtensions
         // Lưu thay đổi vào cơ sở dữ liệu
         await dataContext.SaveChangesAsync();
         return true;
+    }
+
+    public static async Task<long> CreateTempToBanDoAsync(this ElisDataContext dbContext,
+        long? maToBanDo = null)
+    {
+        try
+        {
+            var toBanDo = new ToBanDo
+            {
+                MaToBanDo = maToBanDo ?? DefaultTempMaToBanDo,
+                SoTo = "Temp",
+                MaDvhc = 100001,
+                GhiChu = "Tờ bản đồ tạm thời"
+            };
+
+            // Kiểm tra tồn tại:
+            var toBanDoInDb = await dbContext.ToBanDos.FindAsync(toBanDo.MaToBanDo);
+            if (toBanDoInDb != null)
+                return toBanDo.MaToBanDo;
+
+            // Thêm mới nếu không tồn tại
+            dbContext.ToBanDos.Add(toBanDo);
+            await dbContext.SaveChangesAsync();
+
+            return toBanDo.MaToBanDo;
+        }
+        catch (Exception e)
+        {
+            Console.WriteLine(e);
+            return long.MinValue;
+        }
     }
 }

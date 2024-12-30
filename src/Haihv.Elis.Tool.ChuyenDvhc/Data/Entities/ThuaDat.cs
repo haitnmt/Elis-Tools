@@ -1,16 +1,15 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
-using Microsoft.EntityFrameworkCore;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 
 public sealed record ThuaDatCapNhat(long MaThuaDat, string ThuaDatSo, string ToBanDo, string TenDonViHanhChinh);
 
 [Table("ThuaDat")]
-[PrimaryKey("MaThuaDat")]
 public sealed class ThuaDat
 {
     [Column("MaThuaDat", TypeName = "bigint")]
+    [Key]
     public long MaThuaDat { get; set; }
 
     [Column("MaToBanDo", TypeName = "bigint")]
@@ -26,10 +25,10 @@ public sealed class ThuaDat
 }
 
 [Table("ThuaDatLS")]
-[PrimaryKey("MaThuaDatLS")]
 public sealed class ThuaDatLichSu
 {
     [Column("MaThuaDatLS", TypeName = "bigint")]
+    [Key]
     public long MaThuaDatLs { get; set; }
 
     [Column("MaToBanDo", TypeName = "bigint")]
