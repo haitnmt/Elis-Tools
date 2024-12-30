@@ -1,7 +1,7 @@
-﻿
-
-// To learn more about WinUI, the WinUI project structure,
+﻿// To learn more about WinUI, the WinUI project structure,
 // and more about our project templates, see: http://aka.ms/winui-project-info.
+
+using System.Diagnostics.CodeAnalysis;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.WinUI
 {
@@ -19,7 +19,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.WinUI
             this.InitializeComponent();
         }
 
+        [Experimental("EXTEXP0018")]
         protected override MauiApp CreateMauiApp() => MauiProgram.CreateMauiApp();
     }
-
 }
