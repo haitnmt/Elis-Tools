@@ -59,7 +59,7 @@ public partial class SelectDvhc : ComponentBase
                 ? _capTinhs
                 : _capTinhs.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
         var dvhcRecords =
-            await HybridCache.GetOrCreateAsync("CapTinh", async _ => await GetCapTinhFromData(cancellationToken),
+            await HybridCache.GetOrCreateAsync("CapTinh", async cancel => await GetCapTinhFromData(cancel),
                 cancellationToken: cancellationToken);
 
         _capTinhs = dvhcRecords;
@@ -93,11 +93,11 @@ public partial class SelectDvhc : ComponentBase
             return string.IsNullOrWhiteSpace(value)
                 ? _capHuyens
                 : _capHuyens.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
-        var dvhcRecords = await HybridCache.GetOrCreateAsync($"CapHuyen:{CapTinh.Ma}", async _ =>
+        var dvhcRecords = await HybridCache.GetOrCreateAsync($"CapHuyen:{CapTinh.Ma}", async cancel =>
         {
             var dvhcs = await _dataContext.Dvhcs
                 .Where(d => d.MaTinh == CapTinh.Ma && d.MaXa == 0 && d.MaHuyen != 0)
-                .OrderBy(d => d.MaTinh).ToListAsync(cancellationToken: cancellationToken);
+                .OrderBy(d => d.MaTinh).ToListAsync(cancel);
             return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.MaHuyen, d.Ten));
         }, cancellationToken: cancellationToken);
 
@@ -111,11 +111,11 @@ public partial class SelectDvhc : ComponentBase
     {
         if (CapHuyen is not { Ma: > 0 }) return;
 
-        var dvhcRecords = await HybridCache.GetOrCreateAsync($"CapXa:{CapHuyen.Ma}", async _ =>
+        var dvhcRecords = await HybridCache.GetOrCreateAsync($"CapXa:{CapHuyen.Ma}", async cancel =>
         {
             var dvhcs = await _dataContext.Dvhcs
                 .Where(d => d.MaHuyen == CapHuyen.Ma && d.MaXa != 0)
-                .OrderBy(d => d.MaTinh).ToListAsync(cancellationToken);
+                .OrderBy(d => d.MaTinh).ToListAsync(cancel);
             return dvhcs.Select(d => new DvhcRecord(d.MaDvhc, d.MaXa, d.Ten));
         }, cancellationToken: cancellationToken);
         _capXas = dvhcRecords;

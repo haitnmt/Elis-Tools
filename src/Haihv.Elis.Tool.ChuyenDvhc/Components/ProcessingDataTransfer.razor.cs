@@ -3,6 +3,7 @@ using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.Memory;
 using MudBlazor;
 using Color = MudBlazor.Color;
@@ -11,6 +12,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Components;
 
 public partial class ProcessingDataTransfer
 {
+    [Inject] private HybridCache HybridCache { get; set; } = null!;
     [Inject] private IMemoryCache MemoryCache { get; set; } = null!;
     [Inject] private ISnackbar Snackbar { get; set; } = null!;
     [Parameter] public bool IsAuditEnabled { get; set; }
@@ -32,27 +34,30 @@ public partial class ProcessingDataTransfer
     private List<int> _maDvhcBiSapNhap = [];
     private DvhcRecord? _capXaSau;
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
         _connectionString = MemoryCache.Get<string>(CacheDataConnection.ConnectionString);
         if (!string.IsNullOrWhiteSpace(_connectionString))
         {
             _dataContext = new ElisDataContext(_connectionString);
-            _thamChieuToBanDos = MemoryCache.Get<List<ThamChieuToBanDo>>(CacheThamSoBanDo.ThamChieuToBanDo) ?? [];
+            _thamChieuToBanDos = await HybridCache.GetOrCreateAsync(CacheThamSoBanDo.ThamChieuToBanDo,
+                _ => ValueTask.FromResult(_thamChieuToBanDos));
             if (_thamChieuToBanDos.Count == 0)
             {
                 SetMessage("Dữ liệu tham chiếu tờ bản đồ không tồn tại.");
                 return;
             }
 
-            _capXaTruoc = MemoryCache.Get<List<DvhcRecord?>?>(CacheThamSoDvhc.CapXaTruoc) ?? null;
+            _capXaTruoc =
+                await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.CapXaTruoc, _ => ValueTask.FromResult(_capXaTruoc));
             if (_capXaTruoc == null || _capXaTruoc.Count == 0)
             {
                 SetMessage("Dữ liệu đơn vị hành chính cấp xã trước không tồn tại.");
                 return;
             }
 
-            _capXaSau = MemoryCache.Get<DvhcRecord?>(CacheThamSoDvhc.CapXaSau) ?? null;
+            _capXaSau = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.CapXaSau,
+                _ => ValueTask.FromResult(_capXaSau));
             if (_capXaSau == null)
             {
                 SetMessage("Dữ liệu đơn vị hành chính cấp xã sau không tồn tại.");
@@ -63,18 +68,18 @@ public partial class ProcessingDataTransfer
                 .Select(x => x!.MaDvhc)
                 .ToList() ?? [];
             _maDvhcBiSapNhap.Remove(_capXaSau?.MaDvhc ?? 0);
-            _toBanDoCu = MemoryCache.Get<string>(CacheThamSoDuLieu.ToBanDoCu) ??
-                         ThamSoThayThe.DefaultToBanDoCu;
-            _ghiChuToBanDo = MemoryCache.Get<string>(CacheThamSoDuLieu.GhiChuToBanDo) ??
-                             ThamSoThayThe.DefaultGhiChuToBanDo;
-            _ghiChuThuaDat = MemoryCache.Get<string>(CacheThamSoDuLieu.GhiChuThuaDat) ??
-                             ThamSoThayThe.DefaultGhiChuThuaDat;
-            _ghiChuGiayChungNhan = MemoryCache.Get<string>(CacheThamSoDuLieu.GhiChuGiayChungNhan) ??
-                                   ThamSoThayThe.DefaultGhiChuGiayChungNhan;
-            _ngaySapNhap = MemoryCache.TryGetValue(CacheThamSoDvhc.NgaySatNhap, out DateTime ngaySapNhap)
-                ? ngaySapNhap.ToString(ThamSoThayThe.DinhDangNgaySapNhap)
-                : DateTime.Now.ToString(ThamSoThayThe.DinhDangNgaySapNhap);
-            _renewPrimaryKey = MemoryCache.Get<bool>(CacheThamSoDvhc.RenewPrimaryKey);
+            _toBanDoCu = await HybridCache.GetOrCreateAsync(CacheThamSoDuLieu.ToBanDoCu,
+                _ => ValueTask.FromResult(ThamSoThayThe.DefaultToBanDoCu));
+            _ghiChuToBanDo = await HybridCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuToBanDo,
+                _ => ValueTask.FromResult(ThamSoThayThe.DefaultGhiChuToBanDo));
+            _ghiChuThuaDat = await HybridCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuThuaDat,
+                _ => ValueTask.FromResult(ThamSoThayThe.DefaultGhiChuThuaDat));
+            _ghiChuGiayChungNhan = await HybridCache.GetOrCreateAsync(CacheThamSoDuLieu.GhiChuGiayChungNhan,
+                _ => ValueTask.FromResult(ThamSoThayThe.DefaultGhiChuGiayChungNhan));
+            _ngaySapNhap = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.NgaySatNhap,
+                _ => ValueTask.FromResult(DateTime.Now.ToString(ThamSoThayThe.DinhDangNgaySapNhap)));
+            _renewPrimaryKey = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.RenewPrimaryKey,
+                _ => ValueTask.FromResult(_renewPrimaryKey));
         }
         else
         {
@@ -327,7 +332,8 @@ public partial class ProcessingDataTransfer
 
         try
         {
-            var tenCapXaMoi = MemoryCache.Get<string>(CacheThamSoDvhc.TenDvhcSau) ?? string.Empty;
+            var tenCapXaMoi =
+                await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.TenDvhcSau, _ => ValueTask.FromResult(string.Empty));
             if (!string.IsNullOrWhiteSpace(tenCapXaMoi))
             {
                 _capXaSau = _capXaSau with { Ten = tenCapXaMoi };

@@ -5,7 +5,7 @@ public static class FilePath
     public static string PathConnectionString =>
         Path.Combine(PathRootConfig(), "ConnectionInfo.inf");
 
-    public static string CacheOnDisk => Path.Combine(PathRootConfig(), "Cache");
+    public static string CacheOnDisk => Path.Combine(PathRootConfig(), "CacheFiles");
 
     private static string PathRootConfig()
     {

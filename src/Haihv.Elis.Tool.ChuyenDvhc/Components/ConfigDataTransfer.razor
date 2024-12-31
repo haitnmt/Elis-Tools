@@ -73,19 +73,11 @@
                                           Label="Tên đơn vị hành chính sau sáp nhập"/>
                             @if (_capXaTruoc.Count == 1 && _capXaSau != null && _capXaTruoc[0]?.MaDvhc == _capXaSau.MaDvhc)
                             {
-                                _renewPrimaryKey = false;
                                 <MudCheckBox T="bool"
-                                             Value="@_renewPrimaryKey"
+                                             Value="_renewPrimaryKey"
                                              ValueChanged="OnRenewPrimaryKeyChange"
                                              Dense="true"
                                              Label="Làm mới các mã theo Đơn vị hành chính"/>
-                            }
-                            else
-                            {
-                                if (!_renewPrimaryKey)
-                                {
-                                    _ = OnRenewPrimaryKeyChange(true);
-                                }
                             }
                         </MudStack>
                     </MudCardContent>
@@ -168,6 +160,8 @@
         _capXaSau = _capXaTruoc[0];
         if (string.IsNullOrWhiteSpace(_tenDvhcSau))
             _tenDvhcSau = _capXaTruoc.Count > 0 ? _capXaTruoc[0]?.Ten ?? string.Empty : string.Empty;
+        var renew = !(_capXaTruoc.Count == 1 && _capXaSau != null && _capXaTruoc[0]?.MaDvhc == _capXaSau.MaDvhc);
+        await OnRenewPrimaryKeyChange(renew);
         // Set Cache
         await HybridCache.SetAsync(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
         await HybridCache.SetAsync(CacheThamSoDvhc.CapXaSau, _capXaSau);
@@ -206,6 +200,8 @@
         // Set Cache
         await HybridCache.SetAsync(CacheThamSoDvhc.CapXaSau, _capXaSau);
         await HybridCache.SetAsync(CacheThamSoDvhc.TenDvhcSau, _tenDvhcSau);
+        var renew = !(_capXaTruoc.Count == 1 && _capXaSau != null && _capXaTruoc[0]?.MaDvhc == _capXaSau.MaDvhc);
+        await OnRenewPrimaryKeyChange(renew);
         IsCompletedChangedHandler();
     }
 
@@ -253,6 +249,7 @@
     private async Task OnRenewPrimaryKeyChange(bool renewPrimaryKey)
     {
         _renewPrimaryKey = renewPrimaryKey;
+        StateHasChanged();
         await HybridCache.SetAsync(CacheThamSoDvhc.RenewPrimaryKey, _renewPrimaryKey);
     }
 }
