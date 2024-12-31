@@ -1,16 +1,17 @@
 ﻿using System.Text;
+using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Services;
 
-public class FileService : IFileService
+public class FileService(ILogger logger) : IFileService
 {
-    public async Task<string> ReadFileAsync(string filePath)
+    public async Task<string> ReadFileAsync(string filePath, CancellationToken cancellationToken = default)
     {
         try
         {
             if (!File.Exists(filePath))
             {
-                Console.WriteLine("File not found!");
+                logger.Information("Tệp không tồn tại! [{filePath}]", filePath);
                 return string.Empty;
             }
 
@@ -31,16 +32,48 @@ public class FileService : IFileService
                 bufferSize: 4096,
                 leaveOpen: false);
 
-            return await reader.ReadToEndAsync();
+            return await reader.ReadToEndAsync(cancellationToken);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error reading file: {ex.Message}");
+            logger.Warning($"Lỗi khi đọc tệp: {ex.Message}");
             return string.Empty;
         }
     }
+    
+    public async Task<byte[]?> ReadAllBytesAsync(string filePath, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (File.Exists(filePath)) return await File.ReadAllBytesAsync(filePath, cancellationToken);
+            logger.Warning("Tệp không tồn tại! [{filePath}]", filePath);
+            return null;
 
-    public async Task WriteFileAsync(string filePath, string content)
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Lỗi khi đọc tệp!");
+            return null;
+        }
+    }
+    
+    public byte[]? ReadAllBytes(string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath)) return File.ReadAllBytes(filePath);
+            logger.Warning("Tệp không tồn tại! [{filePath}]", filePath);
+            return null;
+
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Lỗi khi đọc tệp!");
+            return null;
+        }
+    }
+
+    public async Task WriteFileAsync(string filePath, string content, CancellationToken cancellationToken = default)
     {
         try
         {
@@ -67,47 +100,115 @@ public class FileService : IFileService
                 bufferSize: 4096,
                 leaveOpen: false);
             await writer.WriteAsync(content);
-            await writer.FlushAsync(); // Đảm bảo dữ liệu được ghi xuống disk
+            await writer.FlushAsync(cancellationToken); // Đảm bảo dữ liệu được ghi xuống disk
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error writing file: {ex.Message}");
-            throw;
+            logger.Warning(ex, "Lỗi khi đọc tệp!");
         }
     }
-
-    public async Task<bool> CreateFileAsync(string filePath)
+    
+    public async Task WriteAllBytesAsync(string filePath, byte[] content, CancellationToken cancellationToken = default)
     {
         try
         {
-            if (File.Exists(filePath)) return false;
+            // Đảm bảo directory tồn tại
+            var directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+            
+            await File.WriteAllBytesAsync(filePath, content, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex, "Lỗi khi đọc tệp!");
+        }
+    }
+    
+    public void WriteAllBytes(string filePath, byte[] content)
+    {
+        try
+        {
+            // Đảm bảo directory tồn tại
+            var directory = Path.GetDirectoryName(filePath);
+            if (!string.IsNullOrEmpty(directory))
+            {
+                Directory.CreateDirectory(directory);
+            }
+            File.WriteAllBytes(filePath, content);
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex,"Lỗi khi ghi tệp");
+        }
+    }
+
+    public async Task<bool> CreateAsync(string filePath)
+    {
+        try
+        {
+            if (File.Exists(filePath))
+            {
+                logger.Warning("Têp đã tồn tại!");
+                return false;
+            }
             await using var file = File.Create(filePath);
             return true;
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error creating file: {ex.Message}");
-            throw;
+            logger.Warning(ex,"Lỗi khi tạo tệp");
+            return false;
         }
     }
 
-    public Task<bool> DeleteFileAsync(string filePath)
+    public Task<bool> DeleteAsync(string filePath, CancellationToken cancellationToken = default)
     {
         try
         {
-            if (!File.Exists(filePath)) return Task.FromResult(false);
+            if (!File.Exists(filePath))
+            {
+                logger.Information("Tệp không tồn tại! [{filePath}]", filePath);
+                return Task.FromResult(false);
+            }
             File.Delete(filePath);
             return Task.FromResult(true);
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error deleting file: {ex.Message}");
-            throw;
+            logger.Warning(ex,"Lỗi khi xóa tệp");
+            return Task.FromResult(false);
         }
     }
 
-    public Task<bool> FileExistsAsync(string filePath)
+    public bool Delete(string filePath)
+    {
+        try
+        {
+            if (!File.Exists(filePath))
+            {
+                logger.Information("Tệp không tồn tại! [{filePath}]", filePath);
+                return false;
+            }
+            File.Delete(filePath);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex,"Lỗi khi xóa tệp");
+            return false;
+        }
+    }
+
+    public Task<bool> ExistsAsync(string filePath)
     {
         return Task.FromResult(File.Exists(filePath));
+    }
+    
+    public bool Exists(string filePath)
+    {
+        return File.Exists(filePath);
     }
 }

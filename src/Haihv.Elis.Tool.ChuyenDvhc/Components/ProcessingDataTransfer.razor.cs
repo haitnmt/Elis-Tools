@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Components;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.Memory;
 using MudBlazor;
+using Serilog;
 using Color = MudBlazor.Color;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Components;
@@ -14,6 +15,7 @@ public partial class ProcessingDataTransfer
 {
     [Inject] private HybridCache HybridCache { get; set; } = null!;
     [Inject] private IMemoryCache MemoryCache { get; set; } = null!;
+    [Inject] private ILogger Logger { get; set; } = null!;
     [Inject] private ISnackbar Snackbar { get; set; } = null!;
     [Parameter] public bool IsAuditEnabled { get; set; }
     [Parameter] public EventCallback<bool> IsFinishedChanged { get; set; }
@@ -44,7 +46,9 @@ public partial class ProcessingDataTransfer
                 _ => ValueTask.FromResult(_thamChieuToBanDos));
             if (_thamChieuToBanDos.Count == 0)
             {
-                SetMessage("Dữ liệu tham chiếu tờ bản đồ không tồn tại.");
+                const string message = "Dữ liệu tham chiếu tờ bản đồ không tồn tại.";
+                Logger.Warning(message);
+                SetMessage(message);
                 return;
             }
 
@@ -52,7 +56,9 @@ public partial class ProcessingDataTransfer
                 await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.CapXaTruoc, _ => ValueTask.FromResult(_capXaTruoc));
             if (_capXaTruoc == null || _capXaTruoc.Count == 0)
             {
-                SetMessage("Dữ liệu đơn vị hành chính cấp xã trước không tồn tại.");
+                const string message = "Dữ liệu đơn vị hành chính cấp xã trước không tồn tại.";
+                Logger.Warning(message);
+                SetMessage(message);
                 return;
             }
 
@@ -60,7 +66,9 @@ public partial class ProcessingDataTransfer
                 _ => ValueTask.FromResult(_capXaSau));
             if (_capXaSau == null)
             {
-                SetMessage("Dữ liệu đơn vị hành chính cấp xã sau không tồn tại.");
+                const string message = "Dữ liệu đơn vị hành chính cấp xã sau không tồn tại.";
+                Logger.Warning(message);
+                SetMessage(message);
                 return;
             }
 
@@ -83,7 +91,9 @@ public partial class ProcessingDataTransfer
         }
         else
         {
-            SetMessage("Kết nối cơ sở dữ liệu không tồn tại.");
+            const string message = "Kết nối cơ sở dữ liệu không tồn tại.";
+            Logger.Warning(message);
+            SetMessage(message);
         }
     }
 
@@ -100,6 +110,7 @@ public partial class ProcessingDataTransfer
 
         if (_isCompletedKhoiTaoDuLieu || !IsAuditEnabled)
         {
+            Logger.Information("Bắt đầu xử lý dữ liệu chuyển đổi.");
             if (_maDvhcBiSapNhap.Count == 0)
             {
                 _messageSuccessThamChieuThuaDat = "Không có đơn vị hành chính nào được sáp nhập.";
@@ -110,7 +121,9 @@ public partial class ProcessingDataTransfer
                 _timeUpdateToBanDo = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
                 _isCompletedThamChieuThuaDat = true;
                 _isCompletedUpdateToBanDo = true;
-                SetMessage("Không có đơn vị hành chính nào được sáp nhập.", Severity.Info, false);
+                const string message = "Không có đơn vị hành chính nào được sáp nhập.";
+                Logger.Warning(message);
+                SetMessage(message, Severity.Info, false);
                 // Cập nhật dữ liệu Đơn vị hành chính
                 await UpdatingDonViHanhChinh();
             }
@@ -163,7 +176,9 @@ public partial class ProcessingDataTransfer
             // Xử lý lỗi nếu có ngoại lệ
             _errorKhoiTaoDuLieu = ex.Message;
             _colorKhoiTaoDuLieu = Color.Error;
-            SetMessage("Không thể tạo bảng audit.");
+            const string message = "Không thể tạo bảng audit.";
+            Logger.Error(ex, message);
+            SetMessage(message);
         }
         finally
         {
@@ -189,6 +204,7 @@ public partial class ProcessingDataTransfer
         if (_isProcessingThamChieuThuaDat || _isCompletedThamChieuThuaDat || _capXaTruoc == null ||
             _capXaTruoc.Count == 0 || _capXaSau == null)
             return;
+        Logger.Information("Bắt đầu tạo dữ liệu thửa đất lịch sử.");
         _colorThamChieuThuaDat = Color.Primary;
         _isProcessingThamChieuThuaDat = true;
         StateHasChanged();
@@ -211,7 +227,7 @@ public partial class ProcessingDataTransfer
                 await UpdatingDonViHanhChinh();
                 return;
             }
-
+            Logger.Information("Số lượng thửa đất cần cập nhật: {TotalThamChieuThuaDat}", _totalThamChieuThuaDat);
             _currentThamChieuThuaDat = 0;
             _bufferThamChieuThuaDat = Math.Min(_limit, _totalThamChieuThuaDat);
             StateHasChanged();
@@ -253,7 +269,9 @@ public partial class ProcessingDataTransfer
         {
             _errorThamChieuThuaDat = ex.Message;
             _colorThamChieuThuaDat = Color.Error;
-            SetMessage("Không thể tạo dữ liệu thửa đất lịch sử.");
+            const string message = "Không thể tạo dữ liệu thửa đất lịch sử.";
+            Logger.Error(ex, message);
+            SetMessage(message);
         }
         finally
         {
@@ -281,7 +299,7 @@ public partial class ProcessingDataTransfer
     {
         if (_isProcessingUpdateToBanDo || _isCompletedUpdateToBanDo)
             return;
-        _colorUpdateToBanDo = Color.Default;
+        _colorUpdateToBanDo = Color.Primary;
         _isProcessingUpdateToBanDo = true;
         StateHasChanged();
         try
@@ -293,7 +311,10 @@ public partial class ProcessingDataTransfer
         {
             _errorUpdateToBanDo = ex.Message;
             _colorUpdateToBanDo = Color.Error;
-            SetMessage("Không thể cập nhật dữ liệu tờ bản đồ.");
+            const string message = "Không thể cập nhật dữ liệu tờ bản đồ.";
+            _errorUpdateDvhc = message;
+            Logger.Error(message);
+            SetMessage(message);
         }
         finally
         {
@@ -319,14 +340,17 @@ public partial class ProcessingDataTransfer
     {
         if (_isProcessingUpdateDvhc || _isCompletedUpdateDvhc)
             return;
-        _colorUpdateDvhc = Color.Default;
+        Logger.Information("Bắt đầu cập nhật dữ liệu đơn vị hành chính.");
+        _colorUpdateDvhc = Color.Primary;
         _isProcessingUpdateDvhc = true;
         StateHasChanged();
         if (_capXaSau == null)
         {
             _colorUpdateDvhc = Color.Error;
-            _errorUpdateDvhc = "Không tìm thấy đơn vị hành chính cấp xã sau.";
-            SetMessage("Không thể cập nhật dữ liệu đơn vị hành chính.");
+            const string message = "Không tìm thấy đơn vị hành chính cấp xã sau.";
+            _errorUpdateDvhc = message;
+            Logger.Warning(message);
+            SetMessage(message);
             return;
         }
 
@@ -341,13 +365,15 @@ public partial class ProcessingDataTransfer
 
             await _dataContext.UpdateDonViHanhChinhAsync(_capXaSau, _maDvhcBiSapNhap);
             _colorUpdateDvhc = Color.Success;
-            SetMessage("Đã hoàn thành", Severity.Success);
+            await UpdatePrimaryKeyAsync();
         }
         catch (Exception ex)
         {
             _colorUpdateDvhc = Color.Error;
             _errorUpdateDvhc = ex.Message;
-            SetMessage("Không thể cập nhật dữ liệu đơn vị hành chính.");
+            const string message = "Không thể cập nhật dữ liệu đơn vị hành chính.";
+            Logger.Error(ex, message);
+            SetMessage(message);
         }
         finally
         {
@@ -355,5 +381,73 @@ public partial class ProcessingDataTransfer
             _isCompletedUpdateDvhc = true;
             StateHasChanged();
         }
+    }
+    
+    private Color _colorUpdatePrimaryKey = Color.Default;
+    private string _timeUpdatePrimaryKey = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
+    private bool _isCompletedUpdatePrimaryKey = false;
+    private bool _isProcessingUpdatePrimaryKey = false;
+    private string _errorUpdatePrimaryKey = string.Empty;
+    private string _processingMessageUpdatePrimaryKey = "Đang cập nhật...";
+    private long _totalUpdatePrimaryKey;
+    private long _currentUpdatePrimaryKey;
+    private long _bufferUpdatePrimaryKey;
+
+    private async Task UpdatePrimaryKeyAsync()
+    {
+        if (!_renewPrimaryKey)
+        {
+            Logger.Information("Không cần cập nhật mã thửa đất.");
+            const string message = "Đã hoàn thành";
+            Logger.Information(message);
+            SetMessage(message, Severity.Success);
+            return;
+        }
+        if (_isCompletedUpdatePrimaryKey || _isProcessingUpdatePrimaryKey)
+            return;
+        _colorUpdatePrimaryKey = Color.Primary;
+        _isProcessingUpdatePrimaryKey = true;
+        StateHasChanged();
+        try
+        {
+            await UpdateMaThuaDatAsync();
+            
+            // Hoàn thành
+            _colorUpdatePrimaryKey = Color.Success;
+            const string message = "Đã hoàn thành";
+            Logger.Information(message);
+            SetMessage(message, Severity.Success);
+        }
+        catch (Exception ex)
+        {
+            _colorUpdatePrimaryKey = Color.Error;
+            _errorUpdatePrimaryKey = ex.Message;
+            const string message = "Không thể cập nhật các mã theo đơn vị hành chính.";
+            Logger.Error(ex, message);
+            SetMessage(message);
+        }
+        finally
+        {
+            _timeUpdatePrimaryKey = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
+            _isCompletedUpdatePrimaryKey = true;
+            StateHasChanged();
+        }
+
+    }
+
+    private const int TotalStepUpdatePrimaryKey = 3;
+    private async Task UpdateMaThuaDatAsync()
+    {
+        _processingMessageUpdatePrimaryKey = $"[1/{TotalStepUpdatePrimaryKey}]: Cập nhật mã thửa đất...";
+        await UpdateMaDangKyAsync();
+    }
+    private async Task UpdateMaDangKyAsync()
+    {
+        _processingMessageUpdatePrimaryKey = $"[2/{TotalStepUpdatePrimaryKey}]: Cập nhật mã đăng ký quyền sử dụng đất...";
+        await UpdateMaGiayChungNhanAsync();
+    }
+    private async Task UpdateMaGiayChungNhanAsync()
+    {
+        _processingMessageUpdatePrimaryKey = $"[3/{TotalStepUpdatePrimaryKey}]: Cập nhật mã Giấy chứng nhận...";
     }
 }

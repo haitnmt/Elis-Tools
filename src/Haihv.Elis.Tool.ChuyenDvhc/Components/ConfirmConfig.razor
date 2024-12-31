@@ -1,4 +1,6 @@
-﻿<MudStack>
+﻿@using Serilog
+@inject ILogger Logger
+<MudStack>
     <MudAlert Severity="Severity.Warning" ShowCloseIcon="false">
         <MudText>
             Vui lòng kiểm tra lại thông tin cấu hình trước khi tiếp tục!
@@ -44,6 +46,10 @@
     private void SetCompleted()
     {
         IsCompleted = _isBackupConfirmed && _isConfigurationVerified;
+        if (IsCompleted)
+        {
+            Logger.Information("Cấu hình đã được kiểm tra");
+        }
         IsCompletedChanged.InvokeAsync(IsCompleted);
     }
     

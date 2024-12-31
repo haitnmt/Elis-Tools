@@ -76,5 +76,14 @@
     @* Làm mới mã theo đơn vị hành chính *@
     @if (_renewPrimaryKey)
     {
+        <TimeLineProcess Label="Làm mới mã thửa đất theo đơn vị hành chính"
+                         ColorTimeLine="_colorUpdatePrimaryKey"
+                         IsCompleted="_isCompletedUpdatePrimaryKey"
+                         Time="@_timeUpdatePrimaryKey"
+                         Error="@_errorUpdatePrimaryKey"
+                         MaxCount="_totalUpdatePrimaryKey"
+                         BufferCount="_bufferUpdatePrimaryKey"
+                         CurrentCount="_currentUpdatePrimaryKey"
+                         ProcessingMessage="@_processingMessageUpdatePrimaryKey"/>
     }
 </MudTimeline>

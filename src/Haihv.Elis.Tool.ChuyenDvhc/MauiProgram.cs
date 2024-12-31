@@ -4,6 +4,7 @@ using Haihv.Elis.Tool.ChuyenDvhc.Services;
 using Microsoft.Extensions.Logging;
 using MudBlazor;
 using MudBlazor.Services;
+using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc
 {
@@ -16,11 +17,25 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
             builder
                 .UseMauiApp<App>()
                 .ConfigureFonts(fonts => { fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"); });
-            builder.Services.AddHybridCaching();
-            builder.Services.AddMauiBlazorWebView();
-
+            // Đăng ký Serilog (Write to File)
+            var logger = new LoggerConfiguration()
+                .WriteTo.File(
+                    Settings.FilePath.LogFile($"Log_{DateTime.Now:yyyyMMdd_HHmmss}.log"),
+                    rollingInterval: RollingInterval.Infinite,
+                    outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss} [{Level:u3}] {Message:lj}{NewLine}{Exception}"
+                )
+                .Enrich.FromLogContext()
+                .CreateLogger();
+            builder.Services.AddSerilog(logger);
+            
             // Đăng ký FileService
             builder.Services.AddSingleton<IFileService, FileService>();
+            
+            
+            // Đăng ký HybridCaching
+            builder.Services.AddHybridCaching();
+            // Đăng ký BlazorWebView
+            builder.Services.AddMauiBlazorWebView();
 
             // Đăng ký MudBlazor
             builder.Services.AddMudServices(config =>
