@@ -11,8 +11,10 @@ public static class HybridCachingExtensions
     [Experimental("EXTEXP0018")]
     public static void AddHybridCaching(this IServiceCollection services)
     {
-        services.AddSingleton<IDistributedCache>(_ =>
-            new FileDistributedCache(Settings.FilePath.CacheOnDisk));
+        services.AddSingleton<IDistributedCache>(sp =>
+            new FileDistributedCache(
+                sp.GetRequiredService<IFileService>(),
+                Settings.FilePath.CacheOnDisk));
         services.AddHybridCache(options =>
         {
             options.MaximumPayloadBytes = 1024 * 1024;
