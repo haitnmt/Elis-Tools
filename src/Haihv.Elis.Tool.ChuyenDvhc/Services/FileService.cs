@@ -11,7 +11,7 @@ public class FileService(ILogger logger) : IFileService
         {
             if (!File.Exists(filePath))
             {
-                logger.Information("Tệp không tồn tại! [{filePath}]", filePath);
+                logger.Debug("Tệp không tồn tại! [{filePath}]", filePath);
                 return string.Empty;
             }
 
@@ -46,7 +46,7 @@ public class FileService(ILogger logger) : IFileService
         try
         {
             if (File.Exists(filePath)) return await File.ReadAllBytesAsync(filePath, cancellationToken);
-            logger.Warning("Tệp không tồn tại! [{filePath}]", filePath);
+            logger.Debug("Tệp không tồn tại! [{filePath}]", filePath);
             return null;
 
         }
@@ -62,7 +62,7 @@ public class FileService(ILogger logger) : IFileService
         try
         {
             if (File.Exists(filePath)) return File.ReadAllBytes(filePath);
-            logger.Warning("Tệp không tồn tại! [{filePath}]", filePath);
+            logger.Debug("Tệp không tồn tại! [{filePath}]", filePath);
             return null;
 
         }
@@ -170,7 +170,7 @@ public class FileService(ILogger logger) : IFileService
         {
             if (!File.Exists(filePath))
             {
-                logger.Information("Tệp không tồn tại! [{filePath}]", filePath);
+                logger.Debug("Tệp không tồn tại! [{filePath}]", filePath);
                 return Task.FromResult(false);
             }
             File.Delete(filePath);
@@ -189,7 +189,7 @@ public class FileService(ILogger logger) : IFileService
         {
             if (!File.Exists(filePath))
             {
-                logger.Information("Tệp không tồn tại! [{filePath}]", filePath);
+                logger.Debug("Tệp không tồn tại! [{filePath}]", filePath);
                 return false;
             }
             File.Delete(filePath);
