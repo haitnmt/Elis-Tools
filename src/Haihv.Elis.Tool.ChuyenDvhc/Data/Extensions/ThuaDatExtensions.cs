@@ -1,7 +1,6 @@
 ﻿using System.Data;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
-using Microsoft.EntityFrameworkCore;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 
@@ -45,6 +44,8 @@ public static class ThuaDatExtensions
         return int.TryParse(result?.ToString(), out var count) ? count : 0;
     }
 
+    
+    
     /// <summary>
     /// Lấy danh sách Mã Thửa Đất dựa trên danh sách Mã Tờ Bản Đồ.
     /// </summary>

@@ -1,9 +1,9 @@
-﻿@using Haihv.Elis.Tool.ChuyenDvhc.Data
-@using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities
+﻿@using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities
+@using Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories
 @using Haihv.Elis.Tool.ChuyenDvhc.Settings
-@using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Caching.Hybrid
 @using Microsoft.Extensions.Caching.Memory
+@using Serilog
 
 <MudExpansionPanel Expanded="true" Dense="true">
     <TitleContent>
@@ -67,6 +67,7 @@
 @code {
     [Inject] HybridCache HybridCache { get; set; } = null!;
     [Inject] IMemoryCache MemoryCache { get; set; } = null!;
+    [Inject] ILogger Logger { get; set; } = null!;
     [Parameter] public IEnumerable<DvhcRecord>? DvhcTruocs { get; set; }
     [Parameter] public DvhcRecord? DvhcSau { get; set; }
     [Parameter] public string? TenDvhcSau { get; set; }
@@ -81,7 +82,6 @@
     private const string MaxHeight = "null";
     private bool _loadingToBanDos = false;
     private bool _usePrefix = false;
-
 
     protected override async Task OnInitializedAsync()
     {
@@ -137,17 +137,15 @@
             }
 
             _loadingToBanDos = true;
-            var connectionString = MemoryCache.Get(CacheDataConnection.ConnectionString)?.ToString();
+            var connectionString = MemoryCache.Get<string>(CacheDataConnection.ConnectionString);
             if (string.IsNullOrWhiteSpace(connectionString))
             {
+                Logger.Error("Connection string is null or empty");
                 return;
             }
+            var toBanDoRepository = new ToBanDoRepository(connectionString);
 
-            var dbConText = new ElisDataContext(connectionString);
-            var tbds = await dbConText.ToBanDos
-                .Where(tbd => tbd.MaDvhc == _dvhcSau.MaDvhc)
-                .OrderBy(tbd => tbd.TyLe)
-                .ToListAsync();
+            var tbds = (await toBanDoRepository.GetToBanDosAsync(_dvhcSau.MaDvhc)).ToList();
             _thamChieuToBanDos = [];
             var stt = 0;
             _thamChieuToBanDos.AddRange(tbds.Select(tbd => new ThamChieuToBanDo
@@ -166,22 +164,15 @@
                 .Where(t => int.TryParse(t.SoTo, out _))
                 .Select(t => int.Parse(t.SoTo))
                 .Max();
-            var maDvhcTruocs = _dvhcTruocs
-                .Where(d => d.MaDvhc != _dvhcSau.MaDvhc)
-                .Select(d => d.MaDvhc)
-                .ToList();
-            foreach (var maDvhc in maDvhcTruocs)
+            foreach (var (maDvhc, _, tenDvhc) in 
+                     _dvhcTruocs.Where(d => d.MaDvhc != _dvhcSau.MaDvhc))
             {
-                var tenDvhc = _dvhcTruocs.First(d => d.MaDvhc == maDvhc).Ten;
                 var prefix = string.Empty;
                 if (soToBanDoTiepTheo == 0)
                 {
                     prefix = GetPrefix(tenDvhc);
                 }
-                tbds = await dbConText.ToBanDos
-                    .Where(tbd => tbd.MaDvhc == maDvhc)
-                    .OrderBy(tbd => tbd.TyLe)
-                    .ToListAsync();
+                tbds = (await toBanDoRepository.GetToBanDosAsync(maDvhc)).ToList();
                 _thamChieuToBanDos.AddRange(tbds.Select(tbd => new ThamChieuToBanDo
                 {
                     Id = stt++,
@@ -191,12 +182,13 @@
                     SoToBanDoTruoc = $"{tbd.SoTo} [{tbd.TyLe}]",
                     TenDvhcSau = _tenDvhcSau ?? _dvhcSau.Ten,
                     MaDvhcSau = _dvhcSau.MaDvhc,
-                    SoToBanDoSau = string.IsNullOrWhiteSpace(prefix) ? soToBanDoTiepTheo++.ToString() : $"{prefix}{tbd.SoTo}"
+                    SoToBanDoSau = string.IsNullOrWhiteSpace(prefix) ? 
+                        soToBanDoTiepTheo++.ToString() : 
+                        $"{prefix}{tbd.SoTo}"
                 }));
             }
 
             _heightGrid = _thamChieuToBanDos.Count > 10 ? MaxHeight : "null";
-            StateHasChanged();
             CheckCompleted();
         }
         catch (Exception ex)

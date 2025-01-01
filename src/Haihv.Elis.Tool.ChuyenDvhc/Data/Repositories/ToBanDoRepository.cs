@@ -4,13 +4,31 @@ using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
 using Microsoft.Data.SqlClient;
 
-namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
+namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
-public static class ToBanDoRepositories
+/// <summary>
+/// Repository để thao tác với bảng ToBanDo
+/// </summary>
+/// <param name="connectionString">Chuỗi kết nối đến cơ sở dữ liệu</param>
+public class ToBanDoRepository(string connectionString)
 {
     private const long DefaultTempMaToBanDo = long.MaxValue;
-    
-    public static async Task<int> UpdateToBanDoAsync(this SqlConnection dbConnection,
+
+    /// <summary>
+    /// Cập nhật thông tin Tờ Bản Đồ.
+    /// </summary>
+    /// <param name="thamChieuToBanDos">Danh sách tham chiếu Tờ Bản Đồ.</param>
+    /// <param name="formatGhiChuToBanDo">Định dạng ghi chú Tờ Bản Đồ (tùy chọn).</param>
+    /// <param name="ngaySapNhap">Ngày sắp nhập (tùy chọn).</param>
+    /// <returns>Số lượng bản ghi được cập nhật.</returns>
+    public async Task<int> UpdateToBanDoAsync(List<ThamChieuToBanDo> thamChieuToBanDos,
+        string? formatGhiChuToBanDo = null, string? ngaySapNhap = null)
+    {
+        await using var dbConnection = new SqlConnection(connectionString);
+        return await UpdateToBanDoAsync(dbConnection, thamChieuToBanDos, formatGhiChuToBanDo, ngaySapNhap);
+    }
+
+    private static async Task<int> UpdateToBanDoAsync(SqlConnection dbConnection,
         List<ThamChieuToBanDo> thamChieuToBanDos,
         string? formatGhiChuToBanDo = null, string? ngaySapNhap = null)
     {
@@ -44,8 +62,20 @@ public static class ToBanDoRepositories
         // Cập nhật toàn bộ khối dữ liệu
         return await dbConnection.ExecuteAsync(sqlUpdate, toBanDos);
     }
-    
-    public static async Task<long> CreateTempToBanDoAsync(this SqlConnection dbConnection,
+
+
+    /// <summary>
+    /// Tạo một Tờ Bản Đồ tạm thời.
+    /// </summary>
+    /// <param name="maToBanDo">Mã Tờ Bản Đồ (tùy chọn).</param>
+    /// <returns>Mã của Tờ Bản Đồ tạm thời được tạo.</returns>
+    public async Task<long> CreateTempToBanDoAsync(long? maToBanDo = null)
+    {
+        await using var dbConnection = new SqlConnection(connectionString);
+        return await CreateTempToBanDoAsync(dbConnection, maToBanDo);
+    }
+
+    private static async Task<long> CreateTempToBanDoAsync(SqlConnection dbConnection,
         long? maToBanDo = null)
     {
         if (dbConnection.State != ConnectionState.Open)
@@ -68,5 +98,31 @@ public static class ToBanDoRepositories
                                    """;
         await dbConnection.ExecuteAsync(upsertQuery, toBanDo);
         return toBanDo.MaToBanDo;
+    }
+
+
+    /// <summary>
+    /// Lấy danh sách Tờ Bản Đồ theo mã đơn vị hành chính.
+    /// </summary>
+    /// <param name="maDvhc">Mã đơn vị hành chính.</param>
+    /// <param name="cancellationToken">Token hủy bỏ (tùy chọn).</param>
+    /// <returns>Danh sách các Tờ Bản Đồ.</returns>
+    public async Task<IEnumerable<ToBanDo>> GetToBanDosAsync(int maDvhc, CancellationToken cancellationToken = default)
+    {
+        await using var dbConnection = new SqlConnection(connectionString);
+        return await GetToBanDosAsync(dbConnection, maDvhc, cancellationToken);
+    }
+
+    private static async Task<IEnumerable<ToBanDo>> GetToBanDosAsync(SqlConnection dbConnection, int maDvhc,
+        CancellationToken cancellationToken = default)
+    {
+        if (dbConnection.State != ConnectionState.Open)
+            await dbConnection.OpenAsync(cancellationToken);
+        const string query = """
+                             SELECT MaToBanDo, SoTo, MaDvhc, TyLe, GhiChu
+                             FROM ToBanDo
+                             WHERE MaDvhc = @MaDvhc
+                             """;
+        return await dbConnection.QueryAsync<ToBanDo>(query, new { MaDvhc = maDvhc });
     }
 }

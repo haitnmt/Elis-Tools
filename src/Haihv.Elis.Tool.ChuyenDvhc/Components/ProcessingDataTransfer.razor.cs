@@ -1,8 +1,10 @@
 ﻿using Haihv.Elis.Tool.ChuyenDvhc.Data;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
+using Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
 using Microsoft.AspNetCore.Components;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Hybrid;
 using Microsoft.Extensions.Caching.Memory;
 using MudBlazor;
@@ -19,8 +21,7 @@ public partial class ProcessingDataTransfer
     [Inject] private ISnackbar Snackbar { get; set; } = null!;
     [Parameter] public bool IsAuditEnabled { get; set; }
     [Parameter] public EventCallback<bool> IsFinishedChanged { get; set; }
-
-    private ElisDataContext _dataContext = null!;
+    
     private string? _connectionString;
     private bool _isFinished;
     private List<ThamChieuToBanDo> _thamChieuToBanDos = [];
@@ -41,7 +42,6 @@ public partial class ProcessingDataTransfer
         _connectionString = MemoryCache.Get<string>(CacheDataConnection.ConnectionString);
         if (!string.IsNullOrWhiteSpace(_connectionString))
         {
-            _dataContext = new ElisDataContext(_connectionString);
             _thamChieuToBanDos = await HybridCache.GetOrCreateAsync(CacheThamSoBanDo.ThamChieuToBanDo,
                 _ => ValueTask.FromResult(_thamChieuToBanDos));
             if (_thamChieuToBanDos.Count == 0)
@@ -168,7 +168,8 @@ public partial class ProcessingDataTransfer
         try
         {
             // Tạo hoặc thay đổi bảng audit
-            await _dataContext.CreatedOrAlterAuditTable();
+            var dataInitializer = new DataInitializer(_connectionString!);
+            await dataInitializer.CreatedOrAlterAuditTable();
             _colorKhoiTaoDuLieu = Color.Success;
         }
         catch (Exception ex)
@@ -304,7 +305,9 @@ public partial class ProcessingDataTransfer
         StateHasChanged();
         try
         {
-            await _dataContext.UpdateToBanDoAsync(_thamChieuToBanDos, _ghiChuToBanDo, _ngaySapNhap);
+            // Cập nhật dữ liệu Tờ bản đồ
+            await using var dbConnection = new SqlConnection(_connectionString);
+            await dbConnection.UpdateToBanDoAsync(_thamChieuToBanDos, _ghiChuToBanDo, _ngaySapNhap);
             _colorUpdateToBanDo = Color.Success;
         }
         catch (Exception ex)
@@ -363,7 +366,7 @@ public partial class ProcessingDataTransfer
                 _capXaSau = _capXaSau with { Ten = tenCapXaMoi };
             }
 
-            await _dataContext.UpdateDonViHanhChinhAsync(_capXaSau, _maDvhcBiSapNhap);
+            await _capXaSau.UpdateDonViHanhChinhAsync(_connectionString!, _maDvhcBiSapNhap);
             _colorUpdateDvhc = Color.Success;
             await UpdatePrimaryKeyAsync();
         }
