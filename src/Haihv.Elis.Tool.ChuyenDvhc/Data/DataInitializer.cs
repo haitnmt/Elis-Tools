@@ -6,7 +6,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 /// <summary>
 /// Lớp mở rộng để khởi tạo dữ liệu.
 /// </summary>
-public static class DataInitializer
+public class DataInitializer(string connectionString)
 {
     private const string TableName = "AuditChuyenDvhc";
 
