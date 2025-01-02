@@ -158,7 +158,8 @@
         try
         {
             var dataRepository = new DataRepository(Logger, _connectionString);
-            _ = await dataRepository.GetAndOpenConnectionAsync();
+            var connection = await dataRepository.GetAndOpenConnectionAsync();
+            connection.Close();
             MemoryCache.Set(CacheDataConnection.ConnectionString, _connectionString);
             _isConnected = true;
             IsConnected = true;

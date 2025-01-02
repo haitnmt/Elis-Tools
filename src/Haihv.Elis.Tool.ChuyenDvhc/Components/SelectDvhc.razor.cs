@@ -13,7 +13,6 @@ public partial class SelectDvhc : ComponentBase
     [Inject] private HybridCache HybridCache { get; set; } = null!;
     [Inject] private IMemoryCache MemoryCache { get; set; } = null!;
     [Inject] private Logger Logger { get; set; } = null!;
-    [Parameter] public bool IsConnected { get; set; }
     [Parameter] public bool IsBefore { get; set; }
     [Parameter] public DvhcRecord? CapTinh { get; set; }
     [Parameter] public EventCallback<DvhcRecord?> CapTinhChanged { get; set; }

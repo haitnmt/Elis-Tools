@@ -93,7 +93,7 @@
 
     protected override void OnParametersSet()
     {
-        if (DvhcSau != null && DvhcSau != _dvhcSau)
+        if (DvhcSau != null && DvhcSau.MaDvhc != _dvhcSau?.MaDvhc)
         {
             if (_dvhcSau != null)
             {
