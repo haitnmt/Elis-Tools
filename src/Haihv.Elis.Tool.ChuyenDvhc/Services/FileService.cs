@@ -164,22 +164,22 @@ public class FileService(ILogger logger) : IFileService
         }
     }
 
-    public Task<bool> DeleteAsync(string filePath, CancellationToken cancellationToken = default)
+    public Task DeleteAsync(string filePath, CancellationToken cancellationToken = default)
     {
         try
         {
             if (!File.Exists(filePath))
             {
                 logger.Debug("Tệp không tồn tại! [{filePath}]", filePath);
-                return Task.FromResult(false);
+                return Task.CompletedTask;
             }
             File.Delete(filePath);
-            return Task.FromResult(true);
+            return Task.CompletedTask;
         }
         catch (Exception ex)
         {
             logger.Warning(ex,"Lỗi khi xóa tệp");
-            return Task.FromResult(false);
+            return Task.CompletedTask;
         }
     }
 

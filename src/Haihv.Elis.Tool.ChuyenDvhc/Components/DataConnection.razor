@@ -1,10 +1,9 @@
 ﻿@using System.Text.Json
 @using System.Text.Json.Serialization
-@using Haihv.Elis.Tool.ChuyenDvhc.Data
+@using Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories
 @using Haihv.Elis.Tool.ChuyenDvhc.Extensions
 @using Haihv.Elis.Tool.ChuyenDvhc.Services
 @using Haihv.Elis.Tool.ChuyenDvhc.Settings
-@using Microsoft.EntityFrameworkCore
 @using Microsoft.Extensions.Caching.Memory
 @using Serilog
 
@@ -158,8 +157,8 @@
                                $"TrustServerCertificate={_trustedConnection};";
         try
         {
-            await using var context = new ElisDataContext(_connectionString);
-            await context.Database.OpenConnectionAsync();
+            var dataRepository = new DataRepository(Logger, _connectionString);
+            _ = await dataRepository.GetAndOpenConnectionAsync();
             MemoryCache.Set(CacheDataConnection.ConnectionString, _connectionString);
             _isConnected = true;
             IsConnected = true;

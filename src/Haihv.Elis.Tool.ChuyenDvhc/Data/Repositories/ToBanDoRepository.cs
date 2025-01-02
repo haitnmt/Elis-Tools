@@ -3,6 +3,7 @@ using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
 using Microsoft.Data.SqlClient;
+using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
@@ -10,8 +11,10 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 /// Repository để thao tác với bảng ToBanDo
 /// </summary>
 /// <param name="connectionString">Chuỗi kết nối đến cơ sở dữ liệu</param>
-public class ToBanDoRepository(string connectionString)
+/// <ơaram name="dbConnection">Kết nối cơ sở dữ liệu</ơaram>
+public class ToBanDoRepository(ILogger? logger = null, string? connectionString = null, SqlConnection? dbConnection = null) : DataRepository(logger, connectionString, dbConnection)
 {
+    private readonly ILogger? _logger = logger;
     private const long DefaultTempMaToBanDo = long.MaxValue;
 
     /// <summary>
@@ -20,17 +23,29 @@ public class ToBanDoRepository(string connectionString)
     /// <param name="thamChieuToBanDos">Danh sách tham chiếu Tờ Bản Đồ.</param>
     /// <param name="formatGhiChuToBanDo">Định dạng ghi chú Tờ Bản Đồ (tùy chọn).</param>
     /// <param name="ngaySapNhap">Ngày sắp nhập (tùy chọn).</param>
+    /// <param name="cancellationToken">Token hủy bỏ (tùy chọn).</param>
     /// <returns>Số lượng bản ghi được cập nhật.</returns>
     public async Task<int> UpdateToBanDoAsync(List<ThamChieuToBanDo> thamChieuToBanDos,
-        string? formatGhiChuToBanDo = null, string? ngaySapNhap = null)
+        string? formatGhiChuToBanDo = null, string? ngaySapNhap = null, CancellationToken cancellationToken = default)
     {
-        await using var dbConnection = new SqlConnection(connectionString);
-        return await UpdateToBanDoAsync(dbConnection, thamChieuToBanDos, formatGhiChuToBanDo, ngaySapNhap);
+        // Lấy kết nối cơ sở dữ liệu
+        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
+        try
+        {
+            return await UpdateToBanDoAsync(connection, thamChieuToBanDos, formatGhiChuToBanDo, ngaySapNhap, cancellationToken);
+        }
+        catch (Exception ex)
+        {
+            if (_logger == null) throw;
+            _logger.Error(ex, "Lỗi khi cập nhật thông tin Tờ Bản Đồ.");
+            return 0;
+        }
+
     }
 
     private static async Task<int> UpdateToBanDoAsync(SqlConnection dbConnection,
         List<ThamChieuToBanDo> thamChieuToBanDos,
-        string? formatGhiChuToBanDo = null, string? ngaySapNhap = null)
+        string? formatGhiChuToBanDo = null, string? ngaySapNhap = null, CancellationToken cancellationToken = default)
     {
         if (thamChieuToBanDos.Count == 0)
             return 0;
@@ -53,7 +68,7 @@ public class ToBanDoRepository(string connectionString)
                 MaDvhc = thamChieuToBanDo.MaDvhcSau, GhiChu = ghiChuToBanDo
             });
         if (dbConnection.State != ConnectionState.Open)
-            await dbConnection.OpenAsync();
+            await dbConnection.OpenAsync(cancellationToken);
         const string sqlUpdate = """
                                  UPDATE ToBanDo
                                  SET SoTo = @SoTo, MaDvhc = @MaDvhc, GhiChu = @GhiChu
@@ -63,43 +78,48 @@ public class ToBanDoRepository(string connectionString)
         return await dbConnection.ExecuteAsync(sqlUpdate, toBanDos);
     }
 
-
+    
     /// <summary>
     /// Tạo một Tờ Bản Đồ tạm thời.
     /// </summary>
     /// <param name="maToBanDo">Mã Tờ Bản Đồ (tùy chọn).</param>
+    /// <param name="cancellationToken">Token hủy bỏ (tùy chọn).</param>
     /// <returns>Mã của Tờ Bản Đồ tạm thời được tạo.</returns>
-    public async Task<long> CreateTempToBanDoAsync(long? maToBanDo = null)
+    public async Task<long> CreateTempToBanDoAsync(long? maToBanDo = null, CancellationToken cancellationToken = default)
     {
-        await using var dbConnection = new SqlConnection(connectionString);
-        return await CreateTempToBanDoAsync(dbConnection, maToBanDo);
-    }
-
-    private static async Task<long> CreateTempToBanDoAsync(SqlConnection dbConnection,
-        long? maToBanDo = null)
-    {
-        if (dbConnection.State != ConnectionState.Open)
-            await dbConnection.OpenAsync();
-        var toBanDo = new ToBanDo
+        // Lấy kết nối cơ sở dữ liệu
+        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
+        try
         {
-            MaToBanDo = maToBanDo ?? DefaultTempMaToBanDo,
-            SoTo = "Temp",
-            MaDvhc = 100001,
-            GhiChu = "Tờ bản đồ tạm thời"
-        };
+            var toBanDo = new ToBanDo
+            {
+                MaToBanDo = maToBanDo ?? DefaultTempMaToBanDo,
+                SoTo = "Temp",
+                MaDvhc = 100001,
+                GhiChu = "Tờ bản đồ tạm thời"
+            };
 
-        const string upsertQuery = """
-                                   MERGE INTO ToBanDo AS target
-                                   USING (SELECT @MaToBanDo AS MaToBanDo) AS source
-                                   ON target.MaToBanDo = source.MaToBanDo
-                                   WHEN NOT MATCHED THEN
-                                       INSERT (MaToBanDo, SoTo, MaDvhc, GhiChu)
-                                       VALUES (@MaToBanDo, @SoTo, @MaDvhc, @GhiChu);
-                                   """;
-        await dbConnection.ExecuteAsync(upsertQuery, toBanDo);
-        return toBanDo.MaToBanDo;
+            const string upsertQuery = """
+                                       MERGE INTO ToBanDo AS target
+                                       USING (SELECT @MaToBanDo AS MaToBanDo) AS source
+                                       ON target.MaToBanDo = source.MaToBanDo
+                                       WHEN NOT MATCHED THEN
+                                           INSERT (MaToBanDo, SoTo, MaDvhc, GhiChu)
+                                           VALUES (@MaToBanDo, @SoTo, @MaDvhc, @GhiChu);
+                                       WHEN MATCHED THEN
+                                           UPDATE SET SoTo = @SoTo, MaDvhc = @MaDvhc, GhiChu = @GhiChu;
+                                       """;
+            await connection.ExecuteAsync(upsertQuery, toBanDo);
+            return toBanDo.MaToBanDo;
+        }
+        catch (Exception e)
+        {
+            if (_logger == null) throw;
+            _logger.Error(e, "Lỗi khi tạo Tờ Bản Đồ tạm thời. [MaToBanDo: {MaToBanDo}]", maToBanDo);
+            return long.MinValue;
+        }
+        
     }
-
 
     /// <summary>
     /// Lấy danh sách Tờ Bản Đồ theo mã đơn vị hành chính.
@@ -109,20 +129,23 @@ public class ToBanDoRepository(string connectionString)
     /// <returns>Danh sách các Tờ Bản Đồ.</returns>
     public async Task<IEnumerable<ToBanDo>> GetToBanDosAsync(int maDvhc, CancellationToken cancellationToken = default)
     {
-        await using var dbConnection = new SqlConnection(connectionString);
-        return await GetToBanDosAsync(dbConnection, maDvhc, cancellationToken);
-    }
+        // Lấy kết nối cơ sở dữ liệu
+        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
+        try
+        {
+            const string query = """
+                                 SELECT MaToBanDo, SoTo, MaDvhc, TyLe, GhiChu
+                                 FROM ToBanDo
+                                 WHERE MaDvhc = @MaDvhc
+                                 """;
+            return await connection.QueryAsync<ToBanDo>(query, new { MaDvhc = maDvhc });
+        }
+        catch (Exception ex)
+        {
+            if (_logger == null) throw;
+            _logger.Error(ex, "Lỗi khi lấy danh sách Tờ Bản Đồ theo mã đơn vị hành chính. [MaDVHC: {MaDVHC}]", maDvhc);
+            return [];
+        }
 
-    private static async Task<IEnumerable<ToBanDo>> GetToBanDosAsync(SqlConnection dbConnection, int maDvhc,
-        CancellationToken cancellationToken = default)
-    {
-        if (dbConnection.State != ConnectionState.Open)
-            await dbConnection.OpenAsync(cancellationToken);
-        const string query = """
-                             SELECT MaToBanDo, SoTo, MaDvhc, TyLe, GhiChu
-                             FROM ToBanDo
-                             WHERE MaDvhc = @MaDvhc
-                             """;
-        return await dbConnection.QueryAsync<ToBanDo>(query, new { MaDvhc = maDvhc });
     }
 }

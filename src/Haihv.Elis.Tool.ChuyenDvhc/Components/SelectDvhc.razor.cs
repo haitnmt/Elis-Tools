@@ -31,18 +31,13 @@ public partial class SelectDvhc : ComponentBase
     private IEnumerable<DvhcRecord> _capHuyens = [];
     private string _tenHuyen = string.Empty;
     
-    private DonViHanhChinhRepository _donViHanhChinhRepository = null!;
     private IEnumerable<DvhcRecord> _capXas = [];
 
     protected override void OnInitialized()
     {
         _connectionString = MemoryCache.Get<string>(CacheDataConnection.ConnectionString);
-        if (string.IsNullOrWhiteSpace(_connectionString))
-        {
-            Logger.Error("Connection string is null or empty");
-            return;
-        }
-        _donViHanhChinhRepository = new DonViHanhChinhRepository(_connectionString);
+        if (!string.IsNullOrWhiteSpace(_connectionString)) return;
+        Logger.Error("Connection string is null or empty");
     }
 
     protected override async Task OnParametersSetAsync()
@@ -59,9 +54,10 @@ public partial class SelectDvhc : ComponentBase
             return string.IsNullOrWhiteSpace(value)
                 ? _capTinhs
                 : _capTinhs.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+        var donViHanhChinhRepository = new DonViHanhChinhRepository(Logger, _connectionString);
         var dvhcRecords =
             await HybridCache.GetOrCreateAsync("CapTinh", async cancel => 
-                    await _donViHanhChinhRepository.GetCapTinhAsync(cancel),
+                    await donViHanhChinhRepository.GetCapTinhAsync(cancel),
                 cancellationToken: cancellationToken);
 
         _capTinhs = dvhcRecords;
@@ -78,9 +74,10 @@ public partial class SelectDvhc : ComponentBase
             return string.IsNullOrWhiteSpace(value)
                 ? _capHuyens
                 : _capHuyens.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
+        var donViHanhChinhRepository = new DonViHanhChinhRepository(Logger, _connectionString);
         var dvhcRecords = 
             await HybridCache.GetOrCreateAsync($"CapHuyen:{CapTinh.Ma}", async cancel => 
-                await _donViHanhChinhRepository.GetCapHuyenAsync(CapTinh.Ma, cancel), 
+                await donViHanhChinhRepository.GetCapHuyenAsync(CapTinh.Ma, cancel), 
                 cancellationToken: cancellationToken);
 
         _capHuyens = dvhcRecords;
@@ -92,10 +89,10 @@ public partial class SelectDvhc : ComponentBase
     private async Task GetCapXa(CancellationToken cancellationToken = default)
     {
         if (CapHuyen is not { Ma: > 0 }) return;
-
+        var donViHanhChinhRepository = new DonViHanhChinhRepository(Logger, _connectionString);
         var dvhcRecords = 
             await HybridCache.GetOrCreateAsync($"CapXa:{CapHuyen.Ma}", async cancel =>
-                await _donViHanhChinhRepository.GetCapXaAsync(CapHuyen.Ma, cancel)
+                await donViHanhChinhRepository.GetCapXaAsync(CapHuyen.Ma, cancel)
                 , cancellationToken: cancellationToken);
         _capXas = dvhcRecords;
     }

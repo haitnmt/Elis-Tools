@@ -1,6 +1,5 @@
 ﻿using Haihv.Elis.Tool.ChuyenDvhc.Data;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
-using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
 using Microsoft.AspNetCore.Components;
@@ -211,8 +210,10 @@ public partial class ProcessingDataTransfer
         StateHasChanged();
         try
         {
+            await using var dbConnection = new SqlConnection(_connectionString);
+            var thuaDatRepository = new ThuaDatRepository(logger: Logger, dbConnection: dbConnection);
             // Lấy tổng số thửa đất
-            _totalThamChieuThuaDat = await _dataContext.GetCountThuaDatAsync(_maDvhcBiSapNhap);
+            _totalThamChieuThuaDat = await thuaDatRepository.GetCountThuaDatAsync(_maDvhcBiSapNhap);
             if (_totalThamChieuThuaDat == 0)
             {
                 const string message = "Không có thửa đất nào được tìm thấy.";
@@ -228,6 +229,8 @@ public partial class ProcessingDataTransfer
                 await UpdatingDonViHanhChinh();
                 return;
             }
+            var thuaDatCuRepository = new ThuaDatCuRepository(logger: Logger,dbConnection: dbConnection);
+            var giayChungNhanRepository = new GiayChungNhanRepository(logger: Logger,dbConnection: dbConnection);
             Logger.Information("Số lượng thửa đất cần cập nhật: {TotalThamChieuThuaDat}", _totalThamChieuThuaDat);
             _currentThamChieuThuaDat = 0;
             _bufferThamChieuThuaDat = Math.Min(_limit, _totalThamChieuThuaDat);
@@ -242,19 +245,19 @@ public partial class ProcessingDataTransfer
                 {
                     // Lấy danh sách Thửa Đất cần cập nhật và cập nhật ghi chú Thửa Đất
                     var thuaDatToBanDos =
-                        await _dataContext.UpdateAndGetThuaDatToBanDoAsync(dvhcBiSapNhap,
+                        await thuaDatRepository.UpdateAndGetThuaDatToBanDoAsync(dvhcBiSapNhap,
                             minMaThuaDat: minMaThuaDat,
                             limit: _limit,
                             formatGhiChuThuaDat: _ghiChuThuaDat,
                             ngaySapNhap: _ngaySapNhap);
                     if (thuaDatToBanDos.Count == 0)
                         break;
-
+                    
                     // Tạo hoặc cập nhật thông tin Thửa Đất Cũ
-                    await _dataContext.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu);
+                    await thuaDatCuRepository.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu);
 
                     // Cập nhật Ghi chú Giấy chứng nhận
-                    await _dataContext.UpdateGhiChuGiayChungNhan(thuaDatToBanDos, _ghiChuGiayChungNhan, _ngaySapNhap);
+                    await giayChungNhanRepository.UpdateGhiChuGiayChungNhan(thuaDatToBanDos, _ghiChuGiayChungNhan, _ngaySapNhap);
 
                     minMaThuaDat = thuaDatToBanDos[^1].MaThuaDat;
                     _currentThamChieuThuaDat += thuaDatToBanDos.Count;
@@ -307,7 +310,8 @@ public partial class ProcessingDataTransfer
         {
             // Cập nhật dữ liệu Tờ bản đồ
             await using var dbConnection = new SqlConnection(_connectionString);
-            await dbConnection.UpdateToBanDoAsync(_thamChieuToBanDos, _ghiChuToBanDo, _ngaySapNhap);
+            var toBanDoRepository = new ToBanDoRepository(dbConnection: dbConnection);
+            await toBanDoRepository.UpdateToBanDoAsync(_thamChieuToBanDos, _ghiChuToBanDo, _ngaySapNhap);
             _colorUpdateToBanDo = Color.Success;
         }
         catch (Exception ex)
@@ -365,8 +369,9 @@ public partial class ProcessingDataTransfer
             {
                 _capXaSau = _capXaSau with { Ten = tenCapXaMoi };
             }
-
-            await _capXaSau.UpdateDonViHanhChinhAsync(_connectionString!, _maDvhcBiSapNhap);
+            await using var dbConnection = new SqlConnection(_connectionString);
+            var donViHanhChinhRepository = new DonViHanhChinhRepository(dbConnection: dbConnection);
+            await donViHanhChinhRepository.UpdateDonViHanhChinhAsync(_capXaSau, _maDvhcBiSapNhap);
             _colorUpdateDvhc = Color.Success;
             await UpdatePrimaryKeyAsync();
         }

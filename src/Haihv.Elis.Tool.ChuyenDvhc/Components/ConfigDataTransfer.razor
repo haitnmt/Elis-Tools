@@ -101,7 +101,7 @@
     [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
 
     private bool _isCompletedThamChieuBanDo = false;
-    private bool _isCompletedThamChieuDuLieu = false;
+    private bool _isCompletedThamChieuDuLieu = true;
     private string _tenDvhcSau = string.Empty;
     private DvhcRecord? _capTinhTruoc;
     private DvhcRecord? _capTinhSau;
@@ -145,13 +145,14 @@
         _capHuyenTruoc = capHuyen;
         _capHuyenSau ??= capHuyen;
         _capXaTruoc = [];
-
+        
         // Set Cache
         await HybridCache.SetAsync(CacheThamSoDvhc.CapHuyenTruoc, _capHuyenTruoc);
         await HybridCache.SetAsync(CacheThamSoDvhc.CapHuyenSau, _capHuyenSau);
         await HybridCache.SetAsync(CacheThamSoDvhc.CapXaTruoc, _capXaTruoc);
     }
 
+    
     private async Task CapXaChanged(IEnumerable<DvhcRecord?>? capXa)
     {
         if (capXa == null) return;
@@ -210,29 +211,36 @@
         _ngaySatNhap = DateTime.Today;
     }
 
+    private bool _isCompleted= false;
     private void IsCompletedChangedHandler()
     {
-        IsCompleted = _capXaSau != null && _capXaTruoc.Count > 0 && !string.IsNullOrWhiteSpace(_tenDvhcSau) &&
-                      _isCompletedThamChieuBanDo && _isCompletedThamChieuDuLieu;
+        _isCompleted = _capXaSau != null && _capXaTruoc.Count > 0 && !string.IsNullOrWhiteSpace(_tenDvhcSau) &&
+                       _isCompletedThamChieuBanDo && _isCompletedThamChieuDuLieu;
+        if (IsCompleted == _isCompleted) return;
+        IsCompleted = _isCompleted;
         IsCompletedChanged.InvokeAsync(IsCompleted);
     }
-
+    
     private void SetCompletedThamChieuBanDo(bool isCompletedThamChieuBanDo)
     {
+        if (_isCompletedThamChieuBanDo == isCompletedThamChieuBanDo) return;
         _isCompletedThamChieuBanDo = isCompletedThamChieuBanDo;
         IsCompletedChangedHandler();
     }
 
     private void SetCompletedThamChieuDuLieu(bool isCompletedThamChieuDuLieu)
     {
+        if (_isCompletedThamChieuDuLieu == isCompletedThamChieuDuLieu) return;
         _isCompletedThamChieuDuLieu = isCompletedThamChieuDuLieu;
         IsCompletedChangedHandler();
     }
 
     private async Task NgaySatNhapChange(DateTime? ngaySatNhap)
     {
+        if (ngaySatNhap == null || ngaySatNhap.Value.Date == _ngaySatNhap)
+            return;
         _ngaySatNhap = ngaySatNhap;
-        if (ngaySatNhap == null || ngaySatNhap.Value.Date == DateTime.Today)
+        if (ngaySatNhap.Value.Date == DateTime.Today)
         {
             await HybridCache.RemoveAsync(CacheThamSoDvhc.NgaySatNhap);
         }
@@ -248,6 +256,7 @@
 
     private async Task OnRenewPrimaryKeyChange(bool renewPrimaryKey)
     {
+        if (_renewPrimaryKey == renewPrimaryKey) return;
         _renewPrimaryKey = renewPrimaryKey;
         StateHasChanged();
         await HybridCache.SetAsync(CacheThamSoDvhc.RenewPrimaryKey, _renewPrimaryKey);

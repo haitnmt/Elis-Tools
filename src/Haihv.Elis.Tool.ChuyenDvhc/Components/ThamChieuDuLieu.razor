@@ -90,6 +90,8 @@
     /// <param name="textChanged">Giá trị mới của Tờ bản đồ cũ.</param>
     private async Task SetToBanDoCuCache(string textChanged)
     {
+        if (string.IsNullOrWhiteSpace(textChanged) || textChanged == _toBanDoCu)
+            return;
         _toBanDoCu = textChanged;
         await HybridCache.SetAsync(CacheThamSoDuLieu.ToBanDoCu, textChanged);
         SetCompleted();
@@ -102,6 +104,8 @@
     /// <param name="textChanged">Giá trị mới của Ghi chú Tờ bản đồ.</param>
     private async Task SetGhiChuToBanDoCache(string textChanged)
     {
+        if (string.IsNullOrWhiteSpace(textChanged) || textChanged == _ghiChuToBanDo)
+            return;
         _ghiChuToBanDo = textChanged;
         await HybridCache.SetAsync(CacheThamSoDuLieu.GhiChuToBanDo, textChanged);
         SetCompleted();
@@ -113,6 +117,8 @@
     /// <param name="textChanged">Giá trị mới của Ghi chú Thửa đất.</param>
     private async Task SetGhiChuThuaDatCache(string textChanged)
     {
+        if (string.IsNullOrWhiteSpace(textChanged) || textChanged == _ghiChuThuaDat)
+            return;
         _ghiChuThuaDat = textChanged;
         await HybridCache.SetAsync(CacheThamSoDuLieu.GhiChuThuaDat, textChanged);
         SetCompleted();
@@ -124,21 +130,25 @@
     /// <param name="textChanged">Giá trị mới của Ghi chú Giấy chứng nhận.</param>
     private async Task SetGhiChuGiayChungNhanCache(string textChanged)
     {
+        if (string.IsNullOrWhiteSpace(textChanged) || textChanged == _ghiChuGiayChungNhan)
+            return;
         _ghiChuGiayChungNhan = textChanged;
         await HybridCache.SetAsync(CacheThamSoDuLieu.GhiChuGiayChungNhan, textChanged);
         SetCompleted();
     }
 
-
+    private bool _isCompleted;
     /// <summary>
     /// Thiết lập trạng thái hoàn thành.
     /// </summary>
     private void SetCompleted()
     {
-        IsCompleted = !string.IsNullOrWhiteSpace(_toBanDoCu) &&
-                      !string.IsNullOrWhiteSpace(_ghiChuToBanDo) &&
-                      !string.IsNullOrWhiteSpace(_ghiChuThuaDat) &&
-                      !string.IsNullOrWhiteSpace(_ghiChuGiayChungNhan);
+        _isCompleted = !string.IsNullOrWhiteSpace(_toBanDoCu) &&
+                       !string.IsNullOrWhiteSpace(_ghiChuToBanDo) &&
+                       !string.IsNullOrWhiteSpace(_ghiChuThuaDat) &&
+                       !string.IsNullOrWhiteSpace(_ghiChuGiayChungNhan);
+        if (_isCompleted == IsCompleted) return;
+        IsCompleted = _isCompleted;
         IsCompletedChanged.InvokeAsync(IsCompleted);
     }
 

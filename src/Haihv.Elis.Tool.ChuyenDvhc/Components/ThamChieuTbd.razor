@@ -78,6 +78,7 @@
     private IEnumerable<DvhcRecord>? _dvhcTruocs;
     private string? _tenDvhcSau;
     private List<ThamChieuToBanDo> _thamChieuToBanDos = [];
+    private bool _isCompleted;
     private string _heightGrid = "null";
     private const string MaxHeight = "null";
     private bool _loadingToBanDos = false;
@@ -101,7 +102,6 @@
             }
 
             _dvhcSau = DvhcSau;
-            CheckCompleted();
         }
 
         if (DvhcTruocs != null && !Equals(DvhcTruocs, _dvhcTruocs))
@@ -113,7 +113,6 @@
             }
 
             _dvhcTruocs = DvhcTruocs;
-            CheckCompleted();
         }
 
         if (TenDvhcSau == null || TenDvhcSau == _tenDvhcSau) return;
@@ -122,7 +121,7 @@
             _thamChieuToBanDos = [];
             _heightGrid = "null";
         }
-
+        
         _tenDvhcSau = TenDvhcSau;
         CheckCompleted();
     }
@@ -143,7 +142,7 @@
                 Logger.Error("Connection string is null or empty");
                 return;
             }
-            var toBanDoRepository = new ToBanDoRepository(connectionString);
+            var toBanDoRepository = new ToBanDoRepository(Logger, connectionString);
 
             var tbds = (await toBanDoRepository.GetToBanDosAsync(_dvhcSau.MaDvhc)).ToList();
             _thamChieuToBanDos = [];
@@ -215,11 +214,13 @@
 
     private void CheckCompleted()
     {
-        IsCompleted = _thamChieuToBanDos.Any();
-        if (IsCompleted)
+        _isCompleted = _thamChieuToBanDos.Any();
+        if (_isCompleted)
             HybridCache.SetAsync(CacheThamSoBanDo.ThamChieuToBanDo, _thamChieuToBanDos);
         else
             HybridCache.RemoveAsync(CacheThamSoBanDo.ThamChieuToBanDo);
+        if (IsCompleted == _isCompleted) return;
+        IsCompleted = _isCompleted;
         IsCompletedChanged.InvokeAsync(IsCompleted);
     }
 }

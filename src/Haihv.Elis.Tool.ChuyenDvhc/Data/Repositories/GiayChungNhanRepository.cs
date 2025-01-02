@@ -1,12 +1,15 @@
-﻿using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
+﻿using Dapper;
+using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
+using Microsoft.Data.SqlClient;
+using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
-public static class GiayChungNhanExtensions
+public class GiayChungNhanRepository(ILogger? logger = null, string? connectionString = null, SqlConnection? dbConnection = null) : DataRepository(logger, connectionString, dbConnection)
 {
-    public static async Task<bool> UpdateGhiChuGiayChungNhan(this ElisDataContext dataContext,
-        List<ThuaDatCapNhat> thuaDatCapNhats, string? formatGhiChu = null, string? ngaySapNhap = null)
+    private readonly ILogger? _logger = logger;
+    public async Task<bool> UpdateGhiChuGiayChungNhan(List<ThuaDatCapNhat> thuaDatCapNhats, string? formatGhiChu = null, string? ngaySapNhap = null)
     {
         if (thuaDatCapNhats.Count == 0)
             return false;
@@ -16,42 +19,35 @@ public static class GiayChungNhanExtensions
 
         if (string.IsNullOrWhiteSpace(ngaySapNhap))
             ngaySapNhap = DateTime.Now.ToString(ThamSoThayThe.DinhDangNgaySapNhap);
-
-        const string sql = """
-                           UPDATE GCNQSDD
-                           SET GhiChu = @GhiChu
-                           FROM GCNQSDD
-                           INNER JOIN DangKyQSDD ON GCNQSDD.MaDangKy = DangKyQSDD.MaDangKy
-                           INNER JOIN ThuaDat ON DangKyQSDD.MaThuaDat = ThuaDat.MaThuaDat
-                           WHERE ThuaDat.MaThuaDat = @MaThuaDat;
-                           """;
-
-        foreach (var thuaDatCapNhat in thuaDatCapNhats)
+        await using var connection = await GetAndOpenConnectionAsync();
+        try
         {
-            var ghiChuGiayChungNhan = formatGhiChu
-                .Replace(ThamSoThayThe.NgaySapNhap, ngaySapNhap)
-                .Replace(ThamSoThayThe.SoThua, thuaDatCapNhat.ThuaDatSo)
-                .Replace(ThamSoThayThe.ToBanDo, thuaDatCapNhat.ToBanDo)
-                .Replace(ThamSoThayThe.DonViHanhChinh, thuaDatCapNhat.TenDonViHanhChinh);
-            await using var command = dataContext.Database.GetDbConnection().CreateCommand();
-            command.CommandText = sql;
+            const string sql = """
+                               UPDATE GCNQSDD
+                               SET GhiChu = @GhiChu
+                               FROM GCNQSDD
+                               INNER JOIN DangKyQSDD ON GCNQSDD.MaDangKy = DangKyQSDD.MaDangKy
+                               INNER JOIN ThuaDat ON DangKyQSDD.MaThuaDat = ThuaDat.MaThuaDat
+                               WHERE ThuaDat.MaThuaDat = @MaThuaDat;
+                               """;
 
-            // Tham số @GhiChu
-            var parameterGhiChu = command.CreateParameter();
-            parameterGhiChu.ParameterName = "@GhiChu";
-            parameterGhiChu.Value = ghiChuGiayChungNhan;
-            command.Parameters.Add(parameterGhiChu);
+        
+            foreach (var thuaDatCapNhat in thuaDatCapNhats)
+            {
+                var ghiChu = formatGhiChu
+                    .Replace(ThamSoThayThe.ToBanDo, thuaDatCapNhat.ToBanDo)
+                    .Replace(ThamSoThayThe.DonViHanhChinh, thuaDatCapNhat.TenDonViHanhChinh)
+                    .Replace(ThamSoThayThe.NgaySapNhap, ngaySapNhap);
+                await connection.ExecuteAsync(sql, new {thuaDatCapNhat.MaThuaDat, GhiChu = ghiChu});
+            }
 
-            // Tham số @MaThuaDat
-            var parameterMaThuaDat = command.CreateParameter();
-            parameterMaThuaDat.ParameterName = "@MaThuaDat";
-            parameterMaThuaDat.Value = thuaDatCapNhat.MaThuaDat;
-            command.Parameters.Add(parameterMaThuaDat);
-
-            // Thực thi câu lệnh SQL
-            await command.ExecuteNonQueryAsync();
+            return true;
         }
-
-        return true;
+        catch (Exception ex)
+        {
+            if (_logger == null) throw;
+            _logger.Error(ex, "Lỗi khi cập nhật Ghi Chú Giấy Chứng Nhận.");
+            return false;
+        }
     }
 }

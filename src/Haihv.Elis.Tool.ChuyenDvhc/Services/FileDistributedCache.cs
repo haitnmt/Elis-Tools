@@ -17,10 +17,15 @@ public class FileDistributedCache(IFileService fileService, string cacheDirector
         => fileService.WriteAllBytesAsync(ConvertKey(key),value, cancellationToken);
 
     public void Remove(string key)
+    
         => fileService.Delete(ConvertKey(key));
 
     public Task RemoveAsync(string key, CancellationToken cancellationToken = default)
-        => fileService.DeleteAsync(ConvertKey(key), cancellationToken);
+    {
+        fileService.DeleteAsync(ConvertKey(key), cancellationToken);
+        return Task.CompletedTask;
+    }
+        
 
     public void Refresh(string key)
     {

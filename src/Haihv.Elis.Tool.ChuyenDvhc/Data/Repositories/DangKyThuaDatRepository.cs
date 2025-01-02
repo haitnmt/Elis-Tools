@@ -1,55 +1,57 @@
-﻿namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
+﻿using Dapper;
+using Microsoft.Data.SqlClient;
+using Serilog;
 
-public static class DangKyThuaDatExtensions
+namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
+
+public class DangKyThuaDatRepository(
+    ILogger? logger = null,
+    string? connectionString = null,
+    SqlConnection? dbConnection = null) :
+    DataRepository(logger, connectionString, dbConnection)
 {
+    private readonly ILogger? _logger = logger;
     private const long DefaultTempMaThuaDat = ThuaDatRepository.DefaultTempMaThuaDat;
-    private static readonly long DefaultTempMaDangKy = long.MaxValue;
+    //private static readonly long DefaultTempMaDangKy = long.MaxValue;
 
     /// <summary>
     /// Cập nhật mã thửa đất trên đăng ký thửa đất.
     /// </summary>
-    /// <param name="dbContext">Ngữ cảnh dữ liệu Elis.</param>
     /// <param name="maThuaDat">Mã thửa đất hiện tại.</param>
     /// <param name="newMaThuaDat">
     /// Mã thửa đất mới (tùy chọn).
     /// Nếu không được cung cấp, sẽ sử dụng mã thửa đất tạm thời [DefaultTempMaThuaDat].
     /// </param>
+    /// <param name="isLichSu">Có phải là đăng ký thửa đất lịch sử hay không.</param>
+    /// <param name="cancellationToken">Token hủy bỏ để hủy tác vụ không đồng bộ.</param>
     /// <returns>Task bất đồng bộ.</returns>
-    public static async Task UpdateMaThuaDatOnDangKyThuaDatAsync(this ElisDataContext dbContext, long maThuaDat,
-        long? newMaThuaDat = null)
+    public async Task UpdateMaThuaDatOnDangKyThuaDatAsync(long maThuaDat, long? newMaThuaDat = null,
+        bool isLichSu = false, CancellationToken cancellationToken = default)
     {
-        var dangKyThuaDats = await dbContext.DangKys
-            .Where(d => d.MaThuaDat == maThuaDat)
-            .ToListAsync();
-        foreach (var dangKyThuaDat in dangKyThuaDats)
+        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
+        try
         {
-            dangKyThuaDat.MaThuaDat = newMaThuaDat ?? DefaultTempMaThuaDat;
+            var sql = isLichSu
+                    ? """
+                         UPDATE DangKyQSDD
+                         SET MaThuaDat = @NewMaThuaDat
+                         WHERE MaThuaDat = @MaThuaDat
+                      """
+                    : """
+                         UPDATE DangKyQSDDLS
+                         SET MaThuaDatLS = @NewMaThuaDat
+                         WHERE MaThuaDatLS = @MaThuaDat
+                      """
+                ;
+            await connection.ExecuteAsync(sql,
+                new { NewMaThuaDat = newMaThuaDat ?? DefaultTempMaThuaDat, MaThuaDat = maThuaDat });
         }
-
-        await dbContext.SaveChangesAsync();
-    }
-
-    /// <summary>
-    /// Cập nhật mã thửa đất lịch sử trên đăng ký thửa đất lịch sử.
-    /// </summary>
-    /// <param name="dbContext">Ngữ cảnh dữ liệu Elis.</param>
-    /// <param name="maThuaDatLs">Mã thửa đất lịch sử hiện tại.</param>
-    /// <param name="newMaThuaDatLs">
-    /// Mã thửa đất lịch sử mới (tùy chọn).
-    /// Nếu không được cung cấp, sẽ sử dụng mã thửa đất tạm thời [DefaultTempMaThuaDat].
-    /// </param>
-    /// <returns>Task bất đồng bộ.</returns>
-    public static async Task UpdateMaThuaDatLsOnDangKyThuaDatLsAsync(this ElisDataContext dbContext, long maThuaDatLs,
-        long? newMaThuaDatLs = null)
-    {
-        var dangKyThuaDats = await dbContext.DangKyLichSus
-            .Where(d => d.MaThuaDatLs == maThuaDatLs)
-            .ToListAsync();
-        foreach (var dangKyThuaDat in dangKyThuaDats)
+        catch (Exception e)
         {
-            dangKyThuaDat.MaThuaDatLs = newMaThuaDatLs ?? DefaultTempMaThuaDat;
+            if (_logger == null) throw;
+            _logger.Error(e,
+                "Lỗi khi cập nhật mã thửa đất trên đăng ký thửa đất. MaThuaDat: {MaThuaDat}, NewMaThuaDat: {NewMaThuaDat}, IsLichSu: {IsLichSu}",
+                maThuaDat, newMaThuaDat, isLichSu);
         }
-
-        await dbContext.SaveChangesAsync();
     }
 }

@@ -7,7 +7,7 @@ public interface IFileService
     Task WriteAllBytesAsync(string filePath, byte[] content, CancellationToken cancellationToken = default);
     void WriteAllBytes(string filePath, byte[] content);
     Task<bool> CreateAsync(string filePath);
-    Task<bool> DeleteAsync(string filePath, CancellationToken cancellationToken = default);
+    Task DeleteAsync(string filePath, CancellationToken cancellationToken = default);
     bool Delete(string filePath);
     Task<bool> ExistsAsync(string filePath);
     bool Exists(string filePath);
