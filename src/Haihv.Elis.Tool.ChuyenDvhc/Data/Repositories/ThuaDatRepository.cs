@@ -1,49 +1,52 @@
 ﻿using System.Data;
+using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
+using Microsoft.Data.SqlClient;
 
-namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
+namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
-public static class ThuaDatExtensions
+public sealed class ThuaDatExtensions(string connectionString)
 {
     public const long DefaultTempMaThuaDat = long.MaxValue;
 
+
+
+    private static async Task<int> GetCountThuaDatAsync(SqlConnection dbConnection, List<int> maDvhcBiSapNhap)
+    {
+        const string sql = """
+                           SELECT COUNT(ThuaDat.MaThuaDat) 
+                           FROM   ThuaDat INNER JOIN ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
+                           WHERE (ToBanDo.MaDVHC IN @MaDVHC)
+                           """;
+        if (dbConnection.State != ConnectionState.Open)
+            await dbConnection.OpenAsync();
+        return await dbConnection.ExecuteAsync(sql, new {MaDVHC = maDvhcBiSapNhap});
+    }
+
+    private static async Task<int> GetCountThuaDatAsync(string connectionString, List<int> maDvhcBiSapNhap)
+    {
+        await using var dbConnection = new SqlConnection(connectionString);
+        await dbConnection.OpenAsync();
+        return await GetCountThuaDatAsync(dbConnection, maDvhcBiSapNhap);
+    }
     /// <summary>
     /// Lấy số lượng Thửa Đất dựa trên danh sách Mã Tờ Bản Đồ.
     /// </summary>
-    /// <param name="dbContext">
-    /// Ngữ cảnh cơ sở dữ liệu.
-    /// </param>
     /// <param name="maDvhcBiSapNhap">
     /// Danh sách Mã Đơn Vị Hành Chính đang bị sập nhập.
     /// </param>
     /// <returns>Số lượng Thửa Đất.</returns>
-    public static async Task<int> GetCountThuaDatAsync(this ElisDataContext dbContext, List<int> maDvhcBiSapNhap)
+    public async Task<int> GetCountThuaDatAsync(List<int> maDvhcBiSapNhap)
+        => await GetCountThuaDatAsync(connectionString, maDvhcBiSapNhap);
+
+
+    private static async Task<List<ThuaDatCapNhat>> UpdateAndGetThuaDatToBanDoAsync(SqlConnection dbConnection,
+        DvhcRecord dvhcBiSapNhap,
+        long minMaThuaDat = long.MinValue, int limit = 100, string? formatGhiChuThuaDat = null, string ngaySapNhap = "")
     {
-        await using var command = dbContext.Database.GetDbConnection().CreateCommand();
-        var parameters = new List<string>();
-
-        for (var i = 0; i < maDvhcBiSapNhap.Count; i++)
-        {
-            var parameterName = $"@MaToBanDo{i}";
-            var parameter = command.CreateParameter();
-            parameter.ParameterName = parameterName;
-            parameter.Value = maDvhcBiSapNhap[i];
-            parameter.DbType = DbType.Int64;
-            command.Parameters.Add(parameter);
-            parameters.Add(parameterName);
-        }
-
-        var sql = $"""
-                   SELECT COUNT(ThuaDat.MaThuaDat) 
-                   FROM   ThuaDat INNER JOIN ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
-                   WHERE (ToBanDo.MaDVHC IN ({string.Join(", ", parameters)}))
-                   """;
-        command.CommandText = sql;
-        var result = await command.ExecuteScalarAsync();
-        return int.TryParse(result?.ToString(), out var count) ? count : 0;
+        
     }
-
     
     
     /// <summary>

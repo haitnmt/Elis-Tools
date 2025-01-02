@@ -1,10 +1,8 @@
-﻿using Microsoft.EntityFrameworkCore;
-
-namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
+﻿namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
 public static class DangKyThuaDatExtensions
 {
-    private const long DefaultTempMaThuaDat = ThuaDatExtensions.DefaultTempMaThuaDat;
+    private const long DefaultTempMaThuaDat = ThuaDatRepository.DefaultTempMaThuaDat;
     private static readonly long DefaultTempMaDangKy = long.MaxValue;
 
     /// <summary>

@@ -1,8 +1,7 @@
 ﻿using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
-using Microsoft.EntityFrameworkCore;
 
-namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
+namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
 public static class GiayChungNhanExtensions
 {
