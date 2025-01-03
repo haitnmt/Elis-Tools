@@ -6,16 +6,22 @@ public static class FilePath
         Path.Combine(PathRootConfig(), "ConnectionInfo.inf");
 
     public static string CacheOnDisk => Path.Combine(PathRootConfig(), "CacheFiles");
-    
-    public static string LogFile(string fileName) =>  Path.Combine(PathRootConfig("Logs"), fileName);
 
-    private static string PathRootConfig(string folder = "")
+    public static string LogFile(string fileName) => Path.Combine(PathRootConfig("Logs", true), fileName);
+
+    private static string PathRootConfig(string folder = "", bool addDate = false)
     {
         var path = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "ElisTool");
         if (!string.IsNullOrWhiteSpace(folder))
         {
             path = Path.Combine(path, folder);
         }
+
+        if (addDate)
+        {
+            path = Path.Combine(path, DateTime.Now.ToString("yyyy-MM-dd"));
+        }
+
         if (!Directory.Exists(path))
         {
             Directory.CreateDirectory(path);

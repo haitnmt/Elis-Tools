@@ -1,5 +1,4 @@
-﻿using System.Data;
-using Dapper;
+﻿using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
@@ -10,7 +9,6 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
 public sealed class ThuaDatRepository(string connectionString, ILogger? logger = null)
 {
-    private readonly ILogger? _logger = logger;
     public const long DefaultTempMaThuaDat = long.MaxValue;
 
     /// <summary>
@@ -36,8 +34,8 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
         }
         catch (Exception e)
         {
-            if (_logger == null) throw;
-            _logger.Error(e, "Lỗi khi lấy số lượng Thửa Đất theo mã Đơn Vị Hành Chính. [{MaDVHC}]", maDvhcBiSapNhap);
+            if (logger == null) throw;
+            logger.Error(e, "Lỗi khi lấy số lượng Thửa Đất theo mã Đơn Vị Hành Chính. [{MaDVHC}]", maDvhcBiSapNhap);
             return -1;
         }
     }
@@ -111,6 +109,47 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
         return thuaDatCapNhats;
     }
 
+    /// <summary>
+    /// Tạo hoặc cập nhật thông tin Thửa Đất Cũ.
+    /// </summary>
+    /// <param name="thuaDatCapNhats">Danh sách Thửa Đất cần cập nhật.</param>
+    /// <param name="formatToBanDoCu">Định dạng tờ bản đồ cũ.</param>
+    /// <param name="cancellationToken">Token hủy bỏ (tùy chọn).</param>
+    /// <returns>Trả về true nếu có bản ghi được tạo hoặc cập nhật, ngược lại trả về false.</returns>
+    public async Task CreateOrUpdateThuaDatCuAsync(List<ThuaDatCapNhat> thuaDatCapNhats,
+        string? formatToBanDoCu = null, CancellationToken cancellationToken = default)
+    {
+        if (thuaDatCapNhats.Count == 0) return;
+        if (string.IsNullOrWhiteSpace(formatToBanDoCu))
+            formatToBanDoCu = ThamSoThayThe.DefaultToBanDoCu;
+        await using var connection = connectionString.GetConnection();
+        try
+        {
+            const string upsertQuery = """
+                                       MERGE INTO ThuaDatCu AS Target
+                                       USING (SELECT @MaThuaDat AS MaThuaDat) AS Source
+                                       ON Target.MaThuaDat = Source.MaThuaDat
+                                       WHEN MATCHED THEN
+                                           UPDATE SET ToBanDoCu = CONCAT(Target.ToBanDoCu, ' - [', @ToBanDoCu, ']')
+                                       WHEN NOT MATCHED THEN
+                                           INSERT (MaThuaDat, ToBanDoCu)
+                                           VALUES (@MaThuaDat, @ToBanDoCu);
+                                       """;
+            foreach (var thuaDatCapNhat in thuaDatCapNhats)
+            {
+                var toBanDoCu = formatToBanDoCu
+                    .Replace(ThamSoThayThe.ToBanDo, thuaDatCapNhat.ToBanDo)
+                    .Replace(ThamSoThayThe.DonViHanhChinh, thuaDatCapNhat.TenDonViHanhChinh);
+                await connection.ExecuteAsync(upsertQuery, new { thuaDatCapNhat.MaThuaDat, ToBanDoCu = toBanDoCu });
+            }
+        }
+        catch (Exception ex)
+        {
+            if (logger == null) throw;
+            logger.Error(ex, "Lỗi khi tạo hoặc cập nhật thông tin Thửa Đất Cũ");
+        }
+    }
+
     private static async Task<long> CreateTempThuaDatAsync(SqlConnection connection,
         long? maToBanDo = null, long? maThuaDatTemp = null, bool isLichSu = false)
     {
@@ -177,10 +216,43 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
         }
         catch (Exception e)
         {
-            if (_logger == null) throw;
-            _logger.Error(e, "Lỗi khi tạo Thửa Đất tạm thời. [MaToBanDo: {MaToBanDo}, MaThuaDatTemp: {MaThuaDatTemp}]",
+            if (logger == null) throw;
+            logger.Error(e, "Lỗi khi tạo Thửa Đất tạm thời. [MaToBanDo: {MaToBanDo}, MaThuaDatTemp: {MaThuaDatTemp}]",
                 maToBanDo, maThuaDatTemp);
             return long.MinValue;
+        }
+    }
+
+    public async Task<bool> UpdateMaToBanDoAsync(long maToBanDo, long newMaToBanDo)
+    {
+        try
+        {
+            // Lấy kết nối cơ sở dữ liệu
+            await using var connection = connectionString.GetConnection();
+
+            // Tạo câu lệnh SQL
+            const string sqlThuaDat = """
+                                      UPDATE ThuaDat
+                                      SET MaToBanDo = @NewMaToBanDo
+                                      WHERE MaToBanDo = @MaToBanDo
+                                      """;
+            // Tạo tham số cho câu lệnh SQL
+            var parameters = new { NewMaToBanDo = newMaToBanDo, MaToBanDo = maToBanDo };
+
+            // Thực thi câu lệnh SQL cập nhật thưa đất
+            await connection.ExecuteAsync(sqlThuaDat, parameters);
+
+            // Thực thi câu lệnh SQL cập nhật thửa đất lịch sử
+            await connection.ExecuteAsync(sqlThuaDat.Replace("ThuaDat", "ThuaDatLS"), parameters);
+            return true;
+        }
+        catch (Exception exception)
+        {
+            if (logger == null) throw;
+            logger.Error(exception,
+                "Lỗi khi cập nhật Mã Tờ Bản Đồ. [MaToBanDo: {MaToBanDo}, NewMaToBanDo: {NewMaToBanDo}]",
+                maToBanDo, newMaToBanDo);
+            return false;
         }
     }
 }

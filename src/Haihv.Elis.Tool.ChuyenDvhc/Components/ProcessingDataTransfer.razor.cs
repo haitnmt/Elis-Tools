@@ -235,7 +235,6 @@ public partial class ProcessingDataTransfer
                 return;
             }
 
-            var thuaDatCuRepository = new ThuaDatCuRepository(_connectionString!, Logger);
             var giayChungNhanRepository = new GiayChungNhanRepository(_connectionString!, Logger);
             Logger.Information("Số lượng thửa đất cần cập nhật: {TotalThamChieuThuaDat}", _totalThamChieuThuaDat);
             _currentThamChieuThuaDat = 0;
@@ -260,7 +259,7 @@ public partial class ProcessingDataTransfer
                         break;
 
                     // Tạo hoặc cập nhật thông tin Thửa Đất Cũ
-                    await thuaDatCuRepository.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu);
+                    await thuaDatRepository.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu);
 
                     // Cập nhật Ghi chú Giấy chứng nhận
                     await giayChungNhanRepository.UpdateGhiChuGiayChungNhan(thuaDatToBanDos, _ghiChuGiayChungNhan,

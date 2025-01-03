@@ -1,5 +1,6 @@
 ﻿@using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities
 @using Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories
+@using Haihv.Elis.Tool.ChuyenDvhc.Extensions
 @using Haihv.Elis.Tool.ChuyenDvhc.Settings
 @using Microsoft.Extensions.Caching.Hybrid
 @using Microsoft.Extensions.Caching.Memory
@@ -104,7 +105,7 @@
             _dvhcSau = DvhcSau;
         }
 
-        if (DvhcTruocs != null && !Equals(DvhcTruocs, _dvhcTruocs))
+        if (DvhcTruocs != null && DvhcTruocs.EqualsHash(_dvhcTruocs))
         {
             if (_dvhcTruocs != null && _dvhcTruocs.Any())
             {
