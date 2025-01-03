@@ -142,7 +142,8 @@
                 Logger.Error("Connection string is null or empty");
                 return;
             }
-            var toBanDoRepository = new ToBanDoRepository(Logger, connectionString);
+
+            var toBanDoRepository = new ToBanDoRepository(connectionString, Logger);
 
             var tbds = (await toBanDoRepository.GetToBanDosAsync(_dvhcSau.MaDvhc)).ToList();
             _thamChieuToBanDos = [];

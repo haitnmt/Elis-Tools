@@ -1,6 +1,6 @@
 ﻿@using System.Text.Json
 @using System.Text.Json.Serialization
-@using Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories
+@using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions
 @using Haihv.Elis.Tool.ChuyenDvhc.Extensions
 @using Haihv.Elis.Tool.ChuyenDvhc.Services
 @using Haihv.Elis.Tool.ChuyenDvhc.Settings
@@ -141,28 +141,31 @@
     protected override async Task OnInitializedAsync()
     {
         await LoadConnectionInfoAsync();
-        await base.OnInitializedAsync();
     }
     
     async Task StartCheckConnectionAsync()
     {
-        _processing = true;
-        _finishChecking = false;
-        await IsConnectedChanged.InvokeAsync(IsConnected);
-        StateHasChanged();
-        _connectionString = $"Server={_serverAddress};" +
+        var connectionString = $"Server={_serverAddress};" +
                                $"Database={_databaseName};" +
                                $"User Id={_userName};" +
                                $"Password={_password};" +
                                $"TrustServerCertificate={_trustedConnection};";
+        if (connectionString == _connectionString) return;
+        _connectionString = connectionString;
+        _processing = true;
+        _finishChecking = false;
+        _isConnected = false;
+        IsConnected = _isConnected;
+        await IsConnectedChanged.InvokeAsync(IsConnected);
+        StateHasChanged();
+
         try
         {
-            var dataRepository = new DataRepository(Logger, _connectionString);
-            var connection = await dataRepository.GetAndOpenConnectionAsync();
-            connection.Close();
+            await using var connection = _connectionString.GetConnection();
+            await connection.OpenAsync();
+            await connection.CloseAsync();
             MemoryCache.Set(CacheDataConnection.ConnectionString, _connectionString);
             _isConnected = true;
-            IsConnected = true;
             _errorMessage = string.Empty;
             await SaveConnectionInfoAsync();
             Logger.Information("Kết nối dữ liệu thành công, Server: [{Server}] DataBase: [{DataBase}]", 
@@ -171,12 +174,12 @@
         catch (Exception ex)
         {
             _isConnected = false;
-            IsConnected = false;
             Logger.Error(ex, "Lỗi khi kiểm tra kết nối");
             _errorMessage = ex.Message;
         }
         finally
         {
+            IsConnected = _isConnected;
             await IsConnectedChanged.InvokeAsync(IsConnected);
             _processing = false;
             _finishChecking = true;
@@ -211,7 +214,7 @@
         }
         catch (Exception ex)
         {
-            Console.WriteLine($"Error reading connection info: {ex.Message}");
+            Logger.Error(ex, "Error reading connection info: [{Message}]", ex.Message);
             var connectionInfo = new DataConnectionModel();
             _serverAddress = connectionInfo.ServerAddress;
             _databaseName = connectionInfo.DatabaseName;

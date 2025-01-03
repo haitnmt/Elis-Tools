@@ -1,14 +1,14 @@
 ﻿using System.Data;
 using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
+using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
 using Microsoft.Data.SqlClient;
 using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
-public sealed class ThuaDatRepository(ILogger? logger = null, string? connectionString = null, SqlConnection? dbConnection = null) : 
-    DataRepository(logger, connectionString, dbConnection)
+public sealed class ThuaDatRepository(string connectionString, ILogger? logger = null)
 {
     private readonly ILogger? _logger = logger;
     public const long DefaultTempMaThuaDat = long.MaxValue;
@@ -19,16 +19,12 @@ public sealed class ThuaDatRepository(ILogger? logger = null, string? connection
     /// <param name="maDvhcBiSapNhap">
     /// Danh sách Mã Đơn Vị Hành Chính đang bị sập nhập.
     /// </param>
-    /// <param name="cancellationToken">
-    /// Token hủy.
-    /// </param>
-    /// <exception cref="ArgumentNullException"></exception>
     /// <returns>Số lượng Thửa Đất.</returns>
-    public async Task<int> GetCountThuaDatAsync(List<int> maDvhcBiSapNhap, CancellationToken cancellationToken = default)
+    public async Task<int> GetCountThuaDatAsync(List<int> maDvhcBiSapNhap)
     {
         if (maDvhcBiSapNhap.Count == 0) return 0;
         // Lấy kết nối cơ sở dữ liệu
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
+        await using var connection = connectionString.GetConnection();
         try
         {
             const string sql = """
@@ -36,7 +32,7 @@ public sealed class ThuaDatRepository(ILogger? logger = null, string? connection
                                FROM   ThuaDat INNER JOIN ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
                                WHERE (ToBanDo.MaDVHC IN @MaDVHC)
                                """;
-            return await connection.ExecuteAsync(sql, new {MaDVHC = maDvhcBiSapNhap});
+            return await connection.ExecuteAsync(sql, new { MaDVHC = maDvhcBiSapNhap });
         }
         catch (Exception e)
         {
@@ -45,7 +41,7 @@ public sealed class ThuaDatRepository(ILogger? logger = null, string? connection
             return -1;
         }
     }
-    
+
     /// <summary>
     /// Lấy danh sách Mã Thửa Đất dựa trên danh sách Mã Tờ Bản Đồ.
     /// </summary>
@@ -54,20 +50,20 @@ public sealed class ThuaDatRepository(ILogger? logger = null, string? connection
     /// <param name="limit">Số lượng giới hạn kết quả trả về.</param>
     /// <param name="formatGhiChuThuaDat">Định dạng Ghi Chú Thửa Đất.</param>
     /// <param name="ngaySapNhap">Ngày sáp nhập.</param>
-    /// <param name="cancellationToken">Token hủy.</param>
     /// <returns>Danh sách Mã Thửa Đất.</returns>
-    public async Task<List<ThuaDatCapNhat>> UpdateAndGetThuaDatToBanDoAsync(DvhcRecord dvhcBiSapNhap, long minMaThuaDat = long.MinValue, 
-        int limit = 100, string? formatGhiChuThuaDat = null, string ngaySapNhap = "", CancellationToken cancellationToken = default)
+    public async Task<List<ThuaDatCapNhat>> UpdateAndGetThuaDatToBanDoAsync(DvhcRecord dvhcBiSapNhap,
+        long minMaThuaDat = long.MinValue,
+        int limit = 100, string? formatGhiChuThuaDat = null, string ngaySapNhap = "")
     {
         // Lấy kết nối cơ sở dữ liệu
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
-        
+        await using var connection = connectionString.GetConnection();
+
         // Khởi tạo giá trị mặc định cho các tham số
         if (string.IsNullOrWhiteSpace(formatGhiChuThuaDat))
             formatGhiChuThuaDat = ThamSoThayThe.DefaultGhiChuThuaDat;
         if (string.IsNullOrWhiteSpace(ngaySapNhap))
             ngaySapNhap = DateTime.Now.ToString(ThamSoThayThe.DinhDangNgaySapNhap);
-        
+
         // Lấy danh sách Thửa Đất cần cập nhật
         // Tạo câu lệnh SQL
         const string sql = """
@@ -84,20 +80,21 @@ public sealed class ThuaDatRepository(ILogger? logger = null, string? connection
             Limit = limit,
             MinMaThuaDat = minMaThuaDat
         };
-        
+
         // Thực thi câu lệnh SQL
-        var thuaDats = (await connection.QueryAsync<(long MaThuaDat, string ThuaDatSo, string SoTo)>(sql, parameters)).ToList();
+        var thuaDats = (await connection.QueryAsync<(long MaThuaDat, string ThuaDatSo, string SoTo)>(sql, parameters))
+            .ToList();
         // Tạo danh sách Thửa Đất cập nhật
-        var thuaDatCapNhats = thuaDats.Select(thuaDat => 
+        var thuaDatCapNhats = thuaDats.Select(thuaDat =>
             new ThuaDatCapNhat(thuaDat.MaThuaDat, thuaDat.ThuaDatSo, thuaDat.SoTo, dvhcBiSapNhap.Ten)).ToList();
-        
+
         // Cập nhật thông tin Thửa Đất
         // Tạo câu lệnh SQL
         const string updateQuery = """
-                                    UPDATE ThuaDat
-                                    SET GhiChu = @GhiChu
-                                    WHERE MaThuaDat = @MaThuaDat
-                                    """;
+                                   UPDATE ThuaDat
+                                   SET GhiChu = @GhiChu
+                                   WHERE MaThuaDat = @MaThuaDat
+                                   """;
         // Tạo tham số cho câu lệnh SQL
         var parametersUpdate = thuaDatCapNhats.Select(thuaDatCapNhat => new
         {
@@ -109,51 +106,45 @@ public sealed class ThuaDatRepository(ILogger? logger = null, string? connection
         });
         // Thực thi câu lệnh SQL
         await connection.ExecuteAsync(updateQuery, parametersUpdate);
-        
+
         // Trả về danh sách Thửa Đất cập nhật
         return thuaDatCapNhats;
     }
-    
+
     private static async Task<long> CreateTempThuaDatAsync(SqlConnection connection,
-        long? maToBanDo = null, long? maThuaDatTemp = null, bool isLichSu = false, CancellationToken cancellationToken = default)
+        long? maToBanDo = null, long? maThuaDatTemp = null, bool isLichSu = false)
     {
-        // Kiểm tra trạng thái kết nối
-        if (connection.State != ConnectionState.Open)
-            await connection.OpenAsync(cancellationToken);
-        
         // Tạo Tờ Bản Đồ tạm thời
-        var toBanDoRepository = new ToBanDoRepository(logger: null, dbConnection: connection);
-        maToBanDo = await toBanDoRepository.CreateTempToBanDoAsync(maToBanDo, cancellationToken);
-        
+        maToBanDo = await ToBanDoRepository.CreateTempToBanDoAsync(connection, maToBanDo);
+
         // Tạo câu lệnh SQL để tạo hoặc cập nhật Thửa Đất tạm thời
-        var sql = isLichSu ? 
-            """
-              IF NOT EXISTS (SELECT 1 FROM ThuaDat WHERE MaThuaDat = @MaThuaDat)
-              BEGIN
-                  INSERT INTO ThuaDat (MaThuaDat, MaToBanDo, ThuaDatSo, GhiChu)
-                  VALUES (@MaThuaDat, @MaToBanDo, @ThuaDatSo, @GhiChu)
-              END
-              ELSE
-              BEGIN
-                  UPDATE ThuaDat
-                  SET MaToBanDo = @MaToBanDo, ThuaDatSo = @ThuaDatSo, GhiChu = @GhiChu
-                  WHERE MaThuaDat = @MaThuaDat
-              END
-            """
-            : 
-            """
-                IF NOT EXISTS (SELECT 1 FROM ThuaDatLS WHERE MaThuaDatLS = @MaThuaDat)
+        var sql = isLichSu
+            ? """
+                IF NOT EXISTS (SELECT 1 FROM ThuaDat WHERE MaThuaDat = @MaThuaDat)
                 BEGIN
-                    INSERT INTO ThuaDatLS (MaThuaDatLS, MaToBanDo, ThuaDatSo, GhiChu)
+                    INSERT INTO ThuaDat (MaThuaDat, MaToBanDo, ThuaDatSo, GhiChu)
                     VALUES (@MaThuaDat, @MaToBanDo, @ThuaDatSo, @GhiChu)
                 END
                 ELSE
                 BEGIN
-                    UPDATE ThuaDatLS
+                    UPDATE ThuaDat
                     SET MaToBanDo = @MaToBanDo, ThuaDatSo = @ThuaDatSo, GhiChu = @GhiChu
-                    WHERE MaThuaDatLS = @MaThuaDat
+                    WHERE MaThuaDat = @MaThuaDat
                 END
-            """;
+              """
+            : """
+                  IF NOT EXISTS (SELECT 1 FROM ThuaDatLS WHERE MaThuaDatLS = @MaThuaDat)
+                  BEGIN
+                      INSERT INTO ThuaDatLS (MaThuaDatLS, MaToBanDo, ThuaDatSo, GhiChu)
+                      VALUES (@MaThuaDat, @MaToBanDo, @ThuaDatSo, @GhiChu)
+                  END
+                  ELSE
+                  BEGIN
+                      UPDATE ThuaDatLS
+                      SET MaToBanDo = @MaToBanDo, ThuaDatSo = @ThuaDatSo, GhiChu = @GhiChu
+                      WHERE MaThuaDatLS = @MaThuaDat
+                  END
+              """;
         // Tạo tham số cho câu lệnh SQL
         var parameters = new
         {
@@ -166,7 +157,7 @@ public sealed class ThuaDatRepository(ILogger? logger = null, string? connection
         await connection.ExecuteAsync(sql, parameters);
         return parameters.MaThuaDat;
     }
-    
+
     /// <summary>
     /// Tạo Thửa Đất tạm thời.
     /// </summary>
@@ -174,14 +165,15 @@ public sealed class ThuaDatRepository(ILogger? logger = null, string? connection
     /// <param name="maThuaDatTemp">Mã Thửa Đất tạm thời (tùy chọn).</param>
     /// <param name="cancellationToken">Token hủy bỏ.</param>
     /// <returns>Mã Thửa Đất tạm thời.</returns>
-    public async Task<long> CreateTempThuaDatAsync(long? maToBanDo = null, long? maThuaDatTemp = null, CancellationToken cancellationToken = default)
+    public async Task<long> CreateTempThuaDatAsync(long? maToBanDo = null, long? maThuaDatTemp = null,
+        CancellationToken cancellationToken = default)
     {
         // Lấy kết nối cơ sở dữ liệu
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
+        await using var connection = connectionString.GetConnection();
         try
         {
-            await CreateTempThuaDatAsync(connection, maToBanDo, maThuaDatTemp, cancellationToken: cancellationToken);
-            return await CreateTempThuaDatAsync(connection, maToBanDo, maThuaDatTemp, true, cancellationToken);
+            await CreateTempThuaDatAsync(connection, maToBanDo, maThuaDatTemp);
+            return await CreateTempThuaDatAsync(connection, maToBanDo, maThuaDatTemp, true);
         }
         catch (Exception e)
         {
@@ -191,6 +183,4 @@ public sealed class ThuaDatRepository(ILogger? logger = null, string? connection
             return long.MinValue;
         }
     }
-    
-    
 }

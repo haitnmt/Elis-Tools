@@ -31,8 +31,7 @@
         <MudStep Title="Cấu hình"
                  SecondaryText="Tham số chuyển đổi">
             <div style="@Style">
-                <ConfigDataTransfer IsConnected="_isConnected"
-                                    @bind-IsCompleted="_isCompletedConfig"/>
+                <ConfigDataTransfer @bind-IsCompleted="_isCompletedConfig"/>
             </div>
         </MudStep>
         <MudStep Title="Xác nhận" SecondaryText="Kiểm tra lại thông tin và tùy trọn">

@@ -1,6 +1,6 @@
-﻿using System.Data;
-using Dapper;
+﻿using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
+using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
 using Microsoft.Data.SqlClient;
 using Serilog;
@@ -11,10 +11,9 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 /// Repository để thao tác với bảng ToBanDo
 /// </summary>
 /// <param name="connectionString">Chuỗi kết nối đến cơ sở dữ liệu</param>
-/// <ơaram name="dbConnection">Kết nối cơ sở dữ liệu</ơaram>
-public class ToBanDoRepository(ILogger? logger = null, string? connectionString = null, SqlConnection? dbConnection = null) : DataRepository(logger, connectionString, dbConnection)
+/// <param name="logger">Đối tượng ghi log (tùy chọn)</param>
+public class ToBanDoRepository(string connectionString, ILogger? logger = null)
 {
-    private readonly ILogger? _logger = logger;
     private const long DefaultTempMaToBanDo = long.MaxValue;
 
     /// <summary>
@@ -23,29 +22,24 @@ public class ToBanDoRepository(ILogger? logger = null, string? connectionString 
     /// <param name="thamChieuToBanDos">Danh sách tham chiếu Tờ Bản Đồ.</param>
     /// <param name="formatGhiChuToBanDo">Định dạng ghi chú Tờ Bản Đồ (tùy chọn).</param>
     /// <param name="ngaySapNhap">Ngày sắp nhập (tùy chọn).</param>
-    /// <param name="cancellationToken">Token hủy bỏ (tùy chọn).</param>
     /// <returns>Số lượng bản ghi được cập nhật.</returns>
     public async Task<int> UpdateToBanDoAsync(List<ThamChieuToBanDo> thamChieuToBanDos,
-        string? formatGhiChuToBanDo = null, string? ngaySapNhap = null, CancellationToken cancellationToken = default)
+        string? formatGhiChuToBanDo = null, string? ngaySapNhap = null)
     {
-        // Lấy kết nối cơ sở dữ liệu
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
         try
         {
-            return await UpdateToBanDoAsync(connection, thamChieuToBanDos, formatGhiChuToBanDo, ngaySapNhap, cancellationToken);
+            return await UpdateToBanDoAsync(connectionString, thamChieuToBanDos, formatGhiChuToBanDo, ngaySapNhap);
         }
         catch (Exception ex)
         {
-            if (_logger == null) throw;
-            _logger.Error(ex, "Lỗi khi cập nhật thông tin Tờ Bản Đồ.");
+            if (logger == null) throw;
+            logger.Error(ex, "Lỗi khi cập nhật thông tin Tờ Bản Đồ.");
             return 0;
         }
-
     }
 
-    private static async Task<int> UpdateToBanDoAsync(SqlConnection dbConnection,
-        List<ThamChieuToBanDo> thamChieuToBanDos,
-        string? formatGhiChuToBanDo = null, string? ngaySapNhap = null, CancellationToken cancellationToken = default)
+    private static async Task<int> UpdateToBanDoAsync(string sqlConnection, List<ThamChieuToBanDo> thamChieuToBanDos,
+        string? formatGhiChuToBanDo = null, string? ngaySapNhap = null)
     {
         if (thamChieuToBanDos.Count == 0)
             return 0;
@@ -67,8 +61,7 @@ public class ToBanDoRepository(ILogger? logger = null, string? connectionString 
                 MaToBanDo = thamChieuToBanDo.MaToBanDoTruoc, SoTo = thamChieuToBanDo.SoToBanDoSau,
                 MaDvhc = thamChieuToBanDo.MaDvhcSau, GhiChu = ghiChuToBanDo
             });
-        if (dbConnection.State != ConnectionState.Open)
-            await dbConnection.OpenAsync(cancellationToken);
+        await using var dbConnection = new SqlConnection(sqlConnection);
         const string sqlUpdate = """
                                  UPDATE ToBanDo
                                  SET SoTo = @SoTo, MaDvhc = @MaDvhc, GhiChu = @GhiChu
@@ -78,17 +71,17 @@ public class ToBanDoRepository(ILogger? logger = null, string? connectionString 
         return await dbConnection.ExecuteAsync(sqlUpdate, toBanDos);
     }
 
-    
+
     /// <summary>
     /// Tạo một Tờ Bản Đồ tạm thời.
     /// </summary>
+    /// <param name="connection">Kết nối cơ sở dữ liệu.</param>
     /// <param name="maToBanDo">Mã Tờ Bản Đồ (tùy chọn).</param>
-    /// <param name="cancellationToken">Token hủy bỏ (tùy chọn).</param>
+    /// <param name="logger">Đối tượng ghi log (tùy chọn).</param>
     /// <returns>Mã của Tờ Bản Đồ tạm thời được tạo.</returns>
-    public async Task<long> CreateTempToBanDoAsync(long? maToBanDo = null, CancellationToken cancellationToken = default)
+    public static async Task<long> CreateTempToBanDoAsync(SqlConnection connection, long? maToBanDo = null,
+        ILogger? logger = null)
     {
-        // Lấy kết nối cơ sở dữ liệu
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
         try
         {
             var toBanDo = new ToBanDo
@@ -114,23 +107,21 @@ public class ToBanDoRepository(ILogger? logger = null, string? connectionString 
         }
         catch (Exception e)
         {
-            if (_logger == null) throw;
-            _logger.Error(e, "Lỗi khi tạo Tờ Bản Đồ tạm thời. [MaToBanDo: {MaToBanDo}]", maToBanDo);
+            if (logger == null) throw;
+            logger.Error(e, "Lỗi khi tạo Tờ Bản Đồ tạm thời. [MaToBanDo: {MaToBanDo}]", maToBanDo);
             return long.MinValue;
         }
-        
     }
 
     /// <summary>
     /// Lấy danh sách Tờ Bản Đồ theo mã đơn vị hành chính.
     /// </summary>
     /// <param name="maDvhc">Mã đơn vị hành chính.</param>
-    /// <param name="cancellationToken">Token hủy bỏ (tùy chọn).</param>
     /// <returns>Danh sách các Tờ Bản Đồ.</returns>
-    public async Task<IEnumerable<ToBanDo>> GetToBanDosAsync(int maDvhc, CancellationToken cancellationToken = default)
+    public async Task<IEnumerable<ToBanDo>> GetToBanDosAsync(int maDvhc)
     {
         // Lấy kết nối cơ sở dữ liệu
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
+        await using var connection = connectionString.GetConnection();
         try
         {
             const string query = """
@@ -142,10 +133,9 @@ public class ToBanDoRepository(ILogger? logger = null, string? connectionString 
         }
         catch (Exception ex)
         {
-            if (_logger == null) throw;
-            _logger.Error(ex, "Lỗi khi lấy danh sách Tờ Bản Đồ theo mã đơn vị hành chính. [MaDVHC: {MaDVHC}]", maDvhc);
+            if (logger == null) throw;
+            logger.Error(ex, "Lỗi khi lấy danh sách Tờ Bản Đồ theo mã đơn vị hành chính. [MaDVHC: {MaDVHC}]", maDvhc);
             return [];
         }
-
     }
 }

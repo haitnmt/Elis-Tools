@@ -17,6 +17,9 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
             builder
                 .UseMauiApp<App>()
                 .ConfigureFonts(fonts => { fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular"); });
+
+            // Đăng ký FileService
+            builder.Services.AddSingleton<IFileService, FileService>();
             // Đăng ký Serilog (Write to File)
             var logger = new LoggerConfiguration()
                 .WriteTo.File(
@@ -27,11 +30,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc
                 .Enrich.FromLogContext()
                 .CreateLogger();
             builder.Services.AddSerilog(logger);
-            
-            // Đăng ký FileService
-            builder.Services.AddSingleton<IFileService, FileService>();
-            
-            
+
             // Đăng ký HybridCaching
             builder.Services.AddHybridCaching();
             // Đăng ký BlazorWebView

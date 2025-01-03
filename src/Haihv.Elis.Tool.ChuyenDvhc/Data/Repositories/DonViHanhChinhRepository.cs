@@ -1,7 +1,7 @@
 ﻿using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
+using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
-using Microsoft.Data.SqlClient;
 using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
@@ -10,14 +10,9 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 /// Repository quản lý các đơn vị hành chính.
 /// </summary>
 /// <param name="connectionString">Chuỗi kết nối cơ sở dữ liệu.</param>
-public sealed class DonViHanhChinhRepository(
-    ILogger? logger = null,
-    string? connectionString = null,
-    SqlConnection? dbConnection = null) :
-    DataRepository(logger, connectionString, dbConnection)
+/// <param name="logger">Đối tượng ghi log (tùy chọn).</param>
+public sealed class DonViHanhChinhRepository(string connectionString, ILogger? logger = null)
 {
-    private readonly ILogger? _logger = logger;
-
     /// <summary>
     /// Cập nhật thông tin đơn vị hành chính mới và các đơn vị hành chính bị sáp nhập.
     /// </summary>
@@ -28,11 +23,10 @@ public sealed class DonViHanhChinhRepository(
     public async Task<bool> UpdateDonViHanhChinhAsync(DvhcRecord dvhcMoi, List<int> maDvhcBiSapNhaps,
         string? formatTenDonViHanhChinhBiSapNhap = null, CancellationToken cancellationToken = default)
     {
-        // Lấy kết nối cơ sở dữ liệu
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
-
         try
         {
+            // Lấy kết nối cơ sở dữ liệu
+            await using var connection = connectionString.GetConnection();
             // Cập nhật đơn vị hành chính mới
             var dvhc = new Dvhc
             {
@@ -70,8 +64,8 @@ public sealed class DonViHanhChinhRepository(
         }
         catch (Exception exception)
         {
-            if (_logger == null) throw;
-            _logger.Error(exception, "Lỗi khi cập nhật đơn vị hành chính. [{MaDVHC}]", dvhcMoi.MaDvhc);
+            if (logger == null) throw;
+            logger.Error(exception, "Lỗi khi cập nhật đơn vị hành chính. [{MaDVHC}]", dvhcMoi.MaDvhc);
             return false;
         }
     }
@@ -83,10 +77,10 @@ public sealed class DonViHanhChinhRepository(
     /// <returns>Danh sách các đơn vị hành chính cấp tỉnh.</returns>
     public async Task<IEnumerable<DvhcRecord>> GetCapTinhAsync(CancellationToken cancellationToken = default)
     {
-        // Lấy kết nối cơ sở dữ liệu
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
         try
         {
+            // Lấy kết nối cơ sở dữ liệu
+            await using var connection = connectionString.GetConnection();
             const string query = """
                                  SELECT MaDVHC, MaTinh, Ten
                                  FROM DVHC
@@ -97,11 +91,10 @@ public sealed class DonViHanhChinhRepository(
         }
         catch (Exception exception)
         {
-            if (_logger == null) throw;
-            _logger.Error(exception, "Lỗi khi lấy danh sách đơn vị hành chính cấp tỉnh.");
+            if (logger == null) throw;
+            logger.Error(exception, "Lỗi khi lấy danh sách đơn vị hành chính cấp tỉnh.");
             return [];
         }
-
     }
 
     /// <summary>
@@ -113,10 +106,10 @@ public sealed class DonViHanhChinhRepository(
     public async Task<IEnumerable<DvhcRecord>> GetCapHuyenAsync(int maTinh,
         CancellationToken cancellationToken = default)
     {
-        // Lấy kết nối cơ sở dữ liệu
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
         try
         {
+            // Lấy kết nối cơ sở dữ liệu
+            await using var connection = connectionString.GetConnection();
             const string query = """
                                  SELECT MaDVHC, MaHuyen, Ten
                                  FROM DVHC
@@ -127,8 +120,8 @@ public sealed class DonViHanhChinhRepository(
         }
         catch (Exception e)
         {
-            if (_logger == null) throw;
-            _logger.Error(e, "Lỗi khi lấy danh sách đơn vị hành chính cấp huyện theo mã tỉnh. [{MaTinh}]", maTinh);
+            if (logger == null) throw;
+            logger.Error(e, "Lỗi khi lấy danh sách đơn vị hành chính cấp huyện theo mã tỉnh. [{MaTinh}]", maTinh);
             return [];
         }
     }
@@ -142,10 +135,10 @@ public sealed class DonViHanhChinhRepository(
     public async Task<IEnumerable<DvhcRecord>> GetCapXaAsync(int maHuyen,
         CancellationToken cancellationToken = default)
     {
-        // Lấy kết nối cơ sở dữ liệu
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
         try
         {
+            // Lấy kết nối cơ sở dữ liệu
+            await using var connection = connectionString.GetConnection();
             const string query = """
                                  SELECT MaDVHC, MaXa, Ten
                                  FROM DVHC
@@ -156,10 +149,9 @@ public sealed class DonViHanhChinhRepository(
         }
         catch (Exception e)
         {
-            if (_logger == null) throw;
-            _logger.Error(e, "Lỗi khi lấy danh sách đơn vị hành chính cấp xã theo mã huyện. [{MaHuyen}]", maHuyen);
+            if (logger == null) throw;
+            logger.Error(e, "Lỗi khi lấy danh sách đơn vị hành chính cấp xã theo mã huyện. [{MaHuyen}]", maHuyen);
             return [];
         }
-
     }
 }

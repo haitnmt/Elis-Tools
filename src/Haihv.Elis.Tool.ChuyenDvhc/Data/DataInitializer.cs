@@ -1,4 +1,3 @@
-using System.Data;
 using Dapper;
 using Microsoft.Data.SqlClient;
 
@@ -9,7 +8,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data;
 /// </summary>
 public class DataInitializer(string connectionString)
 {
-    private const string TableName = "[AuditChuyenDvhc]";
+    private const string TableName = "AuditChuyenDvhc";
 
     /// <summary>
     /// Tạo hoặc thay đổi bảng AuditChuyenDvhc.
@@ -19,23 +18,23 @@ public class DataInitializer(string connectionString)
     {
         var columns = new Dictionary<string, string>
         {
-            { "[Id]", "uniqueidentifier" },
-            { "[Table]", "nvarchar(255)" },
-            { "[RowId]", "nvarchar(36)" },
-            { "[OldValue]", "nvarchar(max)" },
-            { "[NewValue]", "nvarchar(max)" },
-            { "[MaDvhc]", "int" },
-            { "[ActivityTime]", "datetime" }
+            { "Id", "uniqueidentifier" },
+            { "Table", "nvarchar(255)" },
+            { "RowId", "nvarchar(36)" },
+            { "OldValue", "nvarchar(max)" },
+            { "NewValue", "nvarchar(max)" },
+            { "MaDvhc", "int" },
+            { "ActivityTime", "datetime" }
         };
-        
+
         await using var dbConnection = new SqlConnection(connectionString);
-        
+
         // Kiểm tra xem bảng AuditChuyenDvhc có tồn tại hay không
         if (!await CheckTableExistAsync(dbConnection, TableName))
         {
             // Nếu bảng không tồn tại thì tạo bảng mới
-            var createTableSql = columns.Aggregate($"CREATE TABLE [{TableName}] (",
-                (current, column) => current + $"[{column.Key}] {column.Value},");
+            var createTableSql = columns.Aggregate($"CREATE TABLE {TableName} (",
+                (current, column) => current + $"{column.Key} {column.Value},");
             createTableSql = createTableSql.TrimEnd(',') + ")";
             await dbConnection.ExecuteAsync(createTableSql);
         }
@@ -70,8 +69,6 @@ public class DataInitializer(string connectionString)
     /// <returns>Trả về true nếu bảng tồn tại, ngược lại trả về false.</returns>
     private static async Task<bool> CheckTableExistAsync(SqlConnection dbConnection, string tableName)
     {
-        if (dbConnection.State != ConnectionState.Open)
-            await dbConnection.OpenAsync();
         const string sql = "SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = @TableName";
         return await dbConnection.QuerySingleOrDefaultAsync<int>(sql, new { TableName = tableName }) == 1;
     }
@@ -83,22 +80,18 @@ public class DataInitializer(string connectionString)
     /// <param name="tableName">Tên bảng.</param>
     /// <param name="columnName">Tên cột.</param>
     /// <returns>Trả về true nếu cột tồn tại, ngược lại trả về false.</returns>
-    private static async Task<bool> CheckColumnExistAsync(SqlConnection dbConnection, 
+    private static async Task<bool> CheckColumnExistAsync(SqlConnection dbConnection,
         string tableName, string columnName)
     {
-        if (dbConnection.State != ConnectionState.Open)
-            await dbConnection.OpenAsync();
-        const string sql = 
+        const string sql =
             "SELECT 1 FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName AND COLUMN_NAME = @ColumnName";
-        return await dbConnection.QuerySingleOrDefaultAsync<int>(sql, 
-            new { TableName = tableName, ColumnName = columnName }) 
+        return await dbConnection.QuerySingleOrDefaultAsync<int>(sql,
+                   new { TableName = tableName, ColumnName = columnName })
                == 1;
     }
 
     private static async Task<List<string>> GetColumnNamesAsync(SqlConnection dbConnection, string tableName)
     {
-        if (dbConnection.State != ConnectionState.Open)
-            await dbConnection.OpenAsync();
         const string sql = "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = @TableName";
         return (await dbConnection.QueryAsync<string>(sql, new { TableName = tableName })).ToList();
     }

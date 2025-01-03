@@ -1,7 +1,6 @@
 @using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities
 <MudStack>
-    <MudAutocomplete T="DvhcRecord"
-                     Label="Chọn đơn vị hành chính cấp Tỉnh"
+    <MudAutocomplete Label="Chọn đơn vị hành chính cấp Tỉnh"
                      @bind-Value="CapTinh"
                      SearchFunc="GetCapTinh"
                      ToStringFunc="DvhcToString"
@@ -22,8 +21,7 @@
             </MudStack>
         </ItemTemplate>
     </MudAutocomplete>
-    <MudAutocomplete T="DvhcRecord"
-                     Label="Chọn đơn vị hành chính cấp Huyện"
+    <MudAutocomplete Label="Chọn đơn vị hành chính cấp Huyện"
                      @bind-Value="CapHuyen"
                      SearchFunc="GetCapHuyen"
                      ToStringFunc="DvhcToString"
@@ -53,7 +51,7 @@
                ToStringFunc="CapXaToString"
                MultiSelection="IsBefore"
                SelectedValuesChanged="SetCapXa">
-        @foreach(var capXa in _capXas)
+        @foreach (var capXa in _capXas)
         {
             <MudSelectItem Value="capXa">
                 <MudStack Row="true" StretchItems="StretchItems.All">

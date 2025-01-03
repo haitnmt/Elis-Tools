@@ -20,7 +20,7 @@ public partial class ProcessingDataTransfer
     [Inject] private ISnackbar Snackbar { get; set; } = null!;
     [Parameter] public bool IsAuditEnabled { get; set; }
     [Parameter] public EventCallback<bool> IsFinishedChanged { get; set; }
-    
+
     private string? _connectionString;
     private bool _isFinished;
     private List<ThamChieuToBanDo> _thamChieuToBanDos = [];
@@ -102,6 +102,12 @@ public partial class ProcessingDataTransfer
         await StartProcessing();
     }
 
+    private async Task SkipAuditDatabaseAsync()
+    {
+        IsAuditEnabled = false;
+        await StartProcessing();
+    }
+
     private async Task StartProcessing()
     {
         // Tạo hoặc thay đổi bảng audit nếu được kích hoạt
@@ -161,7 +167,6 @@ public partial class ProcessingDataTransfer
         // Kiểm tra nếu audit được kích hoạt, _dataContext không null, và quá trình chưa hoàn thành hoặc đang xử lý
         if (!IsAuditEnabled || _isCompletedKhoiTaoDuLieu || _isProcessingKhoiTaoDuLieu)
             return;
-        _isProcessingKhoiTaoDuLieu = true;
         _colorKhoiTaoDuLieu = Color.Primary;
         StateHasChanged();
         try
@@ -169,6 +174,7 @@ public partial class ProcessingDataTransfer
             // Tạo hoặc thay đổi bảng audit
             var dataInitializer = new DataInitializer(_connectionString!);
             await dataInitializer.CreatedOrAlterAuditTable();
+            _isCompletedKhoiTaoDuLieu = true;
             _colorKhoiTaoDuLieu = Color.Success;
         }
         catch (Exception ex)
@@ -177,6 +183,7 @@ public partial class ProcessingDataTransfer
             _errorKhoiTaoDuLieu = ex.Message;
             _colorKhoiTaoDuLieu = Color.Error;
             const string message = "Không thể tạo bảng audit.";
+            _isCompletedKhoiTaoDuLieu = false;
             Logger.Error(ex, message);
             SetMessage(message);
         }
@@ -184,7 +191,6 @@ public partial class ProcessingDataTransfer
         {
             // Cập nhật thời gian, trạng thái hoàn thành và trạng thái xử lý
             _timeKhoiTaoDuLieu = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
-            _isCompletedKhoiTaoDuLieu = true;
             StateHasChanged();
         }
     }
@@ -210,8 +216,7 @@ public partial class ProcessingDataTransfer
         StateHasChanged();
         try
         {
-            await using var dbConnection = new SqlConnection(_connectionString);
-            var thuaDatRepository = new ThuaDatRepository(logger: Logger, dbConnection: dbConnection);
+            var thuaDatRepository = new ThuaDatRepository(_connectionString!, Logger);
             // Lấy tổng số thửa đất
             _totalThamChieuThuaDat = await thuaDatRepository.GetCountThuaDatAsync(_maDvhcBiSapNhap);
             if (_totalThamChieuThuaDat == 0)
@@ -229,8 +234,9 @@ public partial class ProcessingDataTransfer
                 await UpdatingDonViHanhChinh();
                 return;
             }
-            var thuaDatCuRepository = new ThuaDatCuRepository(logger: Logger,dbConnection: dbConnection);
-            var giayChungNhanRepository = new GiayChungNhanRepository(logger: Logger,dbConnection: dbConnection);
+
+            var thuaDatCuRepository = new ThuaDatCuRepository(_connectionString!, Logger);
+            var giayChungNhanRepository = new GiayChungNhanRepository(_connectionString!, Logger);
             Logger.Information("Số lượng thửa đất cần cập nhật: {TotalThamChieuThuaDat}", _totalThamChieuThuaDat);
             _currentThamChieuThuaDat = 0;
             _bufferThamChieuThuaDat = Math.Min(_limit, _totalThamChieuThuaDat);
@@ -252,12 +258,13 @@ public partial class ProcessingDataTransfer
                             ngaySapNhap: _ngaySapNhap);
                     if (thuaDatToBanDos.Count == 0)
                         break;
-                    
+
                     // Tạo hoặc cập nhật thông tin Thửa Đất Cũ
                     await thuaDatCuRepository.CreateOrUpdateThuaDatCuAsync(thuaDatToBanDos, _toBanDoCu);
 
                     // Cập nhật Ghi chú Giấy chứng nhận
-                    await giayChungNhanRepository.UpdateGhiChuGiayChungNhan(thuaDatToBanDos, _ghiChuGiayChungNhan, _ngaySapNhap);
+                    await giayChungNhanRepository.UpdateGhiChuGiayChungNhan(thuaDatToBanDos, _ghiChuGiayChungNhan,
+                        _ngaySapNhap);
 
                     minMaThuaDat = thuaDatToBanDos[^1].MaThuaDat;
                     _currentThamChieuThuaDat += thuaDatToBanDos.Count;
@@ -310,7 +317,7 @@ public partial class ProcessingDataTransfer
         {
             // Cập nhật dữ liệu Tờ bản đồ
             await using var dbConnection = new SqlConnection(_connectionString);
-            var toBanDoRepository = new ToBanDoRepository(dbConnection: dbConnection);
+            var toBanDoRepository = new ToBanDoRepository(_connectionString!, Logger);
             await toBanDoRepository.UpdateToBanDoAsync(_thamChieuToBanDos, _ghiChuToBanDo, _ngaySapNhap);
             _colorUpdateToBanDo = Color.Success;
         }
@@ -369,8 +376,9 @@ public partial class ProcessingDataTransfer
             {
                 _capXaSau = _capXaSau with { Ten = tenCapXaMoi };
             }
+
             await using var dbConnection = new SqlConnection(_connectionString);
-            var donViHanhChinhRepository = new DonViHanhChinhRepository(dbConnection: dbConnection);
+            var donViHanhChinhRepository = new DonViHanhChinhRepository(_connectionString!, Logger);
             await donViHanhChinhRepository.UpdateDonViHanhChinhAsync(_capXaSau, _maDvhcBiSapNhap);
             _colorUpdateDvhc = Color.Success;
             await UpdatePrimaryKeyAsync();
@@ -390,7 +398,7 @@ public partial class ProcessingDataTransfer
             StateHasChanged();
         }
     }
-    
+
     private Color _colorUpdatePrimaryKey = Color.Default;
     private string _timeUpdatePrimaryKey = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
     private bool _isCompletedUpdatePrimaryKey = false;
@@ -411,6 +419,7 @@ public partial class ProcessingDataTransfer
             SetMessage(message, Severity.Success);
             return;
         }
+
         if (_isCompletedUpdatePrimaryKey || _isProcessingUpdatePrimaryKey)
             return;
         _colorUpdatePrimaryKey = Color.Primary;
@@ -419,7 +428,7 @@ public partial class ProcessingDataTransfer
         try
         {
             await UpdateMaThuaDatAsync();
-            
+
             // Hoàn thành
             _colorUpdatePrimaryKey = Color.Success;
             const string message = "Đã hoàn thành";
@@ -440,20 +449,23 @@ public partial class ProcessingDataTransfer
             _isCompletedUpdatePrimaryKey = true;
             StateHasChanged();
         }
-
     }
 
     private const int TotalStepUpdatePrimaryKey = 3;
+
     private async Task UpdateMaThuaDatAsync()
     {
         _processingMessageUpdatePrimaryKey = $"[1/{TotalStepUpdatePrimaryKey}]: Cập nhật mã thửa đất...";
         await UpdateMaDangKyAsync();
     }
+
     private async Task UpdateMaDangKyAsync()
     {
-        _processingMessageUpdatePrimaryKey = $"[2/{TotalStepUpdatePrimaryKey}]: Cập nhật mã đăng ký quyền sử dụng đất...";
+        _processingMessageUpdatePrimaryKey =
+            $"[2/{TotalStepUpdatePrimaryKey}]: Cập nhật mã đăng ký quyền sử dụng đất...";
         await UpdateMaGiayChungNhanAsync();
     }
+
     private async Task UpdateMaGiayChungNhanAsync()
     {
         _processingMessageUpdatePrimaryKey = $"[3/{TotalStepUpdatePrimaryKey}]: Cập nhật mã Giấy chứng nhận...";

@@ -1,15 +1,13 @@
 ﻿using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
+using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
-using Microsoft.Data.SqlClient;
 using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
-public class ThuaDatCuRepository(ILogger? logger = null, string? connectionString = null, SqlConnection? dbConnection = null) : DataRepository(logger, connectionString, dbConnection)
+public class ThuaDatCuRepository(string connectionString, ILogger? logger = null)
 {
-    private readonly ILogger? _logger = logger;
-
     /// <summary>
     /// Tạo hoặc cập nhật thông tin Thửa Đất Cũ.
     /// </summary>
@@ -23,7 +21,7 @@ public class ThuaDatCuRepository(ILogger? logger = null, string? connectionStrin
         if (thuaDatCapNhats.Count == 0) return;
         if (string.IsNullOrWhiteSpace(formatToBanDoCu))
             formatToBanDoCu = ThamSoThayThe.DefaultToBanDoCu;
-        await using var connection = await GetAndOpenConnectionAsync(cancellationToken);
+        await using var connection = connectionString.GetConnection();
         try
         {
             const string upsertQuery = """
@@ -41,14 +39,13 @@ public class ThuaDatCuRepository(ILogger? logger = null, string? connectionStrin
                 var toBanDoCu = formatToBanDoCu
                     .Replace(ThamSoThayThe.ToBanDo, thuaDatCapNhat.ToBanDo)
                     .Replace(ThamSoThayThe.DonViHanhChinh, thuaDatCapNhat.TenDonViHanhChinh);
-                await connection.ExecuteAsync(upsertQuery, new {thuaDatCapNhat.MaThuaDat, ToBanDoCu = toBanDoCu});
+                await connection.ExecuteAsync(upsertQuery, new { thuaDatCapNhat.MaThuaDat, ToBanDoCu = toBanDoCu });
             }
         }
         catch (Exception ex)
         {
-            if (_logger == null) throw;
-            _logger.Error(ex, "Lỗi khi tạo hoặc cập nhật thông tin Thửa Đất Cũ");
+            if (logger == null) throw;
+            logger.Error(ex, "Lỗi khi tạo hoặc cập nhật thông tin Thửa Đất Cũ");
         }
-
     }
 }

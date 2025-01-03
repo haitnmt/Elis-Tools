@@ -1,6 +1,7 @@
 ﻿@using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities
 @using Haihv.Elis.Tool.ChuyenDvhc.Settings
 @using Microsoft.Extensions.Caching.Hybrid
+@using Microsoft.Extensions.Logging
 
 <MudExpansionPanels MultiExpansion="true">
 
@@ -22,8 +23,7 @@
                                      Color="Color.Primary">
                                 Trước chuyển đổi
                             </MudText>
-                            <SelectDvhc IsConnected="IsConnected"
-                                        IsBefore="true"
+                            <SelectDvhc IsBefore="true"
                                         CapTinh="_capTinhTruoc"
                                         CapHuyen="_capHuyenTruoc"
                                         CapXas="_capXaTruoc"
@@ -55,8 +55,7 @@
                                      Color="Color.Secondary">
                                 Sau chuyển đổi
                             </MudText>
-                            <SelectDvhc IsConnected="IsConnected"
-                                        IsBefore="false"
+                            <SelectDvhc IsBefore="false"
                                         CapTinh="_capTinhSau"
                                         CapTinhChanged="CapTinhSauChanged"
                                         CapHuyen="_capHuyenSau"
@@ -96,6 +95,7 @@
 @code
 {
     [Inject] HybridCache HybridCache { get; set; } = null!;
+
     [Parameter] public bool IsCompleted { get; set; }
     [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
 
