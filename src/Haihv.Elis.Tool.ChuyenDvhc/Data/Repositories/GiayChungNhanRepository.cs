@@ -50,4 +50,9 @@ public class GiayChungNhanRepository(string connectionString, ILogger? logger = 
             return false;
         }
     }
+
+    public async Task RenewMaGiayChungNhanAsync(DvhcRecord capXaSau, int limit = 100)
+    {
+        throw new NotImplementedException();
+    }
 }

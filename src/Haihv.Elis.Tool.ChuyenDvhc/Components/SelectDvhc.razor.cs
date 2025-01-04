@@ -21,7 +21,6 @@ public partial class SelectDvhc
     [Parameter] public IEnumerable<DvhcRecord> CapXas { get; set; } = [];
     [Parameter] public EventCallback<IEnumerable<DvhcRecord>> CapXaChanged { get; set; }
 
-
     private string? _connectionString = string.Empty;
 
     private IEnumerable<DvhcRecord> _capTinhs = [];

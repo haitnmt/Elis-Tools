@@ -2,14 +2,13 @@
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
-using Microsoft.Data.SqlClient;
 using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
 public sealed class ThuaDatRepository(string connectionString, ILogger? logger = null)
 {
-    public const long DefaultTempMaThuaDat = long.MaxValue;
+    public const long DefaultTempMaThuaDat = 0;
 
     /// <summary>
     /// Lấy số lượng Thửa Đất dựa trên danh sách Mã Tờ Bản Đồ.
@@ -64,13 +63,13 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
 
         // Lấy danh sách Thửa Đất cần cập nhật
         // Tạo câu lệnh SQL
-        const string sql = """
-                           SELECT DISTINCT TOP (@Limit) ThuaDat.MaThuaDat, ThuaDat.ThuaDatSo, ToBanDo.SoTo
-                           FROM   ThuaDat INNER JOIN ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
-                           WHERE (ToBanDo.MaDVHC = @MaDvhc AND ThuaDat.MaThuaDat > @MinMaThuaDat)
-                           ORDER BY ThuaDat.MaThuaDat
-                           OPTION (RECOMPILE)
-                           """;
+        const string query = """
+                             SELECT DISTINCT TOP (@Limit) ThuaDat.MaThuaDat, ThuaDat.ThuaDatSo, ToBanDo.SoTo
+                             FROM   ThuaDat INNER JOIN ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
+                             WHERE (ToBanDo.MaDVHC = @MaDvhc AND ThuaDat.MaThuaDat > @MinMaThuaDat)
+                             ORDER BY ThuaDat.MaThuaDat
+                             OPTION (RECOMPILE)
+                             """;
         // Tạo tham số cho câu lệnh SQL
         var parameters = new
         {
@@ -80,7 +79,7 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
         };
 
         // Thực thi câu lệnh SQL
-        var thuaDats = (await connection.QueryAsync<(long MaThuaDat, string ThuaDatSo, string SoTo)>(sql, parameters))
+        var thuaDats = (await connection.QueryAsync<(long MaThuaDat, string ThuaDatSo, string SoTo)>(query, parameters))
             .ToList();
         // Tạo danh sách Thửa Đất cập nhật
         var thuaDatCapNhats = thuaDats.Select(thuaDat =>
@@ -150,109 +149,319 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
         }
     }
 
-    private static async Task<long> CreateTempThuaDatAsync(SqlConnection connection,
-        long? maToBanDo = null, long? maThuaDatTemp = null, bool isLichSu = false)
-    {
-        // Tạo Tờ Bản Đồ tạm thời
-        maToBanDo = await ToBanDoRepository.CreateTempToBanDoAsync(connection, maToBanDo);
-
-        // Tạo câu lệnh SQL để tạo hoặc cập nhật Thửa Đất tạm thời
-        var sql = isLichSu
-            ? """
-                IF NOT EXISTS (SELECT 1 FROM ThuaDat WHERE MaThuaDat = @MaThuaDat)
-                BEGIN
-                    INSERT INTO ThuaDat (MaThuaDat, MaToBanDo, ThuaDatSo, GhiChu)
-                    VALUES (@MaThuaDat, @MaToBanDo, @ThuaDatSo, @GhiChu)
-                END
-                ELSE
-                BEGIN
-                    UPDATE ThuaDat
-                    SET MaToBanDo = @MaToBanDo, ThuaDatSo = @ThuaDatSo, GhiChu = @GhiChu
-                    WHERE MaThuaDat = @MaThuaDat
-                END
-              """
-            : """
-                  IF NOT EXISTS (SELECT 1 FROM ThuaDatLS WHERE MaThuaDatLS = @MaThuaDat)
-                  BEGIN
-                      INSERT INTO ThuaDatLS (MaThuaDatLS, MaToBanDo, ThuaDatSo, GhiChu)
-                      VALUES (@MaThuaDat, @MaToBanDo, @ThuaDatSo, @GhiChu)
-                  END
-                  ELSE
-                  BEGIN
-                      UPDATE ThuaDatLS
-                      SET MaToBanDo = @MaToBanDo, ThuaDatSo = @ThuaDatSo, GhiChu = @GhiChu
-                      WHERE MaThuaDatLS = @MaThuaDat
-                  END
-              """;
-        // Tạo tham số cho câu lệnh SQL
-        var parameters = new
-        {
-            MaThuaDat = maThuaDatTemp ?? DefaultTempMaThuaDat,
-            MaToBanDo = maToBanDo,
-            ThuaDatSo = "Temp",
-            GhiChu = "Thửa đất tạm thời"
-        };
-        // Thực thi câu lệnh SQL
-        await connection.ExecuteAsync(sql, parameters);
-        return parameters.MaThuaDat;
-    }
-
     /// <summary>
     /// Tạo Thửa Đất tạm thời.
     /// </summary>
-    /// <param name="maToBanDo">Mã Tờ Bản Đồ.</param>
+    /// <param name="tempMaToBanDo">Mã Tờ Bản Đồ.</param>
     /// <param name="maThuaDatTemp">Mã Thửa Đất tạm thời (tùy chọn).</param>
-    /// <param name="cancellationToken">Token hủy bỏ.</param>
     /// <returns>Mã Thửa Đất tạm thời.</returns>
-    public async Task<long> CreateTempThuaDatAsync(long? maToBanDo = null, long? maThuaDatTemp = null,
-        CancellationToken cancellationToken = default)
+    private async Task<long> CreateTempThuaDatAsync(long maThuaDatTemp = DefaultTempMaThuaDat,
+        long tempMaToBanDo = ToBanDoRepository.DefaultTempMaToBanDo)
     {
-        // Lấy kết nối cơ sở dữ liệu
-        await using var connection = connectionString.GetConnection();
         try
         {
-            await CreateTempThuaDatAsync(connection, maToBanDo, maThuaDatTemp);
-            return await CreateTempThuaDatAsync(connection, maToBanDo, maThuaDatTemp, true);
+            // Lấy kết nối cơ sở dữ liệu
+            await using var connection = connectionString.GetConnection();
+            // Tạo Tờ Bản Đồ tạm thời
+            tempMaToBanDo = await ToBanDoRepository.CreateTempToBanDoAsync(connection, tempMaToBanDo, logger: logger);
+
+            // Tạo câu lệnh SQL để tạo hoặc cập nhật Thửa Đất tạm thời
+            const string sqlThuaDat = """
+                                      IF NOT EXISTS (SELECT 1 FROM ThuaDat WHERE MaThuaDat = @MaThuaDat)
+                                      BEGIN
+                                          INSERT INTO ThuaDat (MaThuaDat, MaToBanDo, ThuaDatSo, GhiChu)
+                                          VALUES (@MaThuaDat, @MaToBanDo, @ThuaDatSo, @GhiChu)
+                                      END
+                                      ELSE
+                                      BEGIN
+                                          UPDATE ThuaDat
+                                          SET MaToBanDo = @MaToBanDo, ThuaDatSo = @ThuaDatSo, GhiChu = @GhiChu
+                                          WHERE MaThuaDat = @MaThuaDat
+                                      END;
+                                      """;
+            const string sqlThuaDatLs = """
+                                        IF NOT EXISTS (SELECT 1 FROM ThuaDatLS WHERE MaThuaDatLS = @MaThuaDat)
+                                          BEGIN
+                                              INSERT INTO ThuaDatLS (MaThuaDatLS, MaToBanDo, ThuaDatSo, GhiChu)
+                                              VALUES (@MaThuaDat, @MaToBanDo, @ThuaDatSo, @GhiChu)
+                                          END
+                                          ELSE
+                                          BEGIN
+                                              UPDATE ThuaDatLS
+                                              SET MaToBanDo = @MaToBanDo, ThuaDatSo = @ThuaDatSo, GhiChu = @GhiChu
+                                              WHERE MaThuaDatLS = @MaThuaDat
+                                          END;
+                                        """;
+            var query = $"""
+                           {sqlThuaDat}
+                           {sqlThuaDatLs}
+                         """;
+            // Tạo tham số cho câu lệnh SQL
+            var parameters = new
+            {
+                MaThuaDat = maThuaDatTemp,
+                MaToBanDo = tempMaToBanDo,
+                ThuaDatSo = "Temp",
+                GhiChu = "Thửa đất tạm thời"
+            };
+            // Sử dụng giao dịch để đảm bảo tính nhất quán
+            await using var transaction = connection.BeginTransaction();
+
+            try
+            {
+                // Thực thi câu lệnh SQL trong giao dịch
+                await connection.ExecuteAsync(query, parameters, transaction: transaction);
+                // Commit giao dịch nếu thành công
+                transaction.Commit();
+            }
+            catch
+            {
+                // Rollback giao dịch nếu có lỗi
+                transaction.Rollback();
+                throw;
+            }
+
+            return parameters.MaThuaDat;
         }
         catch (Exception e)
         {
             if (logger == null) throw;
-            logger.Error(e, "Lỗi khi tạo Thửa Đất tạm thời. [MaToBanDo: {MaToBanDo}, MaThuaDatTemp: {MaThuaDatTemp}]",
-                maToBanDo, maThuaDatTemp);
+            logger.Error(e,
+                "Lỗi khi tạo Thửa Đất tạm thời. [MaToBanDo: {TempMaToBanDo}, MaThuaDatTemp: {MaThuaDatTemp}]",
+                tempMaToBanDo, maThuaDatTemp);
             return long.MinValue;
         }
     }
 
-    public async Task<bool> UpdateMaToBanDoAsync(long maToBanDo, long newMaToBanDo)
+    /// <summary>
+    /// Lấy Mã Thửa Đất lớn nhất của Đơn Vị Hành Chính.
+    /// </summary>
+    /// <param name="dvhc">Bản ghi Đơn Vị Hành Chính.</param>
+    /// <returns>Mã Thửa Đất lớn nhất.</returns>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình truy vấn.</exception>
+    private async Task<long> GetMaxMaThuaDatAsync(DvhcRecord dvhc)
+    {
+        try
+        {
+            // Lấy kết nối cơ sở dữ liệu
+            await using var connection = connectionString.GetConnection();
+            // Tạo câu lệnh query SQL
+            const string sqlThuaDat = """
+                                      SELECT MaThuaDat AS MaThuaDat
+                                      FROM ThuaDat INNER JOIN
+                                       ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
+                                      WHERE MaDVHC = @MaDvhc AND MaThuaDat > @MinMaThuaDat AND MaThuaDat < @MaxMaThuaDat
+                                      """;
+            const string sqlThuaDatLs = """
+                                        SELECT MaThuaDatLS AS MaThuaDat
+                                        FROM ThuaDatLS INNER JOIN
+                                         ToBanDo ON ThuaDatLS.MaToBanDo = ToBanDo.MaToBanDo
+                                        WHERE MaDVHC = @MaDvhc AND MaThuaDatLS > @MinMaThuaDat AND MaThuaDatLS < @MaxMaThuaDat
+                                        """;
+            const string query = $"""
+                                  SELECT MAX(MaThuaDat) AS MaxValue
+                                  FROM (
+                                      {sqlThuaDat}
+                                      UNION
+                                      {sqlThuaDatLs}
+                                  ) AS CombinedResults;
+                                  """;
+            var param = new
+            {
+                dvhc.MaDvhc,
+                MinMaThuaDat = dvhc.Ma.GetMinPrimaryKey(),
+                MaxMaThuaDat = dvhc.Ma.GetMaxPrimaryKey()
+            };
+            // Thực thi câu lệnh SQL
+            return await connection.ExecuteScalarAsync<long>(query, param);
+        }
+        catch (Exception e)
+        {
+            logger?.Error(e, "Lỗi khi lấy Mã Thửa Đất lớn nhất của Đơn Vị Hành Chính. [MaDVHC: {MaDVHC}]", dvhc.MaDvhc);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Kiểm tra xem số lượng Thửa Đất có vượt quá giới hạn không.
+    /// </summary>
+    /// <param name="dvhc">Đơn vị hành chính.</param>
+    /// <returns>Trả về true nếu không vượt quá giới hạn, ngược lại trả về false.</returns>
+    private async Task<bool> CheckOverflowAsync(DvhcRecord dvhc)
+    {
+        // Lấy tổng số lượng thửa đất của đơn vị hành chính
+        const string query = """
+                             SELECT COUNT(*)
+                             FROM ThuaDat INNER JOIN
+                              ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
+                             WHERE MaDVHC = @MaDvhc
+                             """;
+        await using var connection = connectionString.GetConnection();
+        var count = await connection.ExecuteScalarAsync<int>(query, new { dvhc.MaDvhc });
+        return count <= PrimaryKeyExtensions.GetMaximumPrimaryKey();
+    }
+
+    /// <summary>
+    /// Lấy danh sách Mã Thửa Đất chưa sử dụng theo Đơn Vị Hành Chính.
+    /// </summary>
+    /// <param name="dvhc">Đơn vị hành chính.</param>
+    /// <param name="minMaThuaDat">Mã Thửa Đất tối thiểu (tùy chọn).</param>
+    /// <param name="limit">Số lượng bản ghi tối đa cần lấy.</param>
+    /// <returns>Danh sách Mã Thửa Đất chưa sử dụng.</returns>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình truy vấn.</exception>
+    private async Task<SortedSet<long>> GetUnusedMaThuaDatAsync(DvhcRecord dvhc, long? minMaThuaDat = null,
+        int limit = 100)
     {
         try
         {
             // Lấy kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
 
-            // Tạo câu lệnh SQL
+            // Tạo câu lệnh query SQL
             const string sqlThuaDat = """
-                                      UPDATE ThuaDat
-                                      SET MaToBanDo = @NewMaToBanDo
-                                      WHERE MaToBanDo = @MaToBanDo
+                                      SELECT TOP(@Limit) MaThuaDat AS MaThuaDat
+                                      FROM ThuaDat INNER JOIN
+                                       ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
+                                      WHERE MaDVHC = @MaDvhc AND MaThuaDat > @MinMaThuaDat AND MaThuaDat < @MaxMaThuaDatInDvhc
                                       """;
-            // Tạo tham số cho câu lệnh SQL
-            var parameters = new { NewMaToBanDo = newMaToBanDo, MaToBanDo = maToBanDo };
+            const string sqlThuaDatLs = """
+                                        SELECT TOP(@Limit) MaThuaDatLS AS MaThuaDat
+                                        FROM ThuaDatLS INNER JOIN
+                                         ToBanDo ON ThuaDatLS.MaToBanDo = ToBanDo.MaToBanDo
+                                        WHERE MaDVHC = @MaDvhc AND MaThuaDatLS > @MinMaThuaDat AND MaThuaDatLS < @MaxMaThuaDatInDvhc
+                                        """;
+            const string query = $"""
+                                  SELECT MAX(MaThuaDat) AS MaxValue
+                                  FROM (
+                                      {sqlThuaDat}
+                                      UNION
+                                      {sqlThuaDatLs}
+                                  ) AS CombinedResults;
+                                  """;
 
-            // Thực thi câu lệnh SQL cập nhật thưa đất
-            await connection.ExecuteAsync(sqlThuaDat, parameters);
+            SortedSet<long> result = [];
+            var maThuaDat = minMaThuaDat ?? dvhc.Ma.GetMinPrimaryKey();
+            var maxMaThuaDat = await GetMaxMaThuaDatAsync(dvhc);
+            var maxMaThuaDatInDvhc = dvhc.Ma.GetMaxPrimaryKey();
+            while (result.Count == 0)
+            {
+                if (maThuaDat >= maxMaThuaDat)
+                {
+                    return new SortedSet<long>(Enumerable.Range(0, limit).Select(i => maThuaDat + i));
+                }
 
-            // Thực thi câu lệnh SQL cập nhật thửa đất lịch sử
-            await connection.ExecuteAsync(sqlThuaDat.Replace("ThuaDat", "ThuaDatLS"), parameters);
-            return true;
+                var param = new
+                {
+                    dvhc.MaDvhc,
+                    MinMaThuaDat = maThuaDat,
+                    MaxMaThuaDatInDvhc = maxMaThuaDatInDvhc,
+                    Limit = limit
+                };
+                var usedMaThuaDat = (await connection.QueryAsync<long>(query, param)).ToHashSet();
+                if (usedMaThuaDat.Count == 0)
+                {
+                    // Trả về danh sách có limit phần tử liên tục từ maThuaDat
+                    return new SortedSet<long>(Enumerable.Range(0, limit).Select(i => maxMaThuaDat + i));
+                }
+
+                // Tìm các Mã Thửa Đất chưa sử dụng
+                var localMaThuaDat = maThuaDat;
+                var allMaThuaDat = new SortedSet<long>(Enumerable.Range(0, limit).Select(i => localMaThuaDat + i));
+                result = new SortedSet<long>(allMaThuaDat.Except(usedMaThuaDat));
+                if (result.Count == 0)
+                {
+                    maThuaDat = usedMaThuaDat.Max();
+                }
+            }
+
+            return result;
+        }
+        catch (Exception ex)
+        {
+            logger?.Error(ex,
+                "Lỗi khi lấy danh sách Mã Thửa Đất chưa sử dụng theo Đơn Vị Hành Chính. [DVHC: {DVHC}], [MinMaThuaDat: {MinMaThuaDat}]",
+                dvhc, minMaThuaDat);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Lấy danh sách Mã Thửa Đất cần làm mới.
+    /// </summary>
+    /// <param name="dvhc">Đơn vị hành chính.</param>
+    /// <param name="minMaThuaDat">Mã Thửa Đất tối thiểu (tùy chọn).</param>
+    /// <param name="tempMaThuaDat">Mã Thửa Đất tạm thời (mặc định là <see cref="DefaultTempMaThuaDat"/>).</param>
+    /// <param name="limit">Số lượng bản ghi tối đa cần lấy.</param>
+    /// <returns>Danh sách mã Tờ Bản Đồ.</returns>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình truy vấn.</exception>
+    private async Task<IEnumerable<long>> GetMaThuaDatsNeedRenewAsync(DvhcRecord dvhc, long? minMaThuaDat = null,
+        long tempMaThuaDat = DefaultTempMaThuaDat, int limit = 100)
+    {
+        try
+        {
+            // Lấy kết nối cơ sở dữ liệu
+            await using var connection = connectionString.GetConnection();
+
+            // Khởi tạo các giá trị mặc định cho các tham số
+            var minMaInDvhc = dvhc.Ma.GetMinPrimaryKey();
+            minMaThuaDat ??= long.MinValue;
+
+            // Câu lệnh SQL để lấy danh sách Mã Thửa Đất cần làm mới
+            var sqlThuaDat = $"""
+                              SELECT TOP(@Limit) MaThuaDat
+                              FROM ThuaDat INNER JOIN
+                               ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
+                              WHERE MaDVHC = @MaDvhc AND MaThuaDat > @MinMaThuaDat AND MaThuaDat <> @TempMaThuaDat
+                              {(minMaThuaDat < minMaInDvhc ? "AND MaThuaDat < @MinMaInDvhc" : "")}
+                              ORDER BY MaThuaDat {(minMaThuaDat > minMaInDvhc ? "DESC" : "ASC")}
+                              """;
+            var sqlThuaDatLs = $"""
+                                SELECT TOP(@Limit) MaThuaDat
+                                FROM ThuaDatLS INNER JOIN
+                                 ToBanDo ON ThuaDatLS.MaToBanDo = ToBanDo.MaToBanDo
+                                WHERE MaDVHC = @MaDvhc AND MaThuaDatLS > @MinMaThuaDat AND MaThuaDatLS <> @TempMaThuaDat
+                                {(minMaThuaDat < minMaInDvhc ? "AND MaThuaDatLS < @MinMaInDvhc" : "")}
+                                ORDER BY MaThuaDatLS {(minMaThuaDat > minMaInDvhc ? "DESC" : "ASC")}
+                                """;
+            var query = $"""
+                          SELECT DISTINCT MaThuaDat AS MaxValue
+                          FROM (
+                              {sqlThuaDat} 
+                              UNION
+                              {sqlThuaDatLs}
+                              ) AS CombinedResults;
+                         """;
         }
         catch (Exception exception)
         {
-            if (logger == null) throw;
-            logger.Error(exception,
-                "Lỗi khi cập nhật Mã Tờ Bản Đồ. [MaToBanDo: {MaToBanDo}, NewMaToBanDo: {NewMaToBanDo}]",
-                maToBanDo, newMaToBanDo);
-            return false;
+            logger?.Error(exception, "Lỗi khi lấy danh sách Mã Thửa Đất cần làm mới. [DVHC: {DVHC}]", dvhc);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Gia hạn Mã Thửa Đất.
+    /// </summary>
+    /// <param name="capXaSau">Bản ghi cấp xã sau khi sáp nhập.</param>
+    /// <param name="limit">Số lượng giới hạn kết quả trả về.</param>
+    /// <returns>Task bất đồng bộ.</returns>
+    /// <exception cref="OverflowException">Ném ra ngoại lệ khi số lượng Tờ Bản Đồ đã đạt giới hạn tối đa.</exception>
+    /// <exception cref="Exception">Ném ra ngoại lệ khi có lỗi xảy ra trong quá trình cập nhật.</exception>
+    public async Task RenewMaThuaDatAsync(DvhcRecord capXaSau, int limit = 100)
+    {
+        try
+        {
+            // Kiểm tra xem có cần cập nhật không
+            if (!await CheckOverflowAsync(capXaSau))
+            {
+                logger?.Error("Số lượng Thửa Đất của Đơn Vị Hành Chính vượt quá giới hạn. [DVHC: {DVHC}]", capXaSau);
+                throw new OverflowException("Số lượng Thửa Đất của Đơn Vị Hành Chính vượt quá giới hạn.");
+            }
+        }
+        catch (Exception exception)
+        {
+            logger?.Error(exception, "Lỗi khi Làm mới Mã Thửa Đất. [DVHC: {DVHC}]", capXaSau);
+            throw;
         }
     }
 }

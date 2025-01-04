@@ -1,4 +1,5 @@
 ﻿using Dapper;
+using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Serilog;
 
@@ -47,5 +48,10 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                 "Lỗi khi cập nhật mã thửa đất trên đăng ký thửa đất. MaThuaDat: {MaThuaDat}, NewMaThuaDat: {NewMaThuaDat}, IsLichSu: {IsLichSu}",
                 maThuaDat, newMaThuaDat, isLichSu);
         }
+    }
+
+    public async Task RenewMaDangKyAsync(DvhcRecord capXaSau, int limit = 100)
+    {
+        throw new NotImplementedException();
     }
 }

@@ -380,7 +380,6 @@ public partial class ProcessingDataTransfer
             var donViHanhChinhRepository = new DonViHanhChinhRepository(_connectionString!, Logger);
             await donViHanhChinhRepository.UpdateDonViHanhChinhAsync(_capXaSau, _maDvhcBiSapNhap);
             _colorUpdateDvhc = Color.Success;
-            await UpdatePrimaryKeyAsync();
         }
         catch (Exception ex)
         {
@@ -395,6 +394,11 @@ public partial class ProcessingDataTransfer
             _timeUpdateDvhc = DateTime.Now.ToString("dd/MM/yyyy HH:mm:ss");
             _isCompletedUpdateDvhc = true;
             StateHasChanged();
+        }
+
+        if (string.IsNullOrWhiteSpace(_errorUpdateDvhc))
+        {
+            await UpdatePrimaryKeyAsync();
         }
     }
 
@@ -426,7 +430,16 @@ public partial class ProcessingDataTransfer
         StateHasChanged();
         try
         {
-            await UpdateMaThuaDatAsync();
+            if (await RenewMaToBanDoAsync())
+            {
+                // if (await UpdateMaThuaDatAsync())
+                // {
+                //     if (await UpdateMaDangKyAsync())
+                //     {
+                //         await UpdateMaGiayChungNhanAsync();
+                //     }
+                // }
+            }
 
             // Hoàn thành
             _colorUpdatePrimaryKey = Color.Success;
@@ -438,7 +451,7 @@ public partial class ProcessingDataTransfer
         {
             _colorUpdatePrimaryKey = Color.Error;
             _errorUpdatePrimaryKey = ex.Message;
-            const string message = "Không thể cập nhật các mã theo đơn vị hành chính.";
+            const string message = "Lỗi khi tạo lại mã các";
             Logger.Error(ex, message);
             SetMessage(message);
         }
@@ -450,23 +463,41 @@ public partial class ProcessingDataTransfer
         }
     }
 
-    private const int TotalStepUpdatePrimaryKey = 3;
+    private const int TotalStepUpdatePrimaryKey = 4;
 
-    private async Task UpdateMaThuaDatAsync()
+    private async Task<bool> RenewMaToBanDoAsync()
     {
-        _processingMessageUpdatePrimaryKey = $"[1/{TotalStepUpdatePrimaryKey}]: Cập nhật mã thửa đất...";
-        await UpdateMaDangKyAsync();
+        _processingMessageUpdatePrimaryKey = $"[1/{TotalStepUpdatePrimaryKey}]: Làm mới mã tờ bản đồ...";
+        var toBanDoRepository = new ToBanDoRepository(_connectionString!, Logger);
+        await toBanDoRepository.RenewMaToBanDoAsync(_capXaSau!, _limit);
+        Logger.Information("Hoàn thành làm mới mã tờ bản đồ.");
+        return true;
     }
 
-    private async Task UpdateMaDangKyAsync()
+    private async Task<bool> UpdateMaThuaDatAsync()
+    {
+        _processingMessageUpdatePrimaryKey = $"[2/{TotalStepUpdatePrimaryKey}]: Làm mới mã thửa đất...";
+        var thuaDatRepository = new ThuaDatRepository(_connectionString!, Logger);
+        await thuaDatRepository.RenewMaThuaDatAsync(_capXaSau!, _limit);
+        Logger.Information("Hoàn thành làm mới mã thửa đất.");
+        return true;
+    }
+
+    private async Task<bool> UpdateMaDangKyAsync()
     {
         _processingMessageUpdatePrimaryKey =
-            $"[2/{TotalStepUpdatePrimaryKey}]: Cập nhật mã đăng ký quyền sử dụng đất...";
-        await UpdateMaGiayChungNhanAsync();
+            $"[3/{TotalStepUpdatePrimaryKey}]: Làm mới mã đăng ký...";
+        var dangKyThuaDatRepository = new DangKyThuaDatRepository(_connectionString!, Logger);
+        await dangKyThuaDatRepository.RenewMaDangKyAsync(_capXaSau!, _limit);
+        Logger.Information("Hoàn thành làm mới mã đăng ký.");
+        return true;
     }
 
     private async Task UpdateMaGiayChungNhanAsync()
     {
-        _processingMessageUpdatePrimaryKey = $"[3/{TotalStepUpdatePrimaryKey}]: Cập nhật mã Giấy chứng nhận...";
+        _processingMessageUpdatePrimaryKey = $"[4/{TotalStepUpdatePrimaryKey}]: Làm mới mã Giấy chứng nhận...";
+        var giayChungNhanRepository = new GiayChungNhanRepository(_connectionString!, Logger);
+        await giayChungNhanRepository.RenewMaGiayChungNhanAsync(_capXaSau!, _limit);
+        Logger.Information("Hoàn thành làm mới mã Giấy chứng nhận.");
     }
 }

@@ -19,4 +19,16 @@ public sealed class Dvhc
     [Column("MaXa", TypeName = "int")] public int MaXa { get; set; }
 }
 
+/// <summary>
+/// Ghi chú: Sử dụng record để định nghĩa một bản ghi dữ liệu.
+/// </summary>
+/// <param name="MaDvhc">
+/// Mã đơn vị hành chính trong cơ sở dữ liệu ELIS SQL
+/// </param>
+/// <param name="Ma">
+/// Mã được quy định trong quyết định của Bộ Nội vụ
+/// </param>
+/// <param name="Ten">
+/// Tên của đơn vị hành chính
+/// </param>
 public sealed record DvhcRecord(int MaDvhc, int Ma, string Ten);
