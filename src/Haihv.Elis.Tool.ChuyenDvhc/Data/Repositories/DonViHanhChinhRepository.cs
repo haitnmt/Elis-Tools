@@ -73,9 +73,8 @@ public sealed class DonViHanhChinhRepository(string connectionString, ILogger? l
     /// <summary>
     /// Lấy danh sách các đơn vị hành chính cấp tỉnh.
     /// </summary>
-    /// <param name="cancellationToken">Token hủy bỏ để hủy tác vụ không đồng bộ.</param>
     /// <returns>Danh sách các đơn vị hành chính cấp tỉnh.</returns>
-    public async Task<IEnumerable<DvhcRecord>> GetCapTinhAsync(CancellationToken cancellationToken = default)
+    public async ValueTask<IEnumerable<DvhcRecord>> GetCapTinhAsync()
     {
         try
         {
@@ -87,13 +86,14 @@ public sealed class DonViHanhChinhRepository(string connectionString, ILogger? l
                                  WHERE MaHuyen = 0 AND MaXa = 0
                                  ORDER BY MaTinh
                                  """;
-            return await connection.QueryAsync<DvhcRecord>(query);
+            var result = await connection.QueryAsync<DvhcRecord>(query, 
+                map: dhvcs => new DvhcRecord(dhvcs.));
+            return result;
         }
         catch (Exception exception)
         {
-            if (logger == null) throw;
-            logger.Error(exception, "Lỗi khi lấy danh sách đơn vị hành chính cấp tỉnh.");
-            return [];
+            logger?.Error(exception, "Lỗi khi lấy danh sách đơn vị hành chính cấp tỉnh.");
+            throw;
         }
     }
 
@@ -101,10 +101,8 @@ public sealed class DonViHanhChinhRepository(string connectionString, ILogger? l
     /// Lấy danh sách các đơn vị hành chính cấp huyện.
     /// </summary>
     /// <param name="maTinh">Mã tỉnh.</param>
-    /// <param name="cancellationToken">Token hủy bỏ để hủy tác vụ không đồng bộ.</param>
     /// <returns>Danh sách các đơn vị hành chính cấp huyện.</returns>
-    public async Task<IEnumerable<DvhcRecord>> GetCapHuyenAsync(int maTinh,
-        CancellationToken cancellationToken = default)
+    public async ValueTask<IEnumerable<DvhcRecord>> GetCapHuyenAsync(int maTinh)
     {
         try
         {
@@ -130,10 +128,8 @@ public sealed class DonViHanhChinhRepository(string connectionString, ILogger? l
     /// Lấy danh sách các đơn vị hành chính cấp xã.
     /// </summary>
     /// <param name="maHuyen">Mã huyện.</param>
-    /// <param name="cancellationToken">Token hủy bỏ để hủy tác vụ không đồng bộ.</param>
     /// <returns>Danh sách các đơn vị hành chính cấp xã.</returns>
-    public async Task<IEnumerable<DvhcRecord>> GetCapXaAsync(int maHuyen,
-        CancellationToken cancellationToken = default)
+    public async ValueTask<IEnumerable<DvhcRecord>> GetCapXaAsync(int maHuyen)
     {
         try
         {

@@ -430,16 +430,15 @@ public partial class ProcessingDataTransfer
         StateHasChanged();
         try
         {
-            if (await RenewMaToBanDoAsync())
-            {
-                // if (await UpdateMaThuaDatAsync())
+            var tempMaToBanDo = await RenewMaToBanDoAsync();
+            var tempMaThuaDat = await RenewMaThuaDatAsync(tempMaToBanDo);
                 // {
                 //     if (await UpdateMaDangKyAsync())
                 //     {
                 //         await UpdateMaGiayChungNhanAsync();
                 //     }
                 // }
-            }
+
 
             // Hoàn thành
             _colorUpdatePrimaryKey = Color.Success;
@@ -465,32 +464,32 @@ public partial class ProcessingDataTransfer
 
     private const int TotalStepUpdatePrimaryKey = 4;
 
-    private async Task<bool> RenewMaToBanDoAsync()
+    private async Task<long> RenewMaToBanDoAsync()
     {
         _processingMessageUpdatePrimaryKey = $"[1/{TotalStepUpdatePrimaryKey}]: Làm mới mã tờ bản đồ...";
         var toBanDoRepository = new ToBanDoRepository(_connectionString!, Logger);
-        await toBanDoRepository.RenewMaToBanDoAsync(_capXaSau!, _limit);
+        var tempMaToBanDo = await toBanDoRepository.RenewMaToBanDoAsync(_capXaSau!, _limit);
         Logger.Information("Hoàn thành làm mới mã tờ bản đồ.");
-        return true;
+        return tempMaToBanDo;
     }
 
-    private async Task<bool> UpdateMaThuaDatAsync()
+    private async Task<long> RenewMaThuaDatAsync(long tempMaToBanDo)
     {
         _processingMessageUpdatePrimaryKey = $"[2/{TotalStepUpdatePrimaryKey}]: Làm mới mã thửa đất...";
         var thuaDatRepository = new ThuaDatRepository(_connectionString!, Logger);
-        await thuaDatRepository.RenewMaThuaDatAsync(_capXaSau!, _limit);
+        var tempMaThuaDat = await thuaDatRepository.RenewMaThuaDatAsync(_capXaSau!, tempMaToBanDo, _limit);
         Logger.Information("Hoàn thành làm mới mã thửa đất.");
-        return true;
+        return tempMaThuaDat;
     }
 
-    private async Task<bool> UpdateMaDangKyAsync()
+    private async Task<long> UpdateMaDangKyAsync(long tempMaThuaDat)
     {
         _processingMessageUpdatePrimaryKey =
             $"[3/{TotalStepUpdatePrimaryKey}]: Làm mới mã đăng ký...";
         var dangKyThuaDatRepository = new DangKyThuaDatRepository(_connectionString!, Logger);
-        await dangKyThuaDatRepository.RenewMaDangKyAsync(_capXaSau!, _limit);
+        var tempMaDangKy = await dangKyThuaDatRepository.RenewMaDangKyAsync(_capXaSau!, _limit);
         Logger.Information("Hoàn thành làm mới mã đăng ký.");
-        return true;
+        return tempMaDangKy;
     }
 
     private async Task UpdateMaGiayChungNhanAsync()

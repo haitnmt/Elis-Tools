@@ -50,8 +50,8 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
         }
     }
 
-    public async Task RenewMaDangKyAsync(DvhcRecord capXaSau, int limit = 100)
+    public async Task<long> RenewMaDangKyAsync(DvhcRecord capXaSau, int limit = 100)
     {
-        throw new NotImplementedException();
+        return 0L;
     }
 }

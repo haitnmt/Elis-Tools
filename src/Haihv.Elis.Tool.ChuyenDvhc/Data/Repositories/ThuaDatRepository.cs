@@ -153,18 +153,26 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
     /// Tạo Thửa Đất tạm thời.
     /// </summary>
     /// <param name="tempMaToBanDo">Mã Tờ Bản Đồ.</param>
-    /// <param name="maThuaDatTemp">Mã Thửa Đất tạm thời (tùy chọn).</param>
+    /// <param name="maThuaDatTemp">
+    /// Mã Thửa Đất tạm thời (tùy chọn).
+    /// Mặc định: <see cref="ToBanDoRepository.DefaultTempMaToBanDo"/>
+    /// </param>
+    /// <param name="reCreateTempToBanDo">Tạo lại Tờ Bản Đồ tạm thời (tùy chọn). Mặc định = false.</param>
     /// <returns>Mã Thửa Đất tạm thời.</returns>
     private async Task<long> CreateTempThuaDatAsync(long maThuaDatTemp = DefaultTempMaThuaDat,
-        long tempMaToBanDo = ToBanDoRepository.DefaultTempMaToBanDo)
+        long tempMaToBanDo = ToBanDoRepository.DefaultTempMaToBanDo, bool reCreateTempToBanDo = false)
     {
         try
         {
             // Lấy kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
-            // Tạo Tờ Bản Đồ tạm thời
-            tempMaToBanDo = await ToBanDoRepository.CreateTempToBanDoAsync(connection, tempMaToBanDo, logger: logger);
 
+            if (reCreateTempToBanDo && tempMaToBanDo == ToBanDoRepository.DefaultTempMaToBanDo)
+            {
+                // Tạo lại Tờ Bản Đồ tạm thời
+                tempMaToBanDo = await ToBanDoRepository.CreateTempToBanDoAsync(connection, tempMaToBanDo, logger: logger);
+            }
+            
             // Tạo câu lệnh SQL để tạo hoặc cập nhật Thửa Đất tạm thời
             const string sqlThuaDat = """
                                       IF NOT EXISTS (SELECT 1 FROM ThuaDat WHERE MaThuaDat = @MaThuaDat)
@@ -424,13 +432,22 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
                                 ORDER BY MaThuaDatLS {(minMaThuaDat > minMaInDvhc ? "DESC" : "ASC")}
                                 """;
             var query = $"""
-                          SELECT DISTINCT MaThuaDat AS MaxValue
+                          SELECT MaThuaDat AS MaxValue
                           FROM (
                               {sqlThuaDat} 
                               UNION
                               {sqlThuaDatLs}
                               ) AS CombinedResults;
                          """;
+            return await connection.QueryAsync<long>(query,
+                new
+                {
+                    Limit = limit,
+                    dvhc.MaDvhc,
+                    MaToBanDo = minMaThuaDat,
+                    MinMaThuaDat = minMaInDvhc,
+                    TempMaThuaDat = tempMaThuaDat
+                });
         }
         catch (Exception exception)
         {
@@ -443,11 +460,14 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
     /// Gia hạn Mã Thửa Đất.
     /// </summary>
     /// <param name="capXaSau">Bản ghi cấp xã sau khi sáp nhập.</param>
+    /// <param name="tempMaToBanDo">
+    /// Mã Tờ Bản Đồ tạm thời. (<see cref="ToBanDoRepository.DefaultTempMaToBanDo"/>)
+    /// </param>
     /// <param name="limit">Số lượng giới hạn kết quả trả về.</param>
     /// <returns>Task bất đồng bộ.</returns>
     /// <exception cref="OverflowException">Ném ra ngoại lệ khi số lượng Tờ Bản Đồ đã đạt giới hạn tối đa.</exception>
     /// <exception cref="Exception">Ném ra ngoại lệ khi có lỗi xảy ra trong quá trình cập nhật.</exception>
-    public async Task RenewMaThuaDatAsync(DvhcRecord capXaSau, int limit = 100)
+    public async Task<long> RenewMaThuaDatAsync(DvhcRecord capXaSau, long tempMaToBanDo = ToBanDoRepository.DefaultTempMaToBanDo, int limit = 100)
     {
         try
         {
@@ -457,6 +477,97 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
                 logger?.Error("Số lượng Thửa Đất của Đơn Vị Hành Chính vượt quá giới hạn. [DVHC: {DVHC}]", capXaSau);
                 throw new OverflowException("Số lượng Thửa Đất của Đơn Vị Hành Chính vượt quá giới hạn.");
             }
+            // Lấy thông tin kết nối cơ sở dữ liệu
+            await using var connection = connectionString.GetConnection();
+            // Tạo mã thửa đất tạm thời 
+            var tempMaThuaDat = await CreateTempThuaDatAsync(DefaultTempMaThuaDat, tempMaToBanDo);
+            
+            // Khởi tạo các giá trị ban đầu:
+            // Mã Thửa Đất bắt đầu
+            long? startId = null;
+            // Danh sách Mã Thửa Đất chưa được sử dụng
+            var unusedIds = new Queue<long>();
+            // Mã thửa đất mới
+            long? newMaThuaDat = null;
+            // Mã thửa đất nhỏ nhất của đơn vị hành chính
+            var minMaInDvhc = capXaSau.Ma.GetMinPrimaryKey();
+            
+            // Câu lệnh SQL để cập nhật Mã Thửa Đất
+            
+            const string queryUpdateDangKyTempMaThuaDat = """
+                                                          UPDATE DangKyQSDD
+                                                          SET MaThuaDat = @TempMaThuaDat
+                                                          WHERE MaThuaDat = @OldMaThuaDat;
+
+                                                          UPDATE DangKyQSDDLS
+                                                          SET MaThuaDatLS = @TempMaThuaDat
+                                                          WHERE MaThuaDatLS = @OldMaThuaDat;
+                                                          """;
+            
+            const string queryUpdateThuaDat = """
+                                       UPDATE ThuaDat
+                                       SET MaThuaDat = @NewMaThuaDat
+                                       WHERE MaThuaDat = @OldMaThuaDat;
+
+                                       UPDATE ThuaDatLS
+                                        SET MaThuaDatLS = @NewMaThuaDat
+                                        WHERE MaThuaDatLS = @OldMaThuaDat;
+
+                                       UPDATE ThuaDatCu
+                                       SET MaThuaDat = @NewMaThuaDat
+                                       WHERE MaThuaDat = @OldMaThuaDat;
+                                       """;
+            const string queryUpdateDangKyNewMaThuaDat = """
+                                                         UPDATE DangKyQSDD
+                                                         SET MaThuaDat = @NewMaThuaDat
+                                                         WHERE MaThuaDat = @TempMaThuaDat;
+
+                                                         UPDATE DangKyQSDDLS
+                                                         SET MaThuaDatLS = @NewMaThuaDat
+                                                         WHERE MaThuaDatLS = @TempMaThuaDat;
+                                                         """;
+            const string queryUpdate = $"""
+                                       {queryUpdateDangKyTempMaThuaDat}
+                                       {queryUpdateThuaDat}
+                                       {queryUpdateDangKyNewMaThuaDat}
+                                       """;
+            while (true)
+            {
+                // Lấy danh sách mã thửa đất cần cập nhật
+                var maThuaDatNeedRenew =
+                    (await GetMaThuaDatsNeedRenewAsync(capXaSau, startId, tempMaToBanDo, limit)).ToList();
+                foreach (var oldMaToBanDo in maThuaDatNeedRenew)
+                {
+                    if (unusedIds.Count == 0)
+                    {
+                        unusedIds = new Queue<long>(await GetUnusedMaThuaDatAsync(capXaSau, newMaThuaDat, limit));
+                    }
+
+                    newMaThuaDat = unusedIds.Dequeue();
+                    if (newMaThuaDat > oldMaToBanDo && oldMaToBanDo > minMaInDvhc)
+                    {
+                        maThuaDatNeedRenew = [];
+                        break;
+                    }
+                        
+                    var param = new
+                    {
+                        TempMaThuaDat = tempMaThuaDat,
+                        NewMaThuaDat = newMaThuaDat,
+                        OldMaThuaDat = oldMaToBanDo
+                    };
+                    
+                    await connection.ExecuteAsync(queryUpdate, param);
+                }
+
+                // Nếu không còn mã thửa đất cần cập nhật hoặc đã cập nhật hết
+                if (maThuaDatNeedRenew.Count == 0 && startId > minMaInDvhc) break;
+
+                // Lấy mã thửa đất bắt đầu tiếp theo để cập nhật
+                startId = maThuaDatNeedRenew.Count > 0 ? maThuaDatNeedRenew.Max() : minMaInDvhc;
+                startId = startId <= minMaInDvhc ? startId + 1 : newMaThuaDat + 1;
+            }
+            return tempMaThuaDat;
         }
         catch (Exception exception)
         {

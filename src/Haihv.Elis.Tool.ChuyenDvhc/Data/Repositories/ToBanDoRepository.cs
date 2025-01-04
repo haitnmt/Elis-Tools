@@ -311,10 +311,10 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
     /// </summary>
     /// <param name="dvhc">Đơn vị hành chính.</param>
     /// <param name="limit">Số lượng bản ghi tối đa cần lấy.</param>
-    /// <returns>Task đại diện cho thao tác bất đồng bộ.</returns>
+    /// <returns>Mã Tờ Bản Đồ tạm thời.</returns>
     /// <exception cref="OverflowException">Ném ra ngoại lệ khi số lượng Tờ Bản Đồ đã đạt giới hạn tối đa.</exception>
     /// <exception cref="Exception">Ném ra ngoại lệ khi có lỗi xảy ra trong quá trình cập nhật.</exception>
-    public async Task RenewMaToBanDoAsync(DvhcRecord dvhc, int limit = 100)
+    public async Task<long> RenewMaToBanDoAsync(DvhcRecord dvhc, int limit = 100)
     {
         try
         {
@@ -392,6 +392,8 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
                 startId = maToBanDosNeedRenew.Count > 0 ? maToBanDosNeedRenew.Max() : minMaInDvhc;
                 startId = startId <= minMaInDvhc ? startId + 1 : newMaToBanDo + 1;
             }
+
+            return tempMaToBanDo;
         }
         catch (Exception e)
         {
