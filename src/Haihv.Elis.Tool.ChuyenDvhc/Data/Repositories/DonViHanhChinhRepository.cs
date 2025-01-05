@@ -81,14 +81,12 @@ public sealed class DonViHanhChinhRepository(string connectionString, ILogger? l
             // Lấy kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
             const string query = """
-                                 SELECT MaDVHC, MaTinh, Ten
+                                 SELECT MaDVHC AS MaDvhc, MaTinh AS Ma, Ten
                                  FROM DVHC
                                  WHERE MaHuyen = 0 AND MaXa = 0
                                  ORDER BY MaTinh
                                  """;
-            var result = await connection.QueryAsync<DvhcRecord>(query, 
-                map: dhvcs => new DvhcRecord(dhvcs.));
-            return result;
+            return await connection.QueryAsync<DvhcRecord>(query);
         }
         catch (Exception exception)
         {
@@ -109,7 +107,7 @@ public sealed class DonViHanhChinhRepository(string connectionString, ILogger? l
             // Lấy kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
             const string query = """
-                                 SELECT MaDVHC, MaHuyen, Ten
+                                 SELECT MaDVHC AS MaDvhc, MaHuyen AS Ma, Ten
                                  FROM DVHC
                                  WHERE MaTinh = @MaTinh AND MaXa = 0 AND MaHuyen != 0
                                  ORDER BY MaHuyen
@@ -136,7 +134,7 @@ public sealed class DonViHanhChinhRepository(string connectionString, ILogger? l
             // Lấy kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
             const string query = """
-                                 SELECT MaDVHC, MaXa, Ten
+                                 SELECT MaDVHC AS MaDvhc, MaXa AS Ma, Ten
                                  FROM DVHC
                                  WHERE MaHuyen = @MaHuyen AND MaXa != 0
                                  ORDER BY MaXa

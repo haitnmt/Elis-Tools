@@ -21,6 +21,15 @@ public static class CacheThamSoDvhc
     public static string NgaySatNhap => RootKey + "NgaySapNhap";
     public static string TenDvhcSau => RootKey + "DvhcMoi";
     public static string RenewPrimaryKey => RootKey + "RenewPrimaryKey";
+    public static string CapTinh => RootKey + "CapTinh";
+}
+
+public static class CacheData
+{
+    private const string RootKey = "Data:";
+    public static string CapTinh => RootKey + "CapTinh";
+    public static string CapHuyen(int maTinh) => RootKey + $"CapHuyen:{maTinh}";
+    public static string CapXa(int maHuyen) => RootKey + $"CapXa:{maHuyen}";
 }
 
 public static class CacheThamSoBanDo

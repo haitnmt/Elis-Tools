@@ -63,9 +63,9 @@ public partial class SelectDvhc
                     ? _capTinhs
                     : _capTinhs.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
             var dvhcRecords =
-                await HybridCache.GetOrCreateAsync("CapTinh",  _ =>
-                        _donViHanhChinhRepository.GetCapTinhAsync(),
-                        tags: ["CapTinh"], cancellationToken: cancellationToken);
+                await HybridCache.GetOrCreateAsync(CacheData.CapTinh,  _ =>
+                        _donViHanhChinhRepository.GetCapTinhAsync(), 
+                    cancellationToken: cancellationToken);
 
             _capTinhs = dvhcRecords;
             return string.IsNullOrWhiteSpace(value)
@@ -90,7 +90,7 @@ public partial class SelectDvhc
                 ? _capHuyens
                 : _capHuyens.Where(x => x.Ten.Contains(value, StringComparison.InvariantCultureIgnoreCase));
         var dvhcRecords =
-            await HybridCache.GetOrCreateAsync($"CapHuyen:{CapTinh.Ma}", async _ =>
+            await HybridCache.GetOrCreateAsync(CacheData.CapHuyen(CapTinh.Ma), async _ =>
                     await _donViHanhChinhRepository.GetCapHuyenAsync(CapTinh.Ma),
                 cancellationToken: cancellationToken);
 
@@ -104,7 +104,7 @@ public partial class SelectDvhc
     {
         if (CapHuyen is not { Ma: > 0 }) return;
         var dvhcRecords =
-            await HybridCache.GetOrCreateAsync($"CapXa:{CapHuyen.Ma}", async _ =>
+            await HybridCache.GetOrCreateAsync(CacheData.CapXa(CapHuyen.Ma), async _ =>
                     await _donViHanhChinhRepository.GetCapXaAsync(CapHuyen.Ma)
                 , cancellationToken: cancellationToken);
         _capXas = dvhcRecords;
