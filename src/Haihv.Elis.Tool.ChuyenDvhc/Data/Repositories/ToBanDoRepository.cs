@@ -117,12 +117,12 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
     /// <returns>Danh sách các Tờ Bản Đồ.</returns>
     public async Task<IEnumerable<ToBanDo>> GetToBanDosAsync(int maDvhc)
     {
-        // Lấy kết nối cơ sở dữ liệu
-        await using var connection = connectionString.GetConnection();
         try
         {
+            // Lấy kết nối cơ sở dữ liệu
+            await using var connection = connectionString.GetConnection();
             const string query = """
-                                 SELECT MaToBanDo, SoTo, MaDvhc, TyLe, GhiChu
+                                 SELECT MaToBanDo, SoTo, MaDVHC AS MaDvhc, TyLe, GhiChu
                                  FROM ToBanDo
                                  WHERE MaDvhc = @MaDvhc
                                  """;

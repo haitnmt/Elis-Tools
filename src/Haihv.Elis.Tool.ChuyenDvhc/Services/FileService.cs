@@ -180,21 +180,54 @@ public class FileService(ILogger logger) : IFileService
         }
     }
 
-    public bool Delete(string filePath)
+    public void Delete(string filePath)
     {
         try
         {
             if (!Exists(filePath))
             {
                 logger.Debug("Tệp không tồn tại! [{filePath}]", filePath);
-                return false;
             }
             File.Delete(filePath);
-            return true;
         }
         catch (Exception ex)
         {
             logger.Warning(ex,"Lỗi khi xóa tệp");
+        }
+    }
+
+    public Task DeleteDirectoryAsync(string directoryPath, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            if (!Directory.Exists(directoryPath))
+            {
+                logger.Information("Thư mục không tồn tại! [{directoryPath}]", directoryPath);
+            }
+            Directory.Delete(directoryPath, true);
+            return Task.CompletedTask;
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex,"Lỗi khi xóa thư mục");
+            return Task.CompletedTask;
+        }
+    }
+
+    public bool DeleteDirectory(string directoryPath)
+    {
+        try
+        {
+            if (!Directory.Exists(directoryPath))
+            {
+                logger.Debug("Thư mục không tồn tại! [{directoryPath}]", directoryPath);
+            }
+            Directory.Delete(directoryPath, true);
+            return true;
+        }
+        catch (Exception ex)
+        {
+            logger.Warning(ex,"Lỗi khi xóa thư mục");
             return false;
         }
     }

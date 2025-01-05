@@ -28,8 +28,8 @@ public static class CacheData
 {
     private const string RootKey = "Data:";
     public static string CapTinh => RootKey + "CapTinh";
-    public static string CapHuyen(int maTinh) => RootKey + $"CapHuyen:{maTinh}";
-    public static string CapXa(int maHuyen) => RootKey + $"CapXa:{maHuyen}";
+    public static string CapHuyen(int maTinh = 0) => RootKey + $"CapHuyen{(maTinh == 0 ? "" : $":{maTinh}")}";
+    public static string CapXa(int maHuyen = 0) => RootKey + $"CapXa{(maHuyen == 0 ? "" : $":{maHuyen}")}";
 }
 
 public static class CacheThamSoBanDo

@@ -4,10 +4,12 @@
 @using Haihv.Elis.Tool.ChuyenDvhc.Extensions
 @using Haihv.Elis.Tool.ChuyenDvhc.Services
 @using Haihv.Elis.Tool.ChuyenDvhc.Settings
+@using Microsoft.Extensions.Caching.Hybrid
 @using Microsoft.Extensions.Caching.Memory
 @using Serilog
 
 @inject IMemoryCache MemoryCache
+@inject HybridCache HybridCache
 @inject IFileService FileService
 @inject ILogger Logger
 
@@ -168,6 +170,10 @@
             _isConnected = true;
             _errorMessage = string.Empty;
             await SaveConnectionInfoAsync();
+            // Xoá Data Cache
+            _ = HybridCache.RemoveAsync(CacheData.CapTinh);
+            _ = HybridCache.RemoveAsync(CacheData.CapHuyen()); 
+            _ = HybridCache.RemoveAsync(CacheData.CapXa());
             Logger.Information("Kết nối dữ liệu thành công, Server: [{Server}] DataBase: [{DataBase}]", 
                 _serverAddress, _databaseName);
         }

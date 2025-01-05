@@ -8,7 +8,9 @@ public interface IFileService
     void WriteAllBytes(string filePath, byte[] content);
     Task<bool> CreateAsync(string filePath);
     Task DeleteAsync(string filePath, CancellationToken cancellationToken = default);
-    bool Delete(string filePath);
+    void Delete(string filePath);
+    Task DeleteDirectoryAsync(string directoryPath, CancellationToken cancellationToken = default);
+    bool DeleteDirectory(string directoryPath);
     Task<bool> ExistsAsync(string filePath);
     bool Exists(string filePath);
     Task<byte[]?> ReadAllBytesAsync(string filePath, CancellationToken cancellationToken = default);
