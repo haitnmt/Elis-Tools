@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Caching.Distributed;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Services;
 
@@ -39,8 +39,14 @@ public class FileDistributedCache(IFileService fileService, string cacheDirector
     }
 
     private string ConvertKey(string key)
-    {
-        key = key.Replace(':', '_');
-        return Path.Combine(cacheDirectory, key + ".cache");
-    }
+{
+    // Tách key thành các phần bởi dấu ':'
+    var parts = key.Split(':');
+    // Phần cuối cùng là tên file
+    var fileName = parts.Last() + ".cache";
+    // Các phần trước là thư mục
+    var directories = parts.Take(parts.Length - 1);
+    // Kết hợp các thư mục và tên file
+    return Path.Combine(cacheDirectory, Path.Combine(directories.ToArray()), fileName);
+}
 }
