@@ -105,7 +105,7 @@
             _dvhcSau = DvhcSau;
         }
 
-        if (DvhcTruocs != null && !DvhcTruocs.EqualsHash(_dvhcTruocs))
+        if (DvhcTruocs != null && DvhcTruocs.Any() && !DvhcTruocs.EqualsHash(_dvhcTruocs))
         {
             if (_dvhcTruocs != null && _dvhcTruocs.Any())
             {
@@ -221,7 +221,6 @@
             HybridCache.SetAsync(CacheThamSoBanDo.ThamChieuToBanDo, _thamChieuToBanDos);
         else
             HybridCache.RemoveAsync(CacheThamSoBanDo.ThamChieuToBanDo);
-        if (IsCompleted == _isCompleted) return;
         IsCompleted = _isCompleted;
         IsCompletedChanged.InvokeAsync(IsCompleted);
     }

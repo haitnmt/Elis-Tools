@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using System.Data;
+using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
@@ -186,7 +187,7 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
             await using var connection = connectionString.GetConnection();
 
             // Khởi tạo mã Tờ Bản Đồ nhỏ nhất trong đơn vị hành chính
-            var minMaInDvhc = dvhc.Ma.GetMinPrimaryKey(Multiplier);
+            var minMaInDvhc = dvhc.Ma.GetMinPrimaryKey(Multiplier) + 1;
             minMaToBanDo ??= long.MinValue;
             // Câu truy vấn
             var query = $"""
@@ -260,7 +261,7 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
                 if (maToBanDo >= maxMaToBanDo)
                 {
                     // Trả về danh sách có limit phần tử liên tục từ maToBanDo
-                    return Enumerable.Range(0, limit).Select(i => maToBanDo + i);
+                    return Enumerable.Range(1, limit).Select(i => maToBanDo + i);
                 }
 
                 var usedIds = (await connection.QueryAsync<long>(query,
@@ -274,7 +275,7 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
                 if (usedIds.Count == 0)
                 {
                     // Trả về danh sách có limit phần tử liên tục từ maToBanDo
-                    return Enumerable.Range(0, limit).Select(i => maxMaToBanDo + i);
+                    return Enumerable.Range(1, limit).Select(i => maxMaToBanDo + i);
                 }
 
                 var maxId = usedIds.Max();
@@ -310,11 +311,13 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
     /// Cập nhật mã Tờ Bản Đồ theo mã đơn vị hành chính.
     /// </summary>
     /// <param name="dvhc">Đơn vị hành chính.</param>
+    /// <param name="tempMaToBanDo">Mã Tờ Bản Đồ tạm thời (mặc định là <see cref="DefaultTempMaToBanDo"/>).</param>
     /// <param name="limit">Số lượng bản ghi tối đa cần lấy.</param>
     /// <returns>Mã Tờ Bản Đồ tạm thời.</returns>
     /// <exception cref="OverflowException">Ném ra ngoại lệ khi số lượng Tờ Bản Đồ đã đạt giới hạn tối đa.</exception>
     /// <exception cref="Exception">Ném ra ngoại lệ khi có lỗi xảy ra trong quá trình cập nhật.</exception>
-    public async Task<long> RenewMaToBanDoAsync(DvhcRecord dvhc, int limit = 100)
+    public async Task<long> RenewMaToBanDoAsync(DvhcRecord dvhc, long tempMaToBanDo = DefaultTempMaToBanDo,
+        int limit = 100)
     {
         try
         {
@@ -328,7 +331,7 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
             // Lấy kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
             // Tạo mã Tờ Bản Đồ tạm thời
-            var tempMaToBanDo = await CreateTempToBanDoAsync(connection, logger: logger);
+            tempMaToBanDo = await CreateTempToBanDoAsync(connection, tempMaToBanDo, logger: logger);
             // Mã tờ bản đồ bắt đầu:
             long? startId = null;
             // Lấy các mã Tờ Bản Đồ cần cập nhật
@@ -337,25 +340,25 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
             // Lấy mã Tờ Bản Đồ nhỏ nhất chưa được sử dụng
             long? newMaToBanDo = null;
             // Cập nhật mã Tờ Bản Đồ
-            const string sql = """
-                                   UPDATE ThuaDat
-                                   SET MaToBanDo = @TempMaToBanDo
-                                   WHERE MaToBanDo = @OldMaToBanDo;
-                                   UPDATE ThuaDatLS
-                                   SET MaToBanDo = @TempMaToBanDo
-                                   WHERE MaToBanDo = @OldMaToBanDo;
-                                   
-                                   UPDATE ToBanDo
-                                   SET MaToBanDo = @NewMaToBanDo
-                                   WHERE MaToBanDo = @OldMaToBanDo;
-                               
-                                   UPDATE ThuaDat
-                                   SET MaToBanDo = @NewMaToBanDo
-                                   WHERE MaToBanDo = @TempMaToBanDo;
-                                   UPDATE ThuaDatLS
-                                   SET MaToBanDo = @NewMaToBanDo
-                                   WHERE MaToBanDo = @TempMaToBanDo;
-                               """;
+            const string query = """
+                                     UPDATE ThuaDat
+                                     SET MaToBanDo = @TempMaToBanDo
+                                     WHERE MaToBanDo = @OldMaToBanDo;
+                                     UPDATE ThuaDatLS
+                                     SET MaToBanDo = @TempMaToBanDo
+                                     WHERE MaToBanDo = @OldMaToBanDo;
+                                     
+                                     UPDATE ToBanDo
+                                     SET MaToBanDo = @NewMaToBanDo
+                                     WHERE MaToBanDo = @OldMaToBanDo;
+                                 
+                                     UPDATE ThuaDat
+                                     SET MaToBanDo = @NewMaToBanDo
+                                     WHERE MaToBanDo = @TempMaToBanDo;
+                                     UPDATE ThuaDatLS
+                                     SET MaToBanDo = @NewMaToBanDo
+                                     WHERE MaToBanDo = @TempMaToBanDo;
+                                 """;
             var minMaInDvhc = dvhc.Ma.GetMinPrimaryKey(Multiplier);
             while (true)
             {
@@ -376,17 +379,44 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
                         break;
                     }
 
-                    await connection.ExecuteAsync(sql,
-                        new
-                        {
-                            TempMaToBanDo = tempMaToBanDo,
-                            NewMaToBanDo = newMaToBanDo,
-                            OldMaToBanDo = oldMaToBanDo
-                        });
+                    var param = new
+                    {
+                        TempMaToBanDo = tempMaToBanDo,
+                        NewMaToBanDo = newMaToBanDo,
+                        OldMaToBanDo = oldMaToBanDo
+                    };
+
+                    // Sử dụng giao dịch để đảm bảo tính nhất quán
+                    if (connection.State == ConnectionState.Closed)
+                    {
+                        await connection.OpenAsync();
+                    }
+
+                    await using var transaction = await connection.BeginTransactionAsync();
+
+                    try
+                    {
+                        // Thực thi câu lệnh SQL trong giao dịch
+                        await connection.ExecuteAsync(query, param, transaction: transaction);
+                        // Commit giao dịch nếu thành công
+                        await transaction.CommitAsync();
+                    }
+                    catch (Exception ex)
+                    {
+                        // Rollback giao dịch nếu có lỗi
+                        await transaction.RollbackAsync();
+                        logger?.Error(ex,
+                            """
+                            Lỗi trong quá trình cập nhật Tờ bản đồ sang mã mới. 
+                            [Mã cũ: {OldMaToBanDo}, Mã mới: {NewMaToBanDo}]
+                            """,
+                            oldMaToBanDo, newMaToBanDo);
+                        throw;
+                    }
                 }
 
                 // Nếu không còn mã Tờ Bản Đồ cần cập nhật hoặc đã cập nhật hết
-                if (maToBanDosNeedRenew.Count == 0 && startId > minMaInDvhc) break;
+                if (maToBanDosNeedRenew.Count == 0 && startId >= minMaInDvhc) break;
 
                 // Lấy mã Tờ Bản Đồ bắt đầu tiếp theo để cập nhật
                 startId = maToBanDosNeedRenew.Count > 0 ? maToBanDosNeedRenew.Max() : minMaInDvhc;

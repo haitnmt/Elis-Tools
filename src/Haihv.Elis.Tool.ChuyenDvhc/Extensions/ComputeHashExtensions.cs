@@ -77,8 +77,12 @@ public static class ComputeHashExtensions
     /// <param name="obj1">Đối tượng thứ nhất.</param>
     /// <param name="obj2">Đối tượng thứ hai.</param>
     /// <returns>True nếu băm của hai đối tượng bằng nhau, ngược lại là false.</returns>
+    /// <remarks>
+    /// Nếu cả hai đối tượng đều null thì coi là bằng nhau.
+    /// </remarks>
     public static bool EqualsHash<T>(this T? obj1, T? obj2)
     {
+        if (obj1 == null && obj2 == null) return true; // Nếu cả hai đối tượng đều null thì coi là bằng nhau
         var hash1 = ComputeHash(obj1);
         var hash2 = ComputeHash(obj2);
         return hash1 == hash2;

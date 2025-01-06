@@ -432,12 +432,12 @@ public partial class ProcessingDataTransfer
         {
             var tempMaToBanDo = await RenewMaToBanDoAsync();
             var tempMaThuaDat = await RenewMaThuaDatAsync(tempMaToBanDo);
-                // {
-                //     if (await UpdateMaDangKyAsync())
-                //     {
-                //         await UpdateMaGiayChungNhanAsync();
-                //     }
-                // }
+            // {
+            //     if (await UpdateMaDangKyAsync())
+            //     {
+            //         await UpdateMaGiayChungNhanAsync();
+            //     }
+            // }
 
 
             // Hoàn thành
@@ -467,8 +467,9 @@ public partial class ProcessingDataTransfer
     private async Task<long> RenewMaToBanDoAsync()
     {
         _processingMessageUpdatePrimaryKey = $"[1/{TotalStepUpdatePrimaryKey}]: Làm mới mã tờ bản đồ...";
+        StateHasChanged();
         var toBanDoRepository = new ToBanDoRepository(_connectionString!, Logger);
-        var tempMaToBanDo = await toBanDoRepository.RenewMaToBanDoAsync(_capXaSau!, _limit);
+        var tempMaToBanDo = await toBanDoRepository.RenewMaToBanDoAsync(_capXaSau!, limit: _limit);
         Logger.Information("Hoàn thành làm mới mã tờ bản đồ.");
         return tempMaToBanDo;
     }
@@ -476,8 +477,10 @@ public partial class ProcessingDataTransfer
     private async Task<long> RenewMaThuaDatAsync(long tempMaToBanDo)
     {
         _processingMessageUpdatePrimaryKey = $"[2/{TotalStepUpdatePrimaryKey}]: Làm mới mã thửa đất...";
+        StateHasChanged();
         var thuaDatRepository = new ThuaDatRepository(_connectionString!, Logger);
-        var tempMaThuaDat = await thuaDatRepository.RenewMaThuaDatAsync(_capXaSau!, tempMaToBanDo, _limit);
+        var tempMaThuaDat =
+            await thuaDatRepository.RenewMaThuaDatAsync(_capXaSau!, tempMaToBanDo: tempMaToBanDo, limit: _limit);
         Logger.Information("Hoàn thành làm mới mã thửa đất.");
         return tempMaThuaDat;
     }
@@ -486,6 +489,7 @@ public partial class ProcessingDataTransfer
     {
         _processingMessageUpdatePrimaryKey =
             $"[3/{TotalStepUpdatePrimaryKey}]: Làm mới mã đăng ký...";
+        StateHasChanged();
         var dangKyThuaDatRepository = new DangKyThuaDatRepository(_connectionString!, Logger);
         var tempMaDangKy = await dangKyThuaDatRepository.RenewMaDangKyAsync(_capXaSau!, _limit);
         Logger.Information("Hoàn thành làm mới mã đăng ký.");
@@ -495,6 +499,7 @@ public partial class ProcessingDataTransfer
     private async Task UpdateMaGiayChungNhanAsync()
     {
         _processingMessageUpdatePrimaryKey = $"[4/{TotalStepUpdatePrimaryKey}]: Làm mới mã Giấy chứng nhận...";
+        StateHasChanged();
         var giayChungNhanRepository = new GiayChungNhanRepository(_connectionString!, Logger);
         await giayChungNhanRepository.RenewMaGiayChungNhanAsync(_capXaSau!, _limit);
         Logger.Information("Hoàn thành làm mới mã Giấy chứng nhận.");

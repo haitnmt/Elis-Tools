@@ -1,4 +1,5 @@
-﻿using Dapper;
+﻿using System.Data;
+using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
@@ -166,13 +167,13 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
         {
             // Lấy kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
-
             if (reCreateTempToBanDo && tempMaToBanDo == ToBanDoRepository.DefaultTempMaToBanDo)
             {
                 // Tạo lại Tờ Bản Đồ tạm thời
-                tempMaToBanDo = await ToBanDoRepository.CreateTempToBanDoAsync(connection, tempMaToBanDo, logger: logger);
+                tempMaToBanDo =
+                    await ToBanDoRepository.CreateTempToBanDoAsync(connection, tempMaToBanDo, logger: logger);
             }
-            
+
             // Tạo câu lệnh SQL để tạo hoặc cập nhật Thửa Đất tạm thời
             const string sqlThuaDat = """
                                       IF NOT EXISTS (SELECT 1 FROM ThuaDat WHERE MaThuaDat = @MaThuaDat)
@@ -200,10 +201,10 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
                                               WHERE MaThuaDatLS = @MaThuaDat
                                           END;
                                         """;
-            var query = $"""
-                           {sqlThuaDat}
-                           {sqlThuaDatLs}
-                         """;
+            const string query = $"""
+                                    {sqlThuaDat}
+                                    {sqlThuaDatLs}
+                                  """;
             // Tạo tham số cho câu lệnh SQL
             var parameters = new
             {
@@ -212,20 +213,29 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
                 ThuaDatSo = "Temp",
                 GhiChu = "Thửa đất tạm thời"
             };
+
+            if (connection.State == ConnectionState.Closed)
+            {
+                await connection.OpenAsync();
+            }
             // Sử dụng giao dịch để đảm bảo tính nhất quán
-            await using var transaction = connection.BeginTransaction();
+
+            await using var transaction = await connection.BeginTransactionAsync();
 
             try
             {
                 // Thực thi câu lệnh SQL trong giao dịch
                 await connection.ExecuteAsync(query, parameters, transaction: transaction);
                 // Commit giao dịch nếu thành công
-                transaction.Commit();
+                await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
                 // Rollback giao dịch nếu có lỗi
-                transaction.Rollback();
+                await transaction.RollbackAsync();
+                logger?.Error(ex,
+                    "Lỗi khi tạo hoặc cập nhật Thửa Đất tạm thời. [MaToBanDo: {tempMaToBanDo}, MaThuaDatTemp: {maThuaDatTemp}]",
+                    tempMaToBanDo, maThuaDatTemp);
                 throw;
             }
 
@@ -237,7 +247,7 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
             logger.Error(e,
                 "Lỗi khi tạo Thửa Đất tạm thời. [MaToBanDo: {TempMaToBanDo}, MaThuaDatTemp: {MaThuaDatTemp}]",
                 tempMaToBanDo, maThuaDatTemp);
-            return long.MinValue;
+            throw;
         }
     }
 
@@ -327,41 +337,42 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
 
             // Tạo câu lệnh query SQL
             const string sqlThuaDat = """
-                                      SELECT TOP(@Limit) MaThuaDat AS MaThuaDat
+                                      SELECT MaThuaDat AS MaThuaDat
                                       FROM ThuaDat INNER JOIN
                                        ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
-                                      WHERE MaDVHC = @MaDvhc AND MaThuaDat > @MinMaThuaDat AND MaThuaDat < @MaxMaThuaDatInDvhc
+                                      WHERE MaDVHC = @MaDvhc AND MaThuaDat > @StartCheckMaThuaDat AND MaThuaDat < @MaxMaThuaDatInDvhc
                                       """;
             const string sqlThuaDatLs = """
-                                        SELECT TOP(@Limit) MaThuaDatLS AS MaThuaDat
+                                        SELECT MaThuaDatLS AS MaThuaDat
                                         FROM ThuaDatLS INNER JOIN
                                          ToBanDo ON ThuaDatLS.MaToBanDo = ToBanDo.MaToBanDo
-                                        WHERE MaDVHC = @MaDvhc AND MaThuaDatLS > @MinMaThuaDat AND MaThuaDatLS < @MaxMaThuaDatInDvhc
+                                        WHERE MaDVHC = @MaDvhc AND MaThuaDatLS > @StartCheckMaThuaDat AND MaThuaDatLS < @MaxMaThuaDatInDvhc
                                         """;
             const string query = $"""
-                                  SELECT MAX(MaThuaDat) AS MaxValue
+                                  SELECT TOP(@Limit) MaThuaDat AS MaThuaDat
                                   FROM (
                                       {sqlThuaDat}
                                       UNION
                                       {sqlThuaDatLs}
-                                  ) AS CombinedResults;
+                                  ) AS CombinedResults
+                                  ORDER BY MaThuaDat ASC;
                                   """;
 
             SortedSet<long> result = [];
-            var maThuaDat = minMaThuaDat ?? dvhc.Ma.GetMinPrimaryKey();
+            var startCheckMaThuaDat = minMaThuaDat ?? dvhc.Ma.GetMinPrimaryKey();
             var maxMaThuaDat = await GetMaxMaThuaDatAsync(dvhc);
             var maxMaThuaDatInDvhc = dvhc.Ma.GetMaxPrimaryKey();
             while (result.Count == 0)
             {
-                if (maThuaDat >= maxMaThuaDat)
+                if (startCheckMaThuaDat >= maxMaThuaDat)
                 {
-                    return new SortedSet<long>(Enumerable.Range(0, limit).Select(i => maThuaDat + i));
+                    return new SortedSet<long>(Enumerable.Range(1, limit).Select(i => startCheckMaThuaDat + i));
                 }
 
                 var param = new
                 {
                     dvhc.MaDvhc,
-                    MinMaThuaDat = maThuaDat,
+                    StartCheckMaThuaDat = startCheckMaThuaDat,
                     MaxMaThuaDatInDvhc = maxMaThuaDatInDvhc,
                     Limit = limit
                 };
@@ -369,16 +380,18 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
                 if (usedMaThuaDat.Count == 0)
                 {
                     // Trả về danh sách có limit phần tử liên tục từ maThuaDat
-                    return new SortedSet<long>(Enumerable.Range(0, limit).Select(i => maxMaThuaDat + i));
+                    return new SortedSet<long>(Enumerable.Range(1, limit).Select(i => maxMaThuaDat + i));
                 }
 
                 // Tìm các Mã Thửa Đất chưa sử dụng
-                var localMaThuaDat = maThuaDat;
-                var allMaThuaDat = new SortedSet<long>(Enumerable.Range(0, limit).Select(i => localMaThuaDat + i));
+                var localMaThuaDat = startCheckMaThuaDat + 1;
+                var maxId = usedMaThuaDat.Max();
+                var count = (int)(maxId - localMaThuaDat) - 1;
+                var allMaThuaDat = new SortedSet<long>(Enumerable.Range(0, count).Select(i => localMaThuaDat + i));
                 result = new SortedSet<long>(allMaThuaDat.Except(usedMaThuaDat));
                 if (result.Count == 0)
                 {
-                    maThuaDat = usedMaThuaDat.Max();
+                    startCheckMaThuaDat = maxId;
                 }
             }
 
@@ -411,41 +424,40 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
             await using var connection = connectionString.GetConnection();
 
             // Khởi tạo các giá trị mặc định cho các tham số
-            var minMaInDvhc = dvhc.Ma.GetMinPrimaryKey();
+            var minMaInDvhc = dvhc.Ma.GetMinPrimaryKey() + 1;
             minMaThuaDat ??= long.MinValue;
 
             // Câu lệnh SQL để lấy danh sách Mã Thửa Đất cần làm mới
             var sqlThuaDat = $"""
-                              SELECT TOP(@Limit) MaThuaDat
+                              SELECT MaThuaDat
                               FROM ThuaDat INNER JOIN
                                ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
-                              WHERE MaDVHC = @MaDvhc AND MaThuaDat > @MinMaThuaDat AND MaThuaDat <> @TempMaThuaDat
+                              WHERE MaDVHC = @MaDvhc AND MaThuaDat >= @MinMaThuaDat AND MaThuaDat <> @TempMaThuaDat
                               {(minMaThuaDat < minMaInDvhc ? "AND MaThuaDat < @MinMaInDvhc" : "")}
-                              ORDER BY MaThuaDat {(minMaThuaDat > minMaInDvhc ? "DESC" : "ASC")}
                               """;
             var sqlThuaDatLs = $"""
-                                SELECT TOP(@Limit) MaThuaDat
+                                SELECT MaThuaDatLS AS MaThuaDat
                                 FROM ThuaDatLS INNER JOIN
                                  ToBanDo ON ThuaDatLS.MaToBanDo = ToBanDo.MaToBanDo
-                                WHERE MaDVHC = @MaDvhc AND MaThuaDatLS > @MinMaThuaDat AND MaThuaDatLS <> @TempMaThuaDat
+                                WHERE MaDVHC = @MaDvhc AND MaThuaDatLS >= @MinMaThuaDat AND MaThuaDatLS <> @TempMaThuaDat
                                 {(minMaThuaDat < minMaInDvhc ? "AND MaThuaDatLS < @MinMaInDvhc" : "")}
-                                ORDER BY MaThuaDatLS {(minMaThuaDat > minMaInDvhc ? "DESC" : "ASC")}
                                 """;
             var query = $"""
-                          SELECT MaThuaDat AS MaxValue
-                          FROM (
+                         SELECT TOP(@Limit) MaThuaDat AS MaThuaDat
+                         FROM (
                               {sqlThuaDat} 
                               UNION
                               {sqlThuaDatLs}
-                              ) AS CombinedResults;
+                              ) AS CombinedResults
+                         ORDER BY MaThuaDat {(minMaThuaDat > minMaInDvhc ? "DESC" : "ASC")};
                          """;
             return await connection.QueryAsync<long>(query,
                 new
                 {
                     Limit = limit,
                     dvhc.MaDvhc,
-                    MaToBanDo = minMaThuaDat,
-                    MinMaThuaDat = minMaInDvhc,
+                    MinMaThuaDat = minMaThuaDat,
+                    MinMaInDvhc = minMaInDvhc,
                     TempMaThuaDat = tempMaThuaDat
                 });
         }
@@ -460,6 +472,7 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
     /// Gia hạn Mã Thửa Đất.
     /// </summary>
     /// <param name="capXaSau">Bản ghi cấp xã sau khi sáp nhập.</param>
+    /// <param name="tempMaThuaDat">Mã Thửa Đất tạm thời. (<see cref="DefaultTempMaThuaDat"/></param>)
     /// <param name="tempMaToBanDo">
     /// Mã Tờ Bản Đồ tạm thời. (<see cref="ToBanDoRepository.DefaultTempMaToBanDo"/>)
     /// </param>
@@ -467,7 +480,9 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
     /// <returns>Task bất đồng bộ.</returns>
     /// <exception cref="OverflowException">Ném ra ngoại lệ khi số lượng Tờ Bản Đồ đã đạt giới hạn tối đa.</exception>
     /// <exception cref="Exception">Ném ra ngoại lệ khi có lỗi xảy ra trong quá trình cập nhật.</exception>
-    public async Task<long> RenewMaThuaDatAsync(DvhcRecord capXaSau, long tempMaToBanDo = ToBanDoRepository.DefaultTempMaToBanDo, int limit = 100)
+    public async Task<long> RenewMaThuaDatAsync(DvhcRecord capXaSau,
+        long tempMaThuaDat = DefaultTempMaThuaDat, long tempMaToBanDo = ToBanDoRepository.DefaultTempMaToBanDo,
+        int limit = 100)
     {
         try
         {
@@ -477,11 +492,12 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
                 logger?.Error("Số lượng Thửa Đất của Đơn Vị Hành Chính vượt quá giới hạn. [DVHC: {DVHC}]", capXaSau);
                 throw new OverflowException("Số lượng Thửa Đất của Đơn Vị Hành Chính vượt quá giới hạn.");
             }
+
             // Lấy thông tin kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
             // Tạo mã thửa đất tạm thời 
-            var tempMaThuaDat = await CreateTempThuaDatAsync(DefaultTempMaThuaDat, tempMaToBanDo);
-            
+            tempMaThuaDat = await CreateTempThuaDatAsync(tempMaThuaDat, tempMaToBanDo);
+
             // Khởi tạo các giá trị ban đầu:
             // Mã Thửa Đất bắt đầu
             long? startId = null;
@@ -491,9 +507,9 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
             long? newMaThuaDat = null;
             // Mã thửa đất nhỏ nhất của đơn vị hành chính
             var minMaInDvhc = capXaSau.Ma.GetMinPrimaryKey();
-            
+
             // Câu lệnh SQL để cập nhật Mã Thửa Đất
-            
+
             const string queryUpdateDangKyTempMaThuaDat = """
                                                           UPDATE DangKyQSDD
                                                           SET MaThuaDat = @TempMaThuaDat
@@ -503,20 +519,20 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
                                                           SET MaThuaDatLS = @TempMaThuaDat
                                                           WHERE MaThuaDatLS = @OldMaThuaDat;
                                                           """;
-            
+
             const string queryUpdateThuaDat = """
-                                       UPDATE ThuaDat
-                                       SET MaThuaDat = @NewMaThuaDat
-                                       WHERE MaThuaDat = @OldMaThuaDat;
+                                              UPDATE ThuaDat
+                                              SET MaThuaDat = @NewMaThuaDat
+                                              WHERE MaThuaDat = @OldMaThuaDat;
 
-                                       UPDATE ThuaDatLS
-                                        SET MaThuaDatLS = @NewMaThuaDat
-                                        WHERE MaThuaDatLS = @OldMaThuaDat;
+                                              UPDATE ThuaDatLS
+                                               SET MaThuaDatLS = @NewMaThuaDat
+                                               WHERE MaThuaDatLS = @OldMaThuaDat;
 
-                                       UPDATE ThuaDatCu
-                                       SET MaThuaDat = @NewMaThuaDat
-                                       WHERE MaThuaDat = @OldMaThuaDat;
-                                       """;
+                                              UPDATE ThuaDatCu
+                                              SET MaThuaDat = @NewMaThuaDat
+                                              WHERE MaThuaDat = @OldMaThuaDat;
+                                              """;
             const string queryUpdateDangKyNewMaThuaDat = """
                                                          UPDATE DangKyQSDD
                                                          SET MaThuaDat = @NewMaThuaDat
@@ -526,17 +542,27 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
                                                          SET MaThuaDatLS = @NewMaThuaDat
                                                          WHERE MaThuaDatLS = @TempMaThuaDat;
                                                          """;
+            const string queryUpdateTaiSanThuaDat = """
+                                                    UPDATE TS_ThuaDat_TaiSan
+                                                    SET idThuaDat = @NewMaThuaDat
+                                                    WHERE idThuaDat = @OldMaThuaDat;
+
+                                                    UPDATE TS_LichSu
+                                                    SET idThuaDat = @NewMaThuaDat
+                                                    WHERE idThuaDat = @OldMaThuaDat;
+                                                    """;
             const string queryUpdate = $"""
-                                       {queryUpdateDangKyTempMaThuaDat}
-                                       {queryUpdateThuaDat}
-                                       {queryUpdateDangKyNewMaThuaDat}
-                                       """;
+                                        {queryUpdateDangKyTempMaThuaDat}
+                                        {queryUpdateThuaDat}
+                                        {queryUpdateDangKyNewMaThuaDat}
+                                        {queryUpdateTaiSanThuaDat}
+                                        """;
             while (true)
             {
                 // Lấy danh sách mã thửa đất cần cập nhật
                 var maThuaDatNeedRenew =
-                    (await GetMaThuaDatsNeedRenewAsync(capXaSau, startId, tempMaToBanDo, limit)).ToList();
-                foreach (var oldMaToBanDo in maThuaDatNeedRenew)
+                    (await GetMaThuaDatsNeedRenewAsync(capXaSau, startId, tempMaThuaDat, limit)).ToList();
+                foreach (var oldMaThuaDat in maThuaDatNeedRenew)
                 {
                     if (unusedIds.Count == 0)
                     {
@@ -544,29 +570,57 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
                     }
 
                     newMaThuaDat = unusedIds.Dequeue();
-                    if (newMaThuaDat > oldMaToBanDo && oldMaToBanDo > minMaInDvhc)
+                    if (newMaThuaDat > oldMaThuaDat && oldMaThuaDat > minMaInDvhc)
                     {
                         maThuaDatNeedRenew = [];
                         break;
                     }
-                        
+
                     var param = new
                     {
                         TempMaThuaDat = tempMaThuaDat,
                         NewMaThuaDat = newMaThuaDat,
-                        OldMaThuaDat = oldMaToBanDo
+                        OldMaThuaDat = oldMaThuaDat
                     };
-                    
-                    await connection.ExecuteAsync(queryUpdate, param);
+
+
+                    if (connection.State == ConnectionState.Closed)
+                    {
+                        await connection.OpenAsync();
+                    }
+
+                    // Sử dụng giao dịch để đảm bảo tính nhất quán
+                    await using var transaction = connection.BeginTransaction();
+
+                    try
+                    {
+                        // Thực thi câu lệnh SQL trong giao dịch
+                        await connection.ExecuteAsync(queryUpdate, param, transaction: transaction);
+                        // Commit giao dịch nếu thành công
+                        transaction.Commit();
+                    }
+                    catch (Exception exception)
+                    {
+                        // Rollback giao dịch nếu có lỗi
+                        transaction.Rollback();
+                        logger?.Error(exception,
+                            """
+                            Lỗi khi cập nhật Mã Thửa Đất. 
+                            [Mã cũ: {OldMaThuaDat}, mã mới: {NewMaThuaDat}],
+                            """,
+                            oldMaThuaDat, newMaThuaDat);
+                        throw;
+                    }
                 }
 
                 // Nếu không còn mã thửa đất cần cập nhật hoặc đã cập nhật hết
-                if (maThuaDatNeedRenew.Count == 0 && startId > minMaInDvhc) break;
+                if (maThuaDatNeedRenew.Count == 0 && startId >= minMaInDvhc) break;
 
                 // Lấy mã thửa đất bắt đầu tiếp theo để cập nhật
                 startId = maThuaDatNeedRenew.Count > 0 ? maThuaDatNeedRenew.Max() : minMaInDvhc;
                 startId = startId <= minMaInDvhc ? startId + 1 : newMaThuaDat + 1;
             }
+
             return tempMaThuaDat;
         }
         catch (Exception exception)
