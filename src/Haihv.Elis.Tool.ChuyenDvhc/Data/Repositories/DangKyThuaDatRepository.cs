@@ -257,12 +257,12 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                                       AND dk.MaDangKyLS < @MaxMaDangKyInDvhc
                                                   """; // Lấy Mã Đăng ký từ bảng DangKyLS ON ThuaDat
             const string query = $"""
-                                  SELECT TOP (@Limit) MaDangKy
+                                  SELECT DISTINCT TOP (@Limit) MaDangKy
                                   FROM (
                                       {queryDangKy}
-                                      UNION
+                                      UNION ALL
                                       {queryDangKyLs}
-                                      UNION
+                                      UNION ALL
                                       {queryDangKyLsOnThuaDat}
                                   ) AS CombinedResults
                                   ORDER BY MaDangKy ASC;
@@ -337,7 +337,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
             var minMaInDvhc = dvhc.Ma.GetMinPrimaryKey();
             // Câu lệnh SQL để lấy danh sách Mã Đăng ký cần làm mới
             var queryDangKy = $"""
-                               SELECT dk.MaDangKy AS MaDangKy
+                               SELECT DISTINCT dk.MaDangKy AS MaDangKy
                                FROM DangKyQSDD dk
                                    INNER JOIN ThuaDat td ON dk.MaThuaDat = td.MaThuaDat
                                    INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
@@ -347,7 +347,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                    {(minMaDangKy < minMaInDvhc ? "AND dk.MaDangKy < @MinMaInDvhc" : "")}
                                """; // Lấy Mã Đăng ký từ bảng DangKy
             var queryDangKyLs = $"""
-                                 SELECT dk.MaDangKyLS AS MaDangKy
+                                 SELECT DISTINCT dk.MaDangKyLS AS MaDangKy
                                  FROM DangKyQSDDLS dk
                                      INNER JOIN ThuaDatLS td ON dk.MaThuaDatLS = td.MaThuaDatLS
                                      INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
@@ -357,7 +357,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                      {(minMaDangKy < minMaInDvhc ? "AND dk.MaDangKyLS < @MinMaInDvhc" : "")}
                                  """; // Lấy Mã Đăng ký từ bảng DangKyLS
             var queryDangKyLsOnThuaDat = $"""
-                                          SELECT dk.MaDangKyLS AS MaDangKy
+                                          SELECT DISTINCT dk.MaDangKyLS AS MaDangKy
                                           FROM DangKyQSDDLS dk
                                               INNER JOIN ThuaDat td ON dk.MaThuaDatLS = td.MaThuaDat
                                               INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
@@ -367,12 +367,13 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                           {(minMaDangKy < minMaInDvhc ? "AND dk.MaDangKyLS < @MinMaInDvhc" : "")}
                                           """; // Lấy Mã Đăng ký từ bảng DangKyLS ON ThuaDat
             var query = $"""
-                         SELECT TOP (@Limit) MaDangKy
+                         SELECT DISTINCT TOP (@Limit) MaDangKy
                          FROM (
                              {queryDangKy}
-                             UNION
+                             UNION ALL
                              {queryDangKyLs}
-                             UNION {queryDangKyLsOnThuaDat}
+                             UNION ALL
+                             {queryDangKyLsOnThuaDat}
                          ) AS CombinedResult
                          ORDER BY MaDangKy {(minMaDangKy >= minMaInDvhc ? "DESC" : "ASC")};
                          """; // Kết hợp kết quả từ 2 bảng DangKy và DangKyLS
@@ -554,7 +555,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                     break;
 
                 // Lấy mã Đăng ký nhỏ nhất cần lấy tiếp theo
-                startId = maDangKyNeedRenew.Count == 0 ? maDangKyNeedRenew.Max() + 1 : minMaDangKyInDvhc;
+                startId = maDangKyNeedRenew.Count > 0 ? maDangKyNeedRenew.Max() + 1 : minMaDangKyInDvhc;
                 startId = startId <= minMaDangKyInDvhc ? startId : newMaDangKy + 1;
             }
 
