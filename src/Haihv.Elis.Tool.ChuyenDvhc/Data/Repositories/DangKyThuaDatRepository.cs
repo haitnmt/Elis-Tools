@@ -555,7 +555,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                     break;
 
                 // Lấy mã Đăng ký nhỏ nhất cần lấy tiếp theo
-                startId = maDangKyNeedRenew.Count > 0 ? maDangKyNeedRenew.Max() + 1 : minMaDangKyInDvhc;
+                startId = maDangKyNeedRenew.Count > 0 ? maDangKyNeedRenew.Max() : minMaDangKyInDvhc;
                 startId = startId <= minMaDangKyInDvhc ? startId : newMaDangKy + 1;
             }
 

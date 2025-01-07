@@ -621,7 +621,7 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
                 if (maThuaDatNeedRenew.Count == 0 && startId >= minMaInDvhc) break;
 
                 // Lấy mã thửa đất bắt đầu tiếp theo để cập nhật
-                startId = maThuaDatNeedRenew.Count > 0 ? maThuaDatNeedRenew.Max() + 1 : minMaInDvhc;
+                startId = maThuaDatNeedRenew.Count > 0 ? maThuaDatNeedRenew.Max() : minMaInDvhc;
                 startId = startId <= minMaInDvhc ? startId : newMaThuaDat + 1;
             }
 
