@@ -172,8 +172,8 @@ public partial class ProcessingDataTransfer
         try
         {
             // Tạo hoặc thay đổi bảng audit
-            var dataInitializer = new DataInitializer(_connectionString!);
-            await dataInitializer.CreatedOrAlterAuditTable();
+            //var dataInitializer = new DataInitializer(_connectionString!);
+            //await dataInitializer.CreatedOrAlterAuditTable();
             _isCompletedKhoiTaoDuLieu = true;
             _colorKhoiTaoDuLieu = Color.Success;
         }
@@ -430,14 +430,10 @@ public partial class ProcessingDataTransfer
         StateHasChanged();
         try
         {
-            var tempMaToBanDo = await RenewMaToBanDoAsync();
-            var tempMaThuaDat = await RenewMaThuaDatAsync(tempMaToBanDo);
-            // {
-            //     if (await UpdateMaDangKyAsync())
-            //     {
-            //         await UpdateMaGiayChungNhanAsync();
-            //     }
-            // }
+            var maToBanDoTemp = await RenewMaToBanDoAsync();
+            var maThuaDatTemp = await RenewMaThuaDatAsync(maToBanDoTemp);
+            var maDangKyTemp = await UpdateMaDangKyAsync(maThuaDatTemp);
+            await UpdateMaGiayChungNhanAsync(maDangKyTemp);
 
 
             // Hoàn thành
@@ -450,7 +446,7 @@ public partial class ProcessingDataTransfer
         {
             _colorUpdatePrimaryKey = Color.Error;
             _errorUpdatePrimaryKey = ex.Message;
-            const string message = "Lỗi khi tạo lại mã các";
+            const string message = "Lỗi khi mới các bản mã.";
             Logger.Error(ex, message);
             SetMessage(message);
         }
@@ -474,34 +470,35 @@ public partial class ProcessingDataTransfer
         return tempMaToBanDo;
     }
 
-    private async Task<long> RenewMaThuaDatAsync(long tempMaToBanDo)
+    private async Task<long> RenewMaThuaDatAsync(long maToBanDoTemp)
     {
         _processingMessageUpdatePrimaryKey = $"[2/{TotalStepUpdatePrimaryKey}]: Làm mới mã thửa đất...";
         StateHasChanged();
         var thuaDatRepository = new ThuaDatRepository(_connectionString!, Logger);
         var tempMaThuaDat =
-            await thuaDatRepository.RenewMaThuaDatAsync(_capXaSau!, tempMaToBanDo: tempMaToBanDo, limit: _limit);
+            await thuaDatRepository.RenewMaThuaDatAsync(_capXaSau!, maToBanDoTemp: maToBanDoTemp, limit: _limit);
         Logger.Information("Hoàn thành làm mới mã thửa đất.");
         return tempMaThuaDat;
     }
 
-    private async Task<long> UpdateMaDangKyAsync(long tempMaThuaDat)
+    private async Task<long> UpdateMaDangKyAsync(long maThuaDatTemp)
     {
         _processingMessageUpdatePrimaryKey =
             $"[3/{TotalStepUpdatePrimaryKey}]: Làm mới mã đăng ký...";
         StateHasChanged();
         var dangKyThuaDatRepository = new DangKyThuaDatRepository(_connectionString!, Logger);
-        var tempMaDangKy = await dangKyThuaDatRepository.RenewMaDangKyAsync(_capXaSau!, _limit);
+        var tempMaDangKy =
+            await dangKyThuaDatRepository.RenewMaDangKyAsync(_capXaSau!, maThuaDatTemp: maThuaDatTemp, limit: _limit);
         Logger.Information("Hoàn thành làm mới mã đăng ký.");
         return tempMaDangKy;
     }
 
-    private async Task UpdateMaGiayChungNhanAsync()
+    private async Task UpdateMaGiayChungNhanAsync(long tempMaDangKy)
     {
         _processingMessageUpdatePrimaryKey = $"[4/{TotalStepUpdatePrimaryKey}]: Làm mới mã Giấy chứng nhận...";
         StateHasChanged();
         var giayChungNhanRepository = new GiayChungNhanRepository(_connectionString!, Logger);
-        await giayChungNhanRepository.RenewMaGiayChungNhanAsync(_capXaSau!, _limit);
+        //await giayChungNhanRepository.RenewMaGiayChungNhanAsync(_capXaSau!, _limit);
         Logger.Information("Hoàn thành làm mới mã Giấy chứng nhận.");
     }
 }

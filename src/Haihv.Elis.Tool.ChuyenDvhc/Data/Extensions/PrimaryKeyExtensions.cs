@@ -33,7 +33,7 @@ public static class PrimaryKeyExtensions
     /// <param name="multiplier">Hệ số nhân (mặc định là 100000)</param>
     /// <returns>Khóa chính nhỏ nhất có thể</returns>
     public static long GetMinPrimaryKey(this int maDvhcCapXa, int multiplier = Multiplier)
-        => maDvhcCapXa * multiplier;
+        => maDvhcCapXa * multiplier + 1;
 
     /// <summary>
     /// Loại bỏ mã đơn vị hành chính cấp xã trong khóa chính.

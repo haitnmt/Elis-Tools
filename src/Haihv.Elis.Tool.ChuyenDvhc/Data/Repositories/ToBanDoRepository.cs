@@ -15,7 +15,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 /// <param name="logger">Đối tượng ghi log (tùy chọn)</param>
 public class ToBanDoRepository(string connectionString, ILogger? logger = null)
 {
-    public const long DefaultTempMaToBanDo = 0;
+    public const long DefaultMaToBanDoTemp = 0;
     private const int Multiplier = 10000;
 
     /// <summary>
@@ -76,7 +76,7 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
     /// <param name="logger">Đối tượng ghi log (tùy chọn).</param>
     /// <returns>Mã của Tờ Bản Đồ tạm thời được tạo.</returns>
     public static async Task<long> CreateTempToBanDoAsync(SqlConnection connection,
-        long tempMaToBanDo = DefaultTempMaToBanDo,
+        long tempMaToBanDo = DefaultMaToBanDoTemp,
         ILogger? logger = null)
     {
         try
@@ -173,12 +173,12 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
     /// </summary>
     /// <param name="dvhc">Đơn vị hành chính.</param>
     /// <param name="minMaToBanDo">Mã Tờ Bản Đồ bắt đầu (tùy chọn).</param>
-    /// <param name="tempMaToBanDo">Mã Tờ Bản Đồ tạm thời (mặc định là <see cref="DefaultTempMaToBanDo"/>).</param>
+    /// <param name="tempMaToBanDo">Mã Tờ Bản Đồ tạm thời (mặc định là <see cref="DefaultMaToBanDoTemp"/>).</param>
     /// <param name="limit">Số lượng bản ghi tối đa cần lấy.</param>
     /// <returns>Danh sách mã Tờ Bản Đồ.</returns>
     /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình truy vấn.</exception>
     private async Task<IEnumerable<long>> GetMaToBanDosNeedRenewAsync(DvhcRecord dvhc, long? minMaToBanDo = null,
-        long tempMaToBanDo = DefaultTempMaToBanDo,
+        long tempMaToBanDo = DefaultMaToBanDoTemp,
         int limit = 100)
     {
         try
@@ -187,7 +187,7 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
             await using var connection = connectionString.GetConnection();
 
             // Khởi tạo mã Tờ Bản Đồ nhỏ nhất trong đơn vị hành chính
-            var minMaInDvhc = dvhc.Ma.GetMinPrimaryKey(Multiplier) + 1;
+            var minMaInDvhc = dvhc.Ma.GetMinPrimaryKey(Multiplier);
             minMaToBanDo ??= long.MinValue;
             // Câu truy vấn
             var query = $"""
@@ -195,7 +195,7 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
                          FROM ToBanDo
                          WHERE MaDvhc = @MaDvhc AND MaToBanDo >= @MaToBanDo AND MaToBanDo <> @TempMaToBanDo
                          {(minMaToBanDo < minMaInDvhc ? "AND MaToBanDo < @MinMaInDvhc" : "")}
-                         ORDER BY MaToBanDo {(minMaToBanDo > minMaInDvhc ? "DESC" : "ASC")}
+                         ORDER BY MaToBanDo {(minMaToBanDo >= minMaInDvhc ? "DESC" : "ASC")}
                          """;
             return await connection.QueryAsync<long>(query,
                 new
@@ -253,7 +253,7 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
                                  ORDER BY MaToBanDo
                                  """;
             List<long> result = [];
-            var maToBanDo = minMaToBanDo ?? dvhc.Ma.GetMinPrimaryKey(Multiplier);
+            var maToBanDo = minMaToBanDo ?? dvhc.Ma.GetMinPrimaryKey(Multiplier) - 1;
             var maxMaToBanDo = await GetMaxMaToBanDosAsync(dvhc) + 1;
             var maxMaToBanDoInDvhc = dvhc.Ma.GetMaxPrimaryKey(Multiplier);
             while (result.Count == 0)
@@ -311,12 +311,12 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
     /// Cập nhật mã Tờ Bản Đồ theo mã đơn vị hành chính.
     /// </summary>
     /// <param name="dvhc">Đơn vị hành chính.</param>
-    /// <param name="tempMaToBanDo">Mã Tờ Bản Đồ tạm thời (mặc định là <see cref="DefaultTempMaToBanDo"/>).</param>
+    /// <param name="tempMaToBanDo">Mã Tờ Bản Đồ tạm thời (mặc định là <see cref="DefaultMaToBanDoTemp"/>).</param>
     /// <param name="limit">Số lượng bản ghi tối đa cần lấy.</param>
     /// <returns>Mã Tờ Bản Đồ tạm thời.</returns>
     /// <exception cref="OverflowException">Ném ra ngoại lệ khi số lượng Tờ Bản Đồ đã đạt giới hạn tối đa.</exception>
     /// <exception cref="Exception">Ném ra ngoại lệ khi có lỗi xảy ra trong quá trình cập nhật.</exception>
-    public async Task<long> RenewMaToBanDoAsync(DvhcRecord dvhc, long tempMaToBanDo = DefaultTempMaToBanDo,
+    public async Task<long> RenewMaToBanDoAsync(DvhcRecord dvhc, long tempMaToBanDo = DefaultMaToBanDoTemp,
         int limit = 100)
     {
         try
@@ -373,7 +373,7 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
                     }
 
                     newMaToBanDo = unusedIds.Dequeue();
-                    if (newMaToBanDo > oldMaToBanDo && oldMaToBanDo > minMaInDvhc)
+                    if (newMaToBanDo >= oldMaToBanDo && oldMaToBanDo >= minMaInDvhc)
                     {
                         maToBanDosNeedRenew = [];
                         break;
@@ -419,8 +419,8 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
                 if (maToBanDosNeedRenew.Count == 0 && startId >= minMaInDvhc) break;
 
                 // Lấy mã Tờ Bản Đồ bắt đầu tiếp theo để cập nhật
-                startId = maToBanDosNeedRenew.Count > 0 ? maToBanDosNeedRenew.Max() : minMaInDvhc;
-                startId = startId <= minMaInDvhc ? startId + 1 : newMaToBanDo + 1;
+                startId = maToBanDosNeedRenew.Count > 0 ? maToBanDosNeedRenew.Max() + 1 : minMaInDvhc;
+                startId = startId <= minMaInDvhc ? startId : newMaToBanDo + 1;
             }
 
             return tempMaToBanDo;

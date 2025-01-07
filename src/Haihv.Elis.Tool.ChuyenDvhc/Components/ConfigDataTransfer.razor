@@ -257,7 +257,7 @@
     {
         if (_renewPrimaryKey == renewPrimaryKey) return;
         _renewPrimaryKey = renewPrimaryKey;
-        StateHasChanged();
         await HybridCache.SetAsync(CacheThamSoDvhc.RenewPrimaryKey, _renewPrimaryKey);
+        StateHasChanged();
     }
 }

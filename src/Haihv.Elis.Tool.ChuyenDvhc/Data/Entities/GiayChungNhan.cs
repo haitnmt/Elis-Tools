@@ -24,7 +24,7 @@ public class GiayChungNhanLichSu
     [Key]
     public long MaGcnLs { get; set; }
 
-    [Column("MaDangKy", TypeName = "bigint")]
+    [Column("MaDangKyLS", TypeName = "bigint")]
     public long MaDangKy { get; set; }
 
     [Column("MaGuid", TypeName = "nvarchar(36)")]
