@@ -1,4 +1,4 @@
-﻿using System.Data;
+using System.Data;
 using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
@@ -344,7 +344,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                WHERE tbd.MaDVHC = @MaDVHC
                                    AND dk.MaDangKy > @MinMaDangKy
                                    AND dk.MaDangKy <> @MaDangKyTemp
-                                   {(minMaDangKy < minMaInDvhc ? "AND MaThuaDat < @MinMaInDvhc" : "")}
+                                   {(minMaDangKy < minMaInDvhc ? "AND dk.MaDangKy < @MinMaInDvhc" : "")}
                                """; // Lấy Mã Đăng ký từ bảng DangKy
             var queryDangKyLs = $"""
                                  SELECT dk.MaDangKyLS AS MaDangKy
@@ -354,7 +354,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                  WHERE tbd.MaDVHC = @MaDVHC
                                      AND dk.MaDangKyLS > @MinMaDangKy
                                      AND dk.MaDangKyLS <> @MaDangKyTemp
-                                     {(minMaDangKy < minMaInDvhc ? "AND MaThuaDatLS < @MinMaInDvhc" : "")}
+                                     {(minMaDangKy < minMaInDvhc ? "AND dk.MaDangKyLS < @MinMaInDvhc" : "")}
                                  """; // Lấy Mã Đăng ký từ bảng DangKyLS
             var queryDangKyLsOnThuaDat = $"""
                                           SELECT dk.MaDangKyLS AS MaDangKy
@@ -364,7 +364,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                           WHERE tbd.MaDVHC = @MaDVHC
                                               AND dk.MaDangKyLS > @MinMaDangKy
                                               AND dk.MaDangKyLS <> @MaDangKyTemp
-                                          {(minMaDangKy < minMaInDvhc ? "AND MaThuaDatLS < @MinMaInDvhc" : "")}
+                                          {(minMaDangKy < minMaInDvhc ? "AND dk.MaDangKyLS < @MinMaInDvhc" : "")}
                                           """; // Lấy Mã Đăng ký từ bảng DangKyLS ON ThuaDat
             var query = $"""
                          SELECT TOP (@Limit) MaDangKy
