@@ -19,11 +19,26 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
     {
         // Lấy tổng số lượng Đăng ký theo Đơn Vị Hành Chính
         const string query = """
-                             SELECT COUNT(*) 
-                             FROM   DangKyQSDD INNER JOIN
-                             ThuaDat ON DangKyQSDD.MaThuaDat = ThuaDat.MaThuaDat INNER JOIN
-                             ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
-                             WHERE (ToBanDo.MaDVHC = @MaDVHC)
+                             SELECT COUNT(DISTINCT MaDangKy) 
+                             FROM (
+                                 SELECT DISTINCT dk.MaDangKy AS MaDangKy
+                                 FROM DangKyQSDD dk
+                                          INNER JOIN ThuaDat td ON dk.MaThuaDat = td.MaThuaDat
+                                          INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
+                                 WHERE tbd.MaDVHC = @MaDVHC
+                                 UNION ALL
+                                 SELECT DISTINCT dk.MaDangKyLS AS MaDangKy
+                                 FROM DangKyQSDDLS dk
+                                          INNER JOIN ThuaDatLS td ON dk.MaThuaDatLS = td.MaThuaDatLS
+                                          INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
+                                 WHERE tbd.MaDVHC = @MaDVHC
+                                 UNION ALL
+                                 SELECT DISTINCT dk.MaDangKyLS AS MaDangKy
+                                 FROM  DangKyQSDDLS dk
+                                     INNER JOIN ThuaDat td ON dk.MaThuaDatLS = td.MaThuaDat
+                                     INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
+                                 WHERE tbd.MaDVHC = @MaDVHC
+                             ) AS CombinedResults
                              """;
         try
         {
@@ -55,7 +70,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
     /// </param>
     /// <param name="reCreateTempThuaDat">Tạo lại thửa đất tạm thời (tùy chọn). Mặc định = false.</param>
     /// <returns>Mã Đăng ký tạm thời.</returns>
-    private async Task<long> CreateTempDangKyAsync(long maDangKyTemp = DefaultTempMaDangKy,
+    public async Task<long> CreateTempDangKyAsync(long maDangKyTemp = DefaultTempMaDangKy,
         long maThuaDatTemp = ThuaDatRepository.DefaultMaThuaDatTemp, bool reCreateTempThuaDat = false)
     {
         try
@@ -70,35 +85,35 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
             }
 
             // Tạo câu lệnh SQL để tạo hoặc cập nhật đăng ký tạm thời
-            const string sqlDangKy = """
-                                     IF NOT EXISTS (SELECT 1 FROM DangKyQSDD WHERE MaDangKy = @MaDangKy)
-                                     BEGIN
-                                         INSERT INTO DangKyQSDD (MaDangKy, MaThuaDat, DienTichDangKy, DienTichChung, GhiChu)
-                                         VALUES (@MaDangKy, @MaThuaDat, 0, 0, @GhiChu)
-                                     END
-                                     ELSE
-                                     BEGIN
-                                         UPDATE DangKyQSDD
-                                         SET MaThuaDat = @MaThuaDat, GhiChu = @GhiChu
-                                         WHERE MaDangKy = @MaDangKy
-                                     END;
-                                     """;
-            const string sqlDangKyLs = """
-                                       IF NOT EXISTS (SELECT 1 FROM DangKyQSDDLS WHERE MaDangKyLS = @MaDangKy)
+            const string queryDangKy = """
+                                       IF NOT EXISTS (SELECT 1 FROM DangKyQSDD WHERE MaDangKy = @MaDangKy)
                                        BEGIN
-                                            INSERT INTO DangKyQSDDLS (MaDangKyLS, MaThuaDatLS, DienTichDangKy, DienTichChung, GhiChu)
-                                            VALUES (@MaDangKy, @MaThuaDat, 0, 0, @GhiChu)
+                                           INSERT INTO DangKyQSDD (MaDangKy, MaThuaDat, DienTichDangKy, DienTichChung, GhiChu)
+                                           VALUES (@MaDangKy, @MaThuaDat, 0, 0, @GhiChu)
                                        END
                                        ELSE
                                        BEGIN
-                                            UPDATE DangKyQSDDLS
-                                            SET MaThuaDatLS = @MaThuaDat, GhiChu = @GhiChu
-                                            WHERE MaDangKyLS = @MaDangKy
+                                           UPDATE DangKyQSDD
+                                           SET MaThuaDat = @MaThuaDat, GhiChu = @GhiChu
+                                           WHERE MaDangKy = @MaDangKy
                                        END;
                                        """;
+            const string queryDangKyLs = """
+                                         IF NOT EXISTS (SELECT 1 FROM DangKyQSDDLS WHERE MaDangKyLS = @MaDangKy)
+                                         BEGIN
+                                              INSERT INTO DangKyQSDDLS (MaDangKyLS, MaThuaDatLS, DienTichDangKy, DienTichChung, GhiChu)
+                                              VALUES (@MaDangKy, @MaThuaDat, 0, 0, @GhiChu)
+                                         END
+                                         ELSE
+                                         BEGIN
+                                              UPDATE DangKyQSDDLS
+                                              SET MaThuaDatLS = @MaThuaDat, GhiChu = @GhiChu
+                                              WHERE MaDangKyLS = @MaDangKy
+                                         END;
+                                         """;
             const string query = $"""
-                                    {sqlDangKy}
-                                    {sqlDangKyLs}
+                                    {queryDangKy}
+                                    {queryDangKyLs}
                                   """;
             // Tạo tham số cho câu lệnh SQL
             var parameters = new
@@ -153,55 +168,54 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
     /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình truy vấn.</exception>
     private async Task<long> GetMaxMaDangKyAsync(DvhcRecord dvhc)
     {
-        try
-        {
-            // Tạo câu lệnh SQL để lấy mã Đăng ký lớn nhất
-            const string queryMaxMaDangKy = """
-                                            SELECT MAX(dk.MaDangKy) AS MaDangKy
-                                            FROM DangKyQSDD dk
-                                                INNER JOIN ThuaDat td ON dk.MaThuaDat = td.MaThuaDat
-                                                INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
-                                            WHERE tbd.MaDVHC = @MaDVHC
-                                                AND dk.MaDangKy > @MinMaDangKy
-                                                AND dk.MaDangKy < @MaxMaDangKy
-                                            """;
+        // Tạo câu lệnh SQL để lấy mã Đăng ký lớn nhất
+        const string queryMaxMaDangKy = """
+                                        SELECT ISNULL(MAX(dk.MaDangKy),0) AS MaDangKy
+                                        FROM DangKyQSDD dk
+                                            INNER JOIN ThuaDat td ON dk.MaThuaDat = td.MaThuaDat
+                                            INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
+                                        WHERE tbd.MaDVHC = @MaDVHC
+                                            AND dk.MaDangKy > @MinMaDangKy
+                                            AND dk.MaDangKy < @MaxMaDangKy
+                                        """;
 
-            const string queryMaxMaDangKyLs = """
-                                              SELECT MAX(dk.MaDangKyLS) AS MaDangKy
+        const string queryMaxMaDangKyLs = """
+                                          SELECT ISNULL(MAX(dk.MaDangKyLS),0) AS MaDangKy
+                                          FROM DangKyQSDDLS dk
+                                              INNER JOIN ThuaDatLS td ON dk.MaThuaDatLS = td.MaThuaDatLS
+                                              INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
+                                          WHERE tbd.MaDVHC = @MaDVHC
+                                              AND dk.MaDangKyLS > @MinMaDangKy
+                                              AND dk.MaDangKyLS < @MaxMaDangKy
+                                          """;
+        const string queryDangKyLsOnThuaDat = """
+                                              SELECT (MAX(dk.MaDangKyLS),0) AS MaDangKy
                                               FROM DangKyQSDDLS dk
-                                                  INNER JOIN ThuaDatLS td ON dk.MaThuaDatLS = td.MaThuaDatLS
+                                                  INNER JOIN ThuaDat td ON dk.MaThuaDatLS = td.MaThuaDat
                                                   INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
                                               WHERE tbd.MaDVHC = @MaDVHC
                                                   AND dk.MaDangKyLS > @MinMaDangKy
                                                   AND dk.MaDangKyLS < @MaxMaDangKy
-                                              """;
-            const string queryDangKyLsOnThuaDat = """
-                                                  SELECT MAX(dk.MaDangKyLS) AS MaDangKy
-                                                  FROM DangKyQSDDLS dk
-                                                      INNER JOIN ThuaDat td ON dk.MaThuaDatLS = td.MaThuaDat
-                                                      INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
-                                                  WHERE tbd.MaDVHC = @MaDVHC
-                                                      AND dk.MaDangKyLS > @MinMaDangKy
-                                                      AND dk.MaDangKyLS < @MaxMaDangKy
-                                                  """; // Lấy Mã Đăng ký từ bảng DangKyLS ON ThuaDat
-            const string query = $"""
-                                  SELECT MAX(MaDangKy) AS MaDangKy
-                                  FROM (
-                                      {queryMaxMaDangKy}
-                                      UNION ALL
-                                      {queryMaxMaDangKyLs}
-                                      UNION ALL
-                                      {queryDangKyLsOnThuaDat}
-                                  ) AS CombinedResults
-                                  """; // Kết hợp kết quả từ 2 bảng DangKy và DangKyLS
-            // Tạo tham số cho câu lệnh SQL
-            var parameters = new
-            {
-                MaDVHC = dvhc.MaDvhc,
-                MinMaDangKy = dvhc.Ma.GetMinPrimaryKey(),
-                MaxMaDangKy = dvhc.Ma.GetMaxPrimaryKey()
-            };
-
+                                              """; // Lấy Mã Đăng ký từ bảng DangKyLS ON ThuaDat
+        const string query = $"""
+                              SELECT MAX(MaDangKy) AS MaDangKy
+                              FROM (
+                                  {queryMaxMaDangKy}
+                                  UNION ALL
+                                  {queryMaxMaDangKyLs}
+                                  UNION ALL
+                                  {queryDangKyLsOnThuaDat}
+                              ) AS CombinedResults
+                              """; // Kết hợp kết quả từ 2 bảng DangKy và DangKyLS
+        // Tạo tham số cho câu lệnh SQL
+        var parameters = new
+        {
+            MaDVHC = dvhc.MaDvhc,
+            MinMaDangKy = dvhc.Ma.GetMinPrimaryKey(),
+            MaxMaDangKy = dvhc.Ma.GetMaxPrimaryKey()
+        };
+        try
+        {
             // Lấy kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
 

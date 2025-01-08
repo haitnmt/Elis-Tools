@@ -311,10 +311,18 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
     {
         // Lấy tổng số lượng thửa đất của đơn vị hành chính
         const string query = """
-                             SELECT COUNT(*)
-                             FROM ThuaDat INNER JOIN
-                              ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
-                             WHERE MaDVHC = @MaDvhc
+                             SELECT COUNT(DISTINCT MaThuaDat)
+                             FROM (
+                                 SELECT DISTINCT MaThuaDat
+                                 FROM ThuaDat INNER JOIN
+                                  ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
+                                 WHERE MaDVHC = @MaDvhc
+                                 UNION 
+                                 SELECT DISTINCT MaThuaDatLS AS MaThuaDat
+                                 FROM ThuaDatLS INNER JOIN
+                                  ToBanDo ON ThuaDatLS.MaToBanDo = ToBanDo.MaToBanDo
+                                 WHERE MaDVHC = @MaDvhc
+                             ) AS CombinedResult
                              """;
         await using var connection = connectionString.GetConnection();
         var count = await connection.ExecuteScalarAsync<int>(query, new { dvhc.MaDvhc });

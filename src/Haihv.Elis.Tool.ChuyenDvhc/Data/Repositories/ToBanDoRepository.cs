@@ -224,7 +224,7 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
     {
         // Lấy tổng số lượng tờ bản đồ hiện có:
         const string query = """
-                             SELECT COUNT(*)
+                             SELECT COUNT(DISTINCT MaToBanDo)
                              FROM ToBanDo
                              WHERE MaDvhc = @MaDvhc
                              """;
