@@ -347,13 +347,13 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
 
             // Tạo câu lệnh query SQL
             const string sqlThuaDat = """
-                                      SELECT MaThuaDat AS MaThuaDat
+                                      SELECT DISTINCT MaThuaDat AS MaThuaDat
                                       FROM ThuaDat INNER JOIN
                                        ToBanDo ON ThuaDat.MaToBanDo = ToBanDo.MaToBanDo
                                       WHERE MaDVHC = @MaDvhc AND MaThuaDat > @MaThuaDatStart AND MaThuaDat < @MaxMaThuaDatInDvhc
                                       """;
             const string sqlThuaDatLs = """
-                                        SELECT MaThuaDatLS AS MaThuaDat
+                                        SELECT DISTINCT MaThuaDatLS AS MaThuaDat
                                         FROM ThuaDatLS INNER JOIN
                                          ToBanDo ON ThuaDatLS.MaToBanDo = ToBanDo.MaToBanDo
                                         WHERE MaDVHC = @MaDvhc AND MaThuaDatLS > @MaThuaDatStart AND MaThuaDatLS < @MaxMaThuaDatInDvhc

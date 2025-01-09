@@ -85,8 +85,6 @@ public partial class ProcessingDataTransfer
                 _ => ValueTask.FromResult(ThamSoThayThe.DefaultGhiChuGiayChungNhan));
             _ngaySapNhap = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.NgaySatNhap,
                 _ => ValueTask.FromResult(DateTime.Now.ToString(ThamSoThayThe.DinhDangNgaySapNhap)));
-            _renewPrimaryKey = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.RenewPrimaryKey,
-                _ => ValueTask.FromResult(_renewPrimaryKey));
         }
         else
         {
@@ -414,6 +412,9 @@ public partial class ProcessingDataTransfer
 
     private async Task UpdatePrimaryKeyAsync()
     {
+        _renewPrimaryKey = await HybridCache.GetOrCreateAsync(CacheThamSoDvhc.RenewPrimaryKey,
+            _ => ValueTask.FromResult(_renewPrimaryKey));
+        StateHasChanged();
         if (!_renewPrimaryKey)
         {
             Logger.Information("Không cần cập nhật mã thửa đất.");
@@ -493,12 +494,12 @@ public partial class ProcessingDataTransfer
         return tempMaDangKy;
     }
 
-    private async Task UpdateMaGiayChungNhanAsync(long tempMaDangKy)
+    private async Task UpdateMaGiayChungNhanAsync(long maDangKyTemp)
     {
         _processingMessageUpdatePrimaryKey = $"[4/{TotalStepUpdatePrimaryKey}]: Làm mới mã Giấy chứng nhận...";
         StateHasChanged();
         var giayChungNhanRepository = new GiayChungNhanRepository(_connectionString!, Logger);
-        //await giayChungNhanRepository.RenewMaGiayChungNhanAsync(_capXaSau!, _limit);
+        await giayChungNhanRepository.RenewMaGiayChungNhanAsync(_capXaSau!, maDangKyTemp: maDangKyTemp, limit: _limit);
         Logger.Information("Hoàn thành làm mới mã Giấy chứng nhận.");
     }
 }

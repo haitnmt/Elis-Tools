@@ -1,7 +1,6 @@
 ﻿@using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities
 @using Haihv.Elis.Tool.ChuyenDvhc.Settings
 @using Microsoft.Extensions.Caching.Hybrid
-@using Microsoft.Extensions.Logging
 
 <MudExpansionPanels MultiExpansion="true">
 
@@ -255,9 +254,7 @@
 
     private async Task OnRenewPrimaryKeyChange(bool renewPrimaryKey)
     {
-        if (_renewPrimaryKey == renewPrimaryKey) return;
         _renewPrimaryKey = renewPrimaryKey;
         await HybridCache.SetAsync(CacheThamSoDvhc.RenewPrimaryKey, _renewPrimaryKey);
-        StateHasChanged();
     }
 }

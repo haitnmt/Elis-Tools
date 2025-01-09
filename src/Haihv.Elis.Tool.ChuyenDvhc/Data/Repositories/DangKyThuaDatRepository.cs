@@ -8,7 +8,7 @@ namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
 public class DangKyThuaDatRepository(string connectionString, ILogger? logger = null)
 {
-    public const long DefaultTempMaDangKy = 0;
+    public const long DefaultMaDangKyTemp = 0;
 
     /// <summary>
     /// Kiểm tra xem mã Đăng ký có vượt quá giới hạn không.
@@ -63,14 +63,14 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
     /// </summary>
     /// <param name="maDangKyTemp">
     /// Mã Thửa Đất tạm thời (tùy chọn).
-    /// Mặc định: <see cref="DefaultTempMaDangKy"/>
+    /// Mặc định: <see cref="DefaultMaDangKyTemp"/>
     /// </param>
     /// <param name="maThuaDatTemp">Mã thửa đất tạm thời.
     /// Mặc định: <see cref="ThuaDatRepository.DefaultMaThuaDatTemp"/>
     /// </param>
     /// <param name="reCreateTempThuaDat">Tạo lại thửa đất tạm thời (tùy chọn). Mặc định = false.</param>
     /// <returns>Mã Đăng ký tạm thời.</returns>
-    public async Task<long> CreateTempDangKyAsync(long maDangKyTemp = DefaultTempMaDangKy,
+    public async Task<long> CreateTempDangKyAsync(long maDangKyTemp = DefaultMaDangKyTemp,
         long maThuaDatTemp = ThuaDatRepository.DefaultMaThuaDatTemp, bool reCreateTempThuaDat = false)
     {
         try
@@ -137,6 +137,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                 await connection.ExecuteAsync(query, parameters, transaction: transaction);
                 // Commit giao dịch nếu thành công
                 await transaction.CommitAsync();
+                return parameters.MaDangKy;
             }
             catch (Exception ex)
             {
@@ -147,8 +148,6 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                     maThuaDatTemp, maDangKyTemp);
                 throw;
             }
-
-            return parameters.MaDangKy;
         }
         catch (Exception e)
         {
@@ -189,7 +188,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                               AND dk.MaDangKyLS < @MaxMaDangKy
                                           """;
         const string queryDangKyLsOnThuaDat = """
-                                              SELECT (MAX(dk.MaDangKyLS),0) AS MaDangKy
+                                              SELECT ISNULL(MAX(dk.MaDangKyLS),0) AS MaDangKy
                                               FROM DangKyQSDDLS dk
                                                   INNER JOIN ThuaDat td ON dk.MaThuaDatLS = td.MaThuaDat
                                                   INNER JOIN ToBanDo tbd ON td.MaToBanDo = tbd.MaToBanDo
@@ -271,12 +270,12 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                                       AND dk.MaDangKyLS < @MaxMaDangKyInDvhc
                                                   """; // Lấy Mã Đăng ký từ bảng DangKyLS ON ThuaDat
             const string query = $"""
-                                  SELECT DISTINCT TOP (@Limit) MaDangKy
+                                  SELECT TOP (@Limit) MaDangKy
                                   FROM (
                                       {queryDangKy}
-                                      UNION ALL
+                                      UNION
                                       {queryDangKyLs}
-                                      UNION ALL
+                                      UNION
                                       {queryDangKyLsOnThuaDat}
                                   ) AS CombinedResults
                                   ORDER BY MaDangKy ASC;
@@ -338,17 +337,18 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
     /// </summary>
     /// <param name="dvhc">Đơn vị hành chính.</param>
     /// <param name="minMaDangKy">Mã Đăng ký nhỏ nhất cần lấy.</param>
-    /// <param name="maDangKyTemp">Mã Đăng ký tạm thời. Mặc định: <see cref="DefaultTempMaDangKy"/>.</param>
+    /// <param name="maDangKyTemp">Mã Đăng ký tạm thời. Mặc định: <see cref="DefaultMaDangKyTemp"/>.</param>
     /// <param name="limit">Số lượng bản ghi tối đa cần lấy.</param>
     /// <returns>Danh sách Mã Đăng ký cần làm mới.</returns>
     /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình truy vấn.</exception>
     private async Task<IEnumerable<long>> GetMaDangKyNeedRenewAsync(DvhcRecord dvhc, long? minMaDangKy = null,
-        long maDangKyTemp = DefaultTempMaDangKy, int limit = 100)
+        long maDangKyTemp = DefaultMaDangKyTemp, int limit = 100)
     {
         try
         {
             // Khơi tạo các tham số mặc định
             var minMaInDvhc = dvhc.Ma.GetMinPrimaryKey();
+            minMaDangKy ??= long.MinValue;
             // Câu lệnh SQL để lấy danh sách Mã Đăng ký cần làm mới
             var queryDangKy = $"""
                                SELECT DISTINCT dk.MaDangKy AS MaDangKy
@@ -381,12 +381,12 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                           {(minMaDangKy < minMaInDvhc ? "AND dk.MaDangKyLS < @MinMaInDvhc" : "")}
                                           """; // Lấy Mã Đăng ký từ bảng DangKyLS ON ThuaDat
             var query = $"""
-                         SELECT DISTINCT TOP (@Limit) MaDangKy
+                         SELECT TOP (@Limit) MaDangKy
                          FROM (
                              {queryDangKy}
-                             UNION ALL
+                             UNION 
                              {queryDangKyLs}
-                             UNION ALL
+                             UNION
                              {queryDangKyLsOnThuaDat}
                          ) AS CombinedResult
                          ORDER BY MaDangKy {(minMaDangKy >= minMaInDvhc ? "DESC" : "ASC")};
@@ -397,7 +397,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
             {
                 Limit = limit,
                 MaDVHC = dvhc.MaDvhc,
-                MinMaDangKy = minMaDangKy ?? long.MinValue,
+                MinMaDangKy = minMaDangKy,
                 MaDangKyTemp = maDangKyTemp,
                 MinMaInDvhc = minMaInDvhc
             };
@@ -418,7 +418,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
     /// Làm mới Mã Đăng ký.
     /// </summary>
     /// <param name="capXaSau">Bản ghi cấp xã sau khi sáp nhập.</param>
-    /// <param name="maDangKyTemp">Mã Thửa Đất tạm thời. (<see cref="DefaultTempMaDangKy"/></param>)
+    /// <param name="maDangKyTemp">Mã Thửa Đất tạm thời. (<see cref="DefaultMaDangKyTemp"/></param>)
     /// <param name="maThuaDatTemp">
     /// Mã Tờ Bản Đồ tạm thời. (<see cref="ThuaDatRepository.DefaultMaThuaDatTemp"/>)
     /// </param>
@@ -426,7 +426,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
     /// <returns>Task bất đồng bộ.</returns>
     /// <exception cref="OverflowException">Ném ra ngoại lệ khi số lượng Tờ Bản Đồ đã đạt giới hạn tối đa.</exception>
     /// <exception cref="Exception">Ném ra ngoại lệ khi có lỗi xảy ra trong quá trình cập nhật.</exception>
-    public async Task<long> RenewMaDangKyAsync(DvhcRecord capXaSau, long maDangKyTemp = DefaultTempMaDangKy,
+    public async Task<long> RenewMaDangKyAsync(DvhcRecord capXaSau, long maDangKyTemp = DefaultMaDangKyTemp,
         long maThuaDatTemp = ThuaDatRepository.DefaultMaThuaDatTemp, int limit = 100)
     {
         try
@@ -466,6 +466,14 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                                     SET MaDangKyLS = @MaDangKyTemp
                                                     WHERE MaDangKyLS = @OldMaDangKy;
                                                 """;
+            const string queryUpdateOtherTemp = """
+                                                UPDATE NguoiDaiDien
+                                                    SET MaDangKy = @MaDangKyTemp
+                                                    WHERE MaDangKy = @OldMaDangKy;
+                                                UPDATE TaiSan_ThuaDat
+                                                  SET MaDangKy = @MaDangKyTemp
+                                                  WHERE MaDangKy = @OldMaDangKy;
+                                                """;
             const string queryUpdateDangKy = """
                                              UPDATE DangKyQSDD
                                                  SET MaDangKy = @NewMaDangKy
@@ -501,14 +509,42 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                                         SET MaDangKyLS = @NewMaDangKy
                                                         WHERE MaDangKyLS = @MaDangKyTemp;
                                                    """;
+            const string queryUpdateOtherNew = """
+                                               UPDATE NguoiDaiDien
+                                                   SET MaDangKy = @NewMaDangKy
+                                                   WHERE MaDangKy = @MaDangKyTemp;
+                                               UPDATE TaiSan_ThuaDat
+                                                 SET MaDangKy = @NewMaDangKy
+                                                 WHERE MaDangKy = @MaDangKyTemp;
+                                               """;
+            const string queryUpdateOther = """
+                                            UPDATE DangKyBienDong
+                                                SET MaDangKy = @NewMaDangKy
+                                                WHERE MaDangKy = @OldMaDangKy;
+                                            UPDATE GCNQSDNha
+                                                SET MaDangKy = @NewMaDangKy
+                                                WHERE MaDangKy = @OldMaDangKy;
+                                            UPDATE tblSoHong
+                                                SET MaDangKy = @NewMaDangKy
+                                                WHERE MaDangKy = @OldMaDangKy;
+                                            UPDATE TD_KNLichSu
+                                                SET MaDangKy = @NewMaDangKy
+                                                WHERE MaDangKy = @OldMaDangKy;
+                                            UPDATE TD_LichSu
+                                                SET MaDangKy = @NewMaDangKy
+                                                WHERE MaDangKy = @OldMaDangKy;
+                                            """;
             const string queryUpdate = $"""
                                         {queryUpdateGiayChungNhan}
                                         {queryUpdateCayLichSu}
+                                        {queryUpdateOtherTemp}
                                         {queryUpdateDangKy}
                                         {queryUpdateDangKyTheChap}
                                         {queryUpdateDangKyGopVon}
                                         {queryUpdateGiayChungNhanNew}
                                         {queryUpdateCayLichSuNew}
+                                        {queryUpdateOtherNew}
+                                        {queryUpdateOther}
                                         """;
             // Lấy thông tin kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
@@ -577,7 +613,8 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
         }
         catch (Exception exception)
         {
-            logger?.Error(exception, "Lỗi khi Làm mới Mã Thửa Đất. [DVHC: {DVHC}]", capXaSau);
+            Console.WriteLine(exception);
+            logger?.Error(exception, "Lỗi khi Làm mới Mã Đăng ký. [DVHC: {DVHC}]", capXaSau);
             throw;
         }
     }
