@@ -638,6 +638,9 @@ public class GiayChungNhanRepository(string connectionString, ILogger? logger = 
                                         UPDATE ThamSoPhieuChuyenNVTCCad
                                             SET MaGCN = @MaGiayChungNhanNew
                                             WHERE MaGCN = @MaGiayChungNhanStartOld;
+                                        UPDATE GCNQR
+                                            SET MaGCN = @MaGiayChungNhanNew
+                                            WHERE MaGCN = @MaGiayChungNhanStartOld;
                                         """;
         const string queryUpdate = $"""
                                     {queryUpdateDkMucDichTemp}
