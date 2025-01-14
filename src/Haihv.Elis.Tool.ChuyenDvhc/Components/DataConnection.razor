@@ -160,7 +160,6 @@
         IsConnected = _isConnected;
         await IsConnectedChanged.InvokeAsync(IsConnected);
         StateHasChanged();
-
         try
         {
             await using var connection = _connectionString.GetConnection();
@@ -170,10 +169,6 @@
             _isConnected = true;
             _errorMessage = string.Empty;
             await SaveConnectionInfoAsync();
-            // Xoá Data Cache
-            _ = HybridCache.RemoveAsync(CacheData.CapTinh);
-            _ = HybridCache.RemoveAsync(CacheData.CapHuyen()); 
-            _ = HybridCache.RemoveAsync(CacheData.CapXa());
             Logger.Information("Kết nối dữ liệu thành công, Server: [{Server}] DataBase: [{DataBase}]", 
                 _serverAddress, _databaseName);
         }
@@ -244,6 +239,19 @@
             };
             var json = JsonSerializer.Serialize(connectionInfo).Encrypt();
             await FileService.WriteFileAsync(_filePath, json);
+            // Xoá Data Cache
+            _ = HybridCache.RemoveAsync(CacheData.CapTinh);
+            _ = HybridCache.RemoveAsync(CacheData.CapHuyen()); 
+            _ = HybridCache.RemoveAsync(CacheData.CapXa());
+            _ = HybridCache.RemoveAsync(CacheThamSoDvhc.CapTinhTruoc);
+            _ = HybridCache.RemoveAsync(CacheThamSoDvhc.CapHuyenTruoc);
+            _ = HybridCache.RemoveAsync(CacheThamSoDvhc.CapXaTruoc);
+            _ = HybridCache.RemoveAsync(CacheThamSoDvhc.CapTinhSau);
+            _ = HybridCache.RemoveAsync(CacheThamSoDvhc.CapHuyenSau);
+            _ = HybridCache.RemoveAsync(CacheThamSoDvhc.CapXaSau);
+            _ = HybridCache.RemoveAsync(CacheThamSoDvhc.CapTinh);
+            _ = HybridCache.RemoveAsync(CacheThamSoBanDo.ThamChieuToBanDo);
+            _ = HybridCache.RemoveAsync(CacheThamSoDvhc.TenDvhcSau);
         }
         catch (Exception ex)
         {

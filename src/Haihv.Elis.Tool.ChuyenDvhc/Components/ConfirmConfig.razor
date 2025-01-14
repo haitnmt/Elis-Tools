@@ -17,7 +17,7 @@
                      ValueChanged="SetConfigurationVerified"></MudCheckBox>
     </MudAlert>
     <MudSpacer/>
-    <MudAlert Severity="Severity.Info" ShowCloseIcon="false">
+    <MudAlert Severity="Severity.Info" ShowCloseIcon="false" >
         <MudText>
             Tùy trọn
         </MudText>
@@ -25,14 +25,16 @@
                      Value="IsAuditEnabled"
                      Dense="true"
                      Label="Tạo bảng tham chiếu dữ liệu [Điều kiện cần để xuất ra Excel]"
-                     ValueChanged="SetAuditEnabled"/>
+                     ValueChanged="SetAuditEnabled"
+                     Disabled="true"/>
+        <MudText>Tạm thời bỏ qua (Chưa cần thiết)</MudText>
     </MudAlert>
 </MudStack>
 
 @code {
     [Parameter] public bool IsCompleted { get; set; }
     [Parameter] public EventCallback<bool> IsCompletedChanged { get; set; }
-    [Parameter] public bool IsAuditEnabled { get; set; } = true;
+    [Parameter] public bool IsAuditEnabled { get; set; } = false;
     [Parameter] public EventCallback<bool> IsAuditEnabledChanged { get; set; }
     bool _isBackupConfirmed = false;
     bool _isConfigurationVerified = false;

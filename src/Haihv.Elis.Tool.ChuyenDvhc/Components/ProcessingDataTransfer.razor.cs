@@ -18,7 +18,7 @@ public partial class ProcessingDataTransfer
     [Inject] private IMemoryCache MemoryCache { get; set; } = null!;
     [Inject] private ILogger Logger { get; set; } = null!;
     [Inject] private ISnackbar Snackbar { get; set; } = null!;
-    [Parameter] public bool IsAuditEnabled { get; set; }
+    [Parameter] public bool IsAuditEnabled { get; set; } = false;
     [Parameter] public EventCallback<bool> IsFinishedChanged { get; set; }
 
     private string? _connectionString;
@@ -170,8 +170,8 @@ public partial class ProcessingDataTransfer
         try
         {
             // Tạo hoặc thay đổi bảng audit
-            //var dataInitializer = new DataInitializer(_connectionString!);
-            //await dataInitializer.CreatedOrAlterAuditTable();
+            var dataInitializer = new DataInitializer(_connectionString!);
+            await dataInitializer.CreatedOrAlterAuditTable();
             _isCompletedKhoiTaoDuLieu = true;
             _colorKhoiTaoDuLieu = Color.Success;
         }
