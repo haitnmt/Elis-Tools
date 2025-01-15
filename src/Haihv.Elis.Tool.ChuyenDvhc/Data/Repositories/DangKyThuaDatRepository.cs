@@ -2,6 +2,7 @@ using System.Data;
 using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
+using Microsoft.Data.SqlClient;
 using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
@@ -81,7 +82,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
             {
                 // Tạo lại thửa đất tạm thời
                 maThuaDatTemp = await new ThuaDatRepository(connectionString, logger)
-                    .CreateTempThuaDatAsync(reCreateTempToBanDo: true);
+                    .CreateThuaDatTempAsync(reCreateTempToBanDo: true);
             }
 
             // Tạo câu lệnh SQL để tạo hoặc cập nhật đăng ký tạm thời
@@ -440,6 +441,7 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
 
             // Khởi tạo các tham số mặc định
             maDangKyTemp = await CreateTempDangKyAsync(maDangKyTemp, maThuaDatTemp);
+
             // Mã Đăng ký nhỏ nhất cần lấy
             long? startId = null;
             // Danh sách mã đăng ký chưa sử dụng
@@ -548,6 +550,12 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
                                         """;
             // Lấy thông tin kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
+
+            // Xóa Giấy Chứng Nhận và Cây Lịch Sử có Mã Đăng ký tạm thời
+            await GiayChungNhanRepository.DeleteGiayChungNhanByMaDangKyAsync(connection, maDangKyTemp, logger);
+            await DeleteCayLichSuByMaDangKyAsync(connection, maDangKyTemp, logger);
+            // Xóa các dữ liệu tạm khác:
+            await DeleteOtherByMaDangKyAsync(connection, maDangKyTemp, logger);
             while (true)
             {
                 // Lấy danh sách Mã Đăng ký cần làm mới
@@ -615,6 +623,113 @@ public class DangKyThuaDatRepository(string connectionString, ILogger? logger = 
         {
             Console.WriteLine(exception);
             logger?.Error(exception, "Lỗi khi Làm mới Mã Đăng ký. [DVHC: {DVHC}]", capXaSau);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Xóa Đăng ký tạm thời.
+    /// </summary>
+    /// <param name="dbConnection">Kết nối cơ sở dữ liệu.</param>
+    /// <param name="maDangKyTemp">Mã Đăng ký tạm thời.</param>
+    /// <param name="logger">Ghi log.</param>
+    public static async Task DeleteDangKyTempAsync(SqlConnection dbConnection,
+        long maDangKyTemp = DefaultMaDangKyTemp, ILogger? logger = null)
+    {
+        try
+        {
+            // Câu lệnh SQL để xóa thông tin Đăng ký tạm thời
+            const string query = """
+                                 DELETE FROM DangKyQSDD WHERE MaDangKy = @MaDangKyTemp;
+                                 DELETE FROM DangKyQSDDLS WHERE MaDangKyLS = @MaDangKyTemp;
+                                 """;
+            // Tạo tham số cho câu lệnh SQL
+            var param = new { MaDangKyTemp = maDangKyTemp };
+            // Thực thi câu lệnh SQL
+            await dbConnection.ExecuteAsync(query, param);
+        }
+        catch (Exception e)
+        {
+            logger?.Error(e, "Lỗi khi xóa Đăng ký tạm thời. [MaDangKyTemp: {MaDangKyTemp}]", maDangKyTemp);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Xóa Đăng ký theo Mã Thửa Đất.
+    /// </summary>
+    /// <param name="dbConnection">Kết nối cơ sở dữ liệu.</param>
+    /// <param name="maThuaDat">Mã Thửa Đất. Mặc định: <see cref="ThuaDatRepository.DefaultMaThuaDatTemp"/>.</param>
+    /// <param name="logger">Ghi log.</param>
+    /// <returns>Task bất đồng bộ.</returns>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình xóa.</exception>
+    public static async Task DeleteDangKyByMaThuaDatAsync(SqlConnection dbConnection,
+        long maThuaDat = ThuaDatRepository.DefaultMaThuaDatTemp, ILogger? logger = null)
+    {
+        try
+        {
+            // Câu lệnh SQL để xóa thông tin Đăng ký theo Mã Thửa Đất
+            const string query = """
+                                 DELETE FROM DangKyQSDD WHERE MaThuaDat = @MaThuaDat;
+                                 DELETE FROM DangKyQSDDLS WHERE MaThuaDatLS = @MaThuaDat;
+                                 """;
+            // Tạo tham số cho câu lệnh SQL
+            var param = new { MaThuaDat = maThuaDat };
+            // Thực thi câu lệnh SQL
+            await dbConnection.ExecuteAsync(query, param);
+        }
+        catch (Exception e)
+        {
+            logger?.Error(e, "Lỗi khi xóa Đăng ký theo Mã Thửa Đất. [MaThuaDat: {MaThuaDat}]", maThuaDat);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Xóa thông tin Cây Lịch Sử theo Mã Đăng Ký.
+    /// </summary>
+    /// <param name="dbConnection">Kết nối cơ sở dữ liệu.</param>
+    /// <param name="maDangKy">Mã Đăng Ký. Mặc định: <see cref="DefaultMaDangKyTemp"/>.</param>
+    /// <param name="logger">Ghi log.</param>
+    /// <returns>Task bất đồng bộ.</returns>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình xóa.</exception>
+    public static async Task DeleteCayLichSuByMaDangKyAsync(SqlConnection dbConnection,
+        long maDangKy = DefaultMaDangKyTemp, ILogger? logger = null)
+    {
+        try
+        {
+            // Câu lệnh SQL để xóa thông tin Đăng ký theo Mã Thửa Đất
+            const string query = "DELETE FROM CayLS WHERE MaDangKyHT = @MaDangKy OR MaDangKyLS = @MaDangKy;";
+            // Tạo tham số cho câu lệnh SQL
+            var param = new { MaDangKy = maDangKy };
+            // Thực thi câu lệnh SQL
+            await dbConnection.ExecuteAsync(query, param);
+        }
+        catch (Exception e)
+        {
+            logger?.Error(e, "Lỗi khi xóa Cây lịch sử. [MaDangKy: {MaDangKy}]", maDangKy);
+            throw;
+        }
+    }
+
+    public static async Task DeleteOtherByMaDangKyAsync(SqlConnection dbConnection,
+        long maDangKy = DefaultMaDangKyTemp, ILogger? logger = null)
+    {
+        try
+        {
+            // Câu lệnh SQL để xóa thông tin tạm khác theo Mã Đăng Ký
+            const string query = """
+                                 DELETE FROM NguoiDaiDien WHERE MaDangKy = @MaDangKy;
+                                 DELETE FROM TaiSan_ThuaDat WHERE MaDangKy = @MaDangKy;
+                                 """;
+            // Tạo tham số cho câu lệnh SQL
+            var param = new { MaDangKy = maDangKy };
+            // Thực thi câu lệnh SQL
+            await dbConnection.ExecuteAsync(query, param);
+        }
+        catch (Exception e)
+        {
+            logger?.Error(e, "Lỗi khi xóa Các thông tin khác theo Mã thửa đất. [MaDangKy: {MaDangKy}]", maDangKy);
             throw;
         }
     }

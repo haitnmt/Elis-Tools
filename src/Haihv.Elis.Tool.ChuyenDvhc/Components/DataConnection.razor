@@ -1,9 +1,11 @@
 ﻿@using System.Text.Json
 @using System.Text.Json.Serialization
 @using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions
+@using Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories
 @using Haihv.Elis.Tool.ChuyenDvhc.Extensions
 @using Haihv.Elis.Tool.ChuyenDvhc.Services
 @using Haihv.Elis.Tool.ChuyenDvhc.Settings
+@using Microsoft.Data.SqlClient
 @using Microsoft.Extensions.Caching.Hybrid
 @using Microsoft.Extensions.Caching.Memory
 @using Serilog
@@ -197,12 +199,13 @@
         public bool TrustedConnection { get; set; } = true;
     }
 
+    private string _connectionStringEncrypt = string.Empty;
     private async Task LoadConnectionInfoAsync()
     {
         try
         {
-            var json = await FileService.ReadFileAsync(_filePath);
-            var jsonDecrypted = json.Decrypt();
+            _connectionStringEncrypt = await FileService.ReadFileAsync(_filePath);
+            var jsonDecrypted = _connectionStringEncrypt.Decrypt();
             var connectionInfo = JsonSerializer.Deserialize<DataConnectionModel>(jsonDecrypted);
             if (connectionInfo != null)
             {
@@ -238,10 +241,10 @@
                 TrustedConnection = _trustedConnection
             };
             var json = JsonSerializer.Serialize(connectionInfo).Encrypt();
-            await FileService.WriteFileAsync(_filePath, json);
+            if (json == _connectionStringEncrypt) return;
             // Xoá Data Cache
             _ = HybridCache.RemoveAsync(CacheData.CapTinh);
-            _ = HybridCache.RemoveAsync(CacheData.CapHuyen()); 
+            _ = HybridCache.RemoveAsync(CacheData.CapHuyen());
             _ = HybridCache.RemoveAsync(CacheData.CapXa());
             _ = HybridCache.RemoveAsync(CacheThamSoDvhc.CapTinhTruoc);
             _ = HybridCache.RemoveAsync(CacheThamSoDvhc.CapHuyenTruoc);
@@ -252,6 +255,7 @@
             _ = HybridCache.RemoveAsync(CacheThamSoDvhc.CapTinh);
             _ = HybridCache.RemoveAsync(CacheThamSoBanDo.ThamChieuToBanDo);
             _ = HybridCache.RemoveAsync(CacheThamSoDvhc.TenDvhcSau);
+            await FileService.WriteFileAsync(_filePath, json);
         }
         catch (Exception ex)
         {

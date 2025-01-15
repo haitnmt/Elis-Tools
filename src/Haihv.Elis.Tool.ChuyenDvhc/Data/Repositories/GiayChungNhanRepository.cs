@@ -3,6 +3,7 @@ using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
+using Microsoft.Data.SqlClient;
 using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
@@ -732,6 +733,68 @@ public class GiayChungNhanRepository(string connectionString, ILogger? logger = 
         {
             Console.WriteLine(e);
             logger?.Error(e, "Lỗi khi làm mới mã Giấy chứng nhận.[DVHC: {DVHC}]", capXaSau);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Xóa Giấy chứng nhận tạm thời.
+    /// </summary>
+    /// <param name="dbConnection">Kết nối cơ sở dữ liệu.</param>
+    /// <param name="maGiayChungNhanTemp">Mã Giấy chứng nhận tạm thời. Mặc định: <see cref="DefaultMaGiayChungNhanTemp"/>.</param>
+    /// <param name="logger">Logger để ghi lại thông tin lỗi. Mặc định là null.</param>
+    /// <returns>Task không đồng bộ.</returns>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình xóa.</exception>
+    public static async Task DeleteGiayChungNhanTemp(SqlConnection dbConnection,
+        long maGiayChungNhanTemp = DefaultMaGiayChungNhanTemp, ILogger? logger = null)
+    {
+        try
+        {
+            // Câu lệnh SQL để xóa Giấy chứng nhận tạm thời
+            const string queryGiayChungNhan = """
+                                              DELETE FROM GCNQSDD WHERE MaGCN = @MaGCN;
+                                              DELETE FROM GCNQSDDLS WHERE MaGCNLS = @MaGCN;
+                                              """;
+            // Khởi tạo tham số cho câu lệnh SQL
+            var parameters = new { MaGCN = maGiayChungNhanTemp };
+
+            // Thực thi câu lệnh SQL
+            await dbConnection.ExecuteAsync(queryGiayChungNhan, parameters);
+        }
+        catch (Exception e)
+        {
+            logger?.Error(e, "Lỗi khi xóa Giấy chứng nhận tạm thời.");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Xóa Giấy chứng nhận theo Mã Đăng ký.
+    /// </summary>
+    /// <param name="dbConnection">Kết nối cơ sở dữ liệu.</param>
+    /// <param name="maDangKy">Mã Đăng ký. Mặc định: <see cref="DangKyThuaDatRepository.DefaultMaDangKyTemp"/>.</param>
+    /// <param name="logger">Logger để ghi lại thông tin lỗi. Mặc định là null.</param>
+    /// <returns>Task không đồng bộ.</returns>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình xóa.</exception>
+    public static async Task DeleteGiayChungNhanByMaDangKyAsync(SqlConnection dbConnection,
+        long maDangKy = DangKyThuaDatRepository.DefaultMaDangKyTemp, ILogger? logger = null)
+    {
+        try
+        {
+            // Câu lệnh SQL để xóa Giấy chứng nhận theo Mã Đăng ký
+            const string queryGiayChungNhan = """
+                                              DELETE FROM GCNQSDD WHERE MaDangKy = @MaDangKy;
+                                              DELETE FROM GCNQSDDLS WHERE MaDangKyLS = @MaDangKy;
+                                              """;
+            // Khởi tạo tham số cho câu lệnh SQL
+            var parameters = new { MaDangKy = maDangKy };
+
+            // Thực thi câu lệnh SQL
+            await dbConnection.ExecuteAsync(queryGiayChungNhan, parameters);
+        }
+        catch (Exception e)
+        {
+            logger?.Error(e, "Lỗi khi xóa Giấy chứng nhận theo Mã Đăng ký. [MaDangKy: {MaDangKy}]", maDangKy);
             throw;
         }
     }

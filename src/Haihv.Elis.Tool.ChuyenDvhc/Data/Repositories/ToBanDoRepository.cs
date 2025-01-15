@@ -330,8 +330,12 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
 
             // Lấy kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
+
             // Tạo mã Tờ Bản Đồ tạm thời
             tempMaToBanDo = await CreateTempToBanDoAsync(connection, tempMaToBanDo, logger: logger);
+
+            // Xóa thửa đất có mã Tờ Bản Đồ tạm thời
+            await ThuaDatRepository.DeleteThuaDatByMaToBanDoAsync(connection, tempMaToBanDo, logger);
             // Mã tờ bản đồ bắt đầu:
             long? startId = null;
             // Lấy các mã Tờ Bản Đồ cần cập nhật
@@ -428,6 +432,29 @@ public class ToBanDoRepository(string connectionString, ILogger? logger = null)
         catch (Exception e)
         {
             logger?.Error(e, "Lỗi khi làm mới Mã Tờ Bản Đồ. [DVHC: {DVHC}]", dvhc);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Xóa Tờ Bản Đồ tạm thời.
+    /// </summary>
+    /// <param name="dbConnection">Kết nối cơ sở dữ liệu.</param>
+    /// <param name="maToBanDoTemp">Mã Tờ Bản Đồ tạm thời (mặc định là <see cref="DefaultMaToBanDoTemp"/>).</param>
+    /// <param name="logger">Đối tượng ghi log (tùy chọn).</param>
+    /// <returns>Task đại diện cho thao tác bất đồng bộ.</returns>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình xóa.</exception>
+    public static async Task DeleteToBanDoTempAsync(SqlConnection dbConnection,
+        long maToBanDoTemp = DefaultMaToBanDoTemp, ILogger? logger = null)
+    {
+        try
+        {
+            const string query = "DELETE FROM ToBanDo WHERE MaToBanDo = @MaToBanDo";
+            await dbConnection.ExecuteAsync(query, new { MaToBanDo = maToBanDoTemp });
+        }
+        catch (Exception e)
+        {
+            logger?.Error(e, "Lỗi khi xóa Tờ Bản Đồ tạm thời. [MaToBanDo: {MaToBanDo}]", maToBanDoTemp);
             throw;
         }
     }

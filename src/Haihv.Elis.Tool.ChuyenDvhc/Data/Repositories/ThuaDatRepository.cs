@@ -3,6 +3,7 @@ using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Entities;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
 using Haihv.Elis.Tool.ChuyenDvhc.Settings;
+using Microsoft.Data.SqlClient;
 using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
@@ -162,7 +163,7 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
     /// </param>
     /// <param name="reCreateTempToBanDo">Tạo lại Tờ Bản Đồ tạm thời (tùy chọn). Mặc định = false.</param>
     /// <returns>Mã Thửa Đất tạm thời.</returns>
-    public async Task<long> CreateTempThuaDatAsync(long maThuaDatTemp = DefaultMaThuaDatTemp,
+    public async Task<long> CreateThuaDatTempAsync(long maThuaDatTemp = DefaultMaThuaDatTemp,
         long tempMaToBanDo = ToBanDoRepository.DefaultMaToBanDoTemp, bool reCreateTempToBanDo = false)
     {
         try
@@ -509,7 +510,10 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
             // Lấy thông tin kết nối cơ sở dữ liệu
             await using var connection = connectionString.GetConnection();
             // Tạo mã thửa đất tạm thời 
-            maThuaDatTemp = await CreateTempThuaDatAsync(maThuaDatTemp, maToBanDoTemp);
+            maThuaDatTemp = await CreateThuaDatTempAsync(maThuaDatTemp, maToBanDoTemp);
+
+            // Xóa đăng ký tạm thời theo mã thửa đất tạm thời
+            await DangKyThuaDatRepository.DeleteDangKyByMaThuaDatAsync(connection, maThuaDatTemp, logger);
 
             // Khởi tạo các giá trị ban đầu:
             // Mã Thửa Đất bắt đầu
@@ -638,6 +642,66 @@ public sealed class ThuaDatRepository(string connectionString, ILogger? logger =
         catch (Exception exception)
         {
             logger?.Error(exception, "Lỗi khi Làm mới Mã Thửa Đất. [DVHC: {DVHC}]", capXaSau);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Xóa Thửa Đất tạm thời.
+    /// </summary>
+    /// <param name="dbConnection">Kết nối cơ sở dữ liệu.</param>
+    /// <param name="maThuaDatTemp">Mã thửa đất tạm thời (mặc định là <see cref="DefaultMaThuaDatTemp"/>).</param>
+    /// <param name="logger">Đối tượng ghi log (tùy chọn).</param>
+    /// <returns>Task đại diện cho thao tác bất đồng bộ.</returns>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình xóa.</exception>
+    public static async Task DeleteThuaDatTempAsync(SqlConnection dbConnection,
+        long maThuaDatTemp = DefaultMaThuaDatTemp, ILogger? logger = null)
+    {
+        try
+        {
+            // Tạo câu lệnh SQL để xóa Thửa Đất tạm thời
+            const string query = """
+                                 DELETE FROM ThuaDat WHERE MaThuaDat = @MaThuaDatTemp;
+                                 DELETE FROM ThuaDatLS WHERE MaThuaDatLS = @MaThuaDatTemp;
+                                 """;
+            // Tạo tham số cho câu lệnh SQL
+            var param = new { MaThuaDatTemp = maThuaDatTemp };
+            // Thực thi câu lệnh SQL
+            await dbConnection.ExecuteAsync(query, param);
+        }
+        catch (Exception ex)
+        {
+            logger?.Error(ex, "Lỗi khi xóa Thửa Đất tạm thời. [MaThuaDatTemp: {MaThuaDatTemp}]", maThuaDatTemp);
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Xóa Thửa Đất theo Mã Tờ Bản Đồ.
+    /// </summary>
+    /// <param name="dbConnection">Kết nối cơ sở dữ liệu.</param>
+    /// <param name="maToBanDo">Mã Tờ Bản Đồ (mặc định là <see cref="ToBanDoRepository.DefaultMaToBanDoTemp"/>).</param>
+    /// <param name="logger">Đối tượng ghi log (tùy chọn).</param>
+    /// <returns>Task đại diện cho thao tác bất đồng bộ.</returns>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình xóa.</exception>
+    public static async Task DeleteThuaDatByMaToBanDoAsync(SqlConnection dbConnection,
+        long maToBanDo = ToBanDoRepository.DefaultMaToBanDoTemp, ILogger? logger = null)
+    {
+        try
+        {
+            // Tạo câu lệnh SQL để xóa Thửa Đất tạm thời
+            const string query = """
+                                 DELETE FROM ThuaDat WHERE MaToBanDo = @MaToBanDoTemp;
+                                 DELETE FROM ThuaDatLS WHERE MaToBanDo = @MaToBanDoTemp;
+                                 """;
+            // Tạo tham số cho câu lệnh SQL
+            var param = new { MaToBanDoTemp = maToBanDo };
+            // Thực thi câu lệnh SQL
+            await dbConnection.ExecuteAsync(query, param);
+        }
+        catch (Exception ex)
+        {
+            logger?.Error(ex, "Lỗi khi xóa Thửa Đất theo Mã Tờ Bản Đồ. [MaToBanDo: {MaToBanDo}]", maToBanDo);
             throw;
         }
     }

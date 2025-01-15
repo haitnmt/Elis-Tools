@@ -1,13 +1,14 @@
 ﻿using System.Data;
 using Dapper;
 using Haihv.Elis.Tool.ChuyenDvhc.Data.Extensions;
+using Microsoft.Data.SqlClient;
 using Serilog;
 
 namespace Haihv.Elis.Tool.ChuyenDvhc.Data.Repositories;
 
 public class ChuSuDungRepository(string connectionString, ILogger? logger = null)
 {
-    private const long DefaultMaChuSuDungTemp = 9999999999;
+    private const long DefaultMaChuSuDungTemp = 0;
 
     /// <summary>
     /// Tạo chủ sử dụng tạm thời.
@@ -86,6 +87,32 @@ public class ChuSuDungRepository(string connectionString, ILogger? logger = null
         {
             Console.WriteLine(e);
             logger?.Error(e, "Lỗi khi tạo chủ sử dụng tạm thời.");
+            throw;
+        }
+    }
+
+    /// <summary>
+    /// Xóa chủ sử dụng tạm thời.
+    /// </summary>
+    /// <param name="dbConnection">Kết nối cơ sở dữ liệu</param>
+    /// <param name="maChuSuDungTemp">Mã chủ sử dụng tạm thời</param>
+    /// <param name="logger">Logger để ghi lại thông tin lỗi (tùy chọn)</param>
+    /// <exception cref="Exception">Ném ra ngoại lệ nếu có lỗi xảy ra trong quá trình truy vấn.</exception>
+    public static async Task DeleteChuSuDungTempAsync(SqlConnection dbConnection,
+        long maChuSuDungTemp = DefaultMaChuSuDungTemp, ILogger? logger = null)
+    {
+        const string query = """
+                             DELETE FROM ChuSuDung WHERE MaChuSuDung = @MaChuSuDung;
+                             DELETE FROM ChuSuDungLS WHERE MaChuSuDungLS = @MaChuSuDung;
+                             """;
+        var parameters = new { MaChuSuDung = maChuSuDungTemp };
+        try
+        {
+            await dbConnection.ExecuteAsync(query, parameters);
+        }
+        catch (Exception e)
+        {
+            logger?.Error(e, "Lỗi khi xóa chủ sử dụng tạm thời.");
             throw;
         }
     }

@@ -436,6 +436,23 @@ public partial class ProcessingDataTransfer
             var maDangKyTemp = await UpdateMaDangKyAsync(maThuaDatTemp);
             await UpdateMaGiayChungNhanAsync(maDangKyTemp);
 
+            //Xóa các bản ghi tạm thời:
+            await using var dbConnection = new SqlConnection(_connectionString);
+
+            await ChuSuDungRepository.DeleteChuSuDungTempAsync(dbConnection, logger: Logger);
+
+            await GiayChungNhanRepository.DeleteGiayChungNhanByMaDangKyAsync(dbConnection, maDangKyTemp, Logger);
+            await GiayChungNhanRepository.DeleteGiayChungNhanTemp(dbConnection, logger: Logger);
+
+            await DangKyThuaDatRepository.DeleteCayLichSuByMaDangKyAsync(dbConnection, maDangKyTemp, Logger);
+            await DangKyThuaDatRepository.DeleteOtherByMaDangKyAsync(dbConnection, maDangKyTemp, Logger);
+            await DangKyThuaDatRepository.DeleteDangKyByMaThuaDatAsync(dbConnection, maThuaDatTemp, Logger);
+            await DangKyThuaDatRepository.DeleteDangKyTempAsync(dbConnection, maDangKyTemp, Logger);
+
+            await ThuaDatRepository.DeleteThuaDatByMaToBanDoAsync(dbConnection, maToBanDoTemp, Logger);
+            await ThuaDatRepository.DeleteThuaDatTempAsync(dbConnection, maThuaDatTemp, Logger);
+
+            await ToBanDoRepository.DeleteToBanDoTempAsync(dbConnection, maToBanDoTemp, Logger);
 
             // Hoàn thành
             _colorUpdatePrimaryKey = Color.Success;
@@ -501,5 +518,13 @@ public partial class ProcessingDataTransfer
         var giayChungNhanRepository = new GiayChungNhanRepository(_connectionString!, Logger);
         await giayChungNhanRepository.RenewMaGiayChungNhanAsync(_capXaSau!, maDangKyTemp: maDangKyTemp, limit: _limit);
         Logger.Information("Hoàn thành làm mới mã Giấy chứng nhận.");
+    }
+
+    private async Task DeleteTempAsync(SqlConnection dbConnection)
+    {
+        await ToBanDoRepository.DeleteToBanDoTempAsync(dbConnection, logger: Logger);
+        await ThuaDatRepository.DeleteThuaDatTempAsync(dbConnection, logger: Logger);
+        await DangKyThuaDatRepository.DeleteDangKyTempAsync(dbConnection, logger: Logger);
+        await GiayChungNhanRepository.DeleteGiayChungNhanTemp(dbConnection, logger: Logger);
     }
 }
