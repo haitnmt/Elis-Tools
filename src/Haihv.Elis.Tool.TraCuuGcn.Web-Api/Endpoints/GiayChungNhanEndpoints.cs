@@ -5,7 +5,7 @@ namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Endpoints;
 
 public static class GiayChungNhanEndpoints
 {
-    public static void MapGiayChungNhans(this WebApplication app)
+    public static void MapGiayChungNhan(this WebApplication app)
     {
         app.MapGet("/elis/gcn", GetGiayChungNhanBySerial)
             .WithName("GetGiayChungNhan");

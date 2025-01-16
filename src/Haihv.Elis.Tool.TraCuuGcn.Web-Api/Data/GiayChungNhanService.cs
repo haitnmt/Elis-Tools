@@ -8,7 +8,7 @@ namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 
 public interface IGiayChungNhanService
 {
-    Task<Result<GiayChungNhan>> GetBySerialAsync(string serial);
+    ValueTask<Result<GiayChungNhan>> GetBySerialAsync(string serial);
 }
 
 public sealed class GiayChungNhanService(
@@ -19,7 +19,7 @@ public sealed class GiayChungNhanService(
     private readonly List<string> _connectionStrings = connectionElisData.ConnectionStrings;
     private static string CacheKey(string serial) => $"GCN:{serial}";
 
-    public async Task<Result<GiayChungNhan>> GetBySerialAsync(string serial)
+    public async ValueTask<Result<GiayChungNhan>> GetBySerialAsync(string serial)
     {
         var cacheKey = CacheKey(serial);
         try
@@ -41,8 +41,6 @@ public sealed class GiayChungNhanService(
         {
             return new Result<GiayChungNhan>(exception);
         }
-
-        return new Result<GiayChungNhan>(new ValueIsNullException("Không tìm thấy giấy chứng nhận!"));
     }
 
     private async ValueTask<GiayChungNhan?> GetBySerialInDataBaseAsync(string serial,

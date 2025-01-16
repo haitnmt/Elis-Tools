@@ -30,6 +30,8 @@ builder.Services.AddSingleton<IConnectionElisData, ConnectionElisData>();
 
 //Add GiayChungNhanService
 builder.Services.AddSingleton<IGiayChungNhanService, GiayChungNhanService>();
+//Add ChuSuDungService
+builder.Services.AddSingleton<IChuSuDungService, ChuSuDungService>();
 
 var app = builder.Build();
 
@@ -41,6 +43,7 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-app.MapGiayChungNhans();
+app.MapGiayChungNhan();
+app.MapChuSuDung();
 
 app.Run();

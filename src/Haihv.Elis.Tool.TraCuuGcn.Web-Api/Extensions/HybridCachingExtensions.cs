@@ -15,7 +15,7 @@ public static class HybridCachingExtensions
             services.AddStackExchangeRedisCache(options =>
             {
                 options.Configuration = redisConnectionString;
-                options.InstanceName = "TraCuuGcn";
+                options.InstanceName = "TraCuuGcn:";
             });
         }
 
