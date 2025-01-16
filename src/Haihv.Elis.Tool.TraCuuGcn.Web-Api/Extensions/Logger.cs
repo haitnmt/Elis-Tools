@@ -10,6 +10,30 @@ namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Extensions;
 public static class Logger
 {
     private const string DefaultIndexName = "Elis-TraCuuGcn";
+
+    /// <summary>
+    /// Thêm cấu hình ghi log vào Elasticsearch.
+    /// </summary>
+    /// <param name="builder">Đối tượng HostApplicationBuilder.</param>
+    /// <param name="sectionName"> Tên của section chứa cấu hình Elasticsearch trong file appsettings.json.</param>
+    /// <param name="uriKey">Khóa cấu hình cho URI của Elasticsearch (mặc định là "Elasticsearch:Uris").</param>
+    /// <param name="tokenKey">Khóa cấu hình cho API token của Elasticsearch (mặc định là "Elasticsearch:encoded").</param>
+    /// <param name="usernameKey">Khóa cấu hình cho tên người dùng của Elasticsearch (mặc định là "Elasticsearch:username").</param>
+    /// <param name="passwordKey">Khóa cấu hình cho mật khẩu của Elasticsearch (mặc định là "Elasticsearch:password").</param>
+    public static void AddLogToElasticsearch(this WebApplicationBuilder builder,
+        string sectionName = "Elasticsearch", string uriKey = "Uris",
+        string? tokenKey = null, string? usernameKey = null, string? passwordKey = null)
+    {
+        if (builder.Services.All(service => service.ServiceType != typeof(IHttpContextAccessor)))
+        {
+            builder.Services.AddHttpContextAccessor();
+        }
+
+        var loggerConfiguration =
+            builder.CreateLoggerConfiguration(sectionName, uriKey, tokenKey, usernameKey, passwordKey);
+        builder.Services.AddSerilog(loggerConfiguration.CreateLogger());
+    }
+
     /// <summary>
     /// Tạo cấu hình logger cho Elasticsearch.
     /// </summary>
@@ -20,8 +44,8 @@ public static class Logger
     /// <param name="usernameKey">Khóa cấu hình cho tên người dùng của Elasticsearch.</param>
     /// <param name="passwordKey">Khóa cấu hình cho mật khẩu của Elasticsearch.</param>
     /// <returns>Cấu hình logger.</returns>
-    public static LoggerConfiguration CreateLoggerConfiguration(this IHostApplicationBuilder builder, 
-        string sectionName = "Elasticsearch", string uriKey = "Uris", 
+    private static LoggerConfiguration CreateLoggerConfiguration(this IHostApplicationBuilder builder,
+        string sectionName = "Elasticsearch", string uriKey = "Uris",
         string? tokenKey = null, string? usernameKey = null, string? passwordKey = null)
     {
         tokenKey ??= "Token";
@@ -36,7 +60,7 @@ public static class Logger
         {
             return builder.CreateLoggerConfiguration(uris, token);
         }
-        
+
         var username = configuration[usernameKey] ?? string.Empty;
         var password = configuration[passwordKey] ?? string.Empty;
         if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
