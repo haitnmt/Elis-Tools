@@ -5,6 +5,10 @@ VisualStudioVersion = 17.12.35527.113
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.ChuyenDvhc", "Haihv.Elis.Tool.ChuyenDvhc\Haihv.Elis.Tool.ChuyenDvhc.csproj", "{AD41591B-F6E8-4D69-82BE-E0B2058FA089}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TraCuuGCN", "TraCuuGCN", "{4D31FEAC-61F4-4EC9-A2BC-A4729205F02E}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Web-Api", "Haihv.Elis.Tool.TraCuuGcn.Web-Api\Haihv.Elis.Tool.TraCuuGcn.Web-Api.csproj", "{4811DA0F-ACA7-4EF4-81AF-5078044C6492}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -15,8 +19,15 @@ Global
 		{AD41591B-F6E8-4D69-82BE-E0B2058FA089}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{AD41591B-F6E8-4D69-82BE-E0B2058FA089}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{AD41591B-F6E8-4D69-82BE-E0B2058FA089}.Release|Any CPU.Build.0 = Release|Any CPU
+		{4811DA0F-ACA7-4EF4-81AF-5078044C6492}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{4811DA0F-ACA7-4EF4-81AF-5078044C6492}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{4811DA0F-ACA7-4EF4-81AF-5078044C6492}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{4811DA0F-ACA7-4EF4-81AF-5078044C6492}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{4811DA0F-ACA7-4EF4-81AF-5078044C6492} = {4D31FEAC-61F4-4EC9-A2BC-A4729205F02E}
 	EndGlobalSection
 EndGlobal
