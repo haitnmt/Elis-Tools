@@ -72,3 +72,6 @@
 #AppSettings
 /src/**/appsettings.Development.json
 /src/**/appsettings.Production.json
+
+#Log
+/src/**/logs/
