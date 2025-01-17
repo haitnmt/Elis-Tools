@@ -1,5 +1,4 @@
-﻿using Dapper;
-using InterpolatedSql.Dapper;
+﻿using InterpolatedSql.Dapper;
 using LanguageExt;
 using LanguageExt.Common;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -20,7 +19,8 @@ public sealed class ChuSuDungService(
     private readonly List<string> _connectionStrings = connectionElisData.ConnectionStrings;
     private const string CacheKey = "ChuSuDung";
 
-    public async ValueTask<Result<ChuSuDung>> GetBySoDinhDanhAsync(GiayChungNhan? giayChungNhan = null, string? soDinhDanh = null)
+    public async ValueTask<Result<ChuSuDung>> GetBySoDinhDanhAsync(GiayChungNhan? giayChungNhan = null,
+        string? soDinhDanh = null)
     {
         var cacheKey = $"{CacheKey}:{soDinhDanh}";
         try
@@ -34,12 +34,11 @@ public sealed class ChuSuDungService(
             logger.Error(exception, "Lỗi khi truy vấn dữ liệu chủ sử dụng từ cơ sở dữ liệu, {SoDDinhDanh}", soDinhDanh);
             return new Result<ChuSuDung>(exception);
         }
-
     }
-    
+
     private async ValueTask<ChuSuDung?> GetBySoDinhDanhInDataAsync(
-        GiayChungNhan? giayChungNhan = null, 
-        string? soDinhDanh = null, 
+        GiayChungNhan? giayChungNhan = null,
+        string? soDinhDanh = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(soDinhDanh) || giayChungNhan is null)
@@ -51,29 +50,30 @@ public sealed class ChuSuDungService(
                 await using var dbConnection = connectionString.GetConnection();
                 var query = dbConnection.SqlBuilder(
                     $"""
-                                        SELECT TOP(1) SoDinhDanh, HoVaTen, GioiTinh, NamSinh, DiaChi1, DiaChi2
-                                        FROM (SELECT DISTINCT CSD.SoDinhDanh1 AS SoDinhDanh, 
-                                                              CSD.Ten1 AS HoVaTen,
-                                                              CSD.GioiTinh1 AS GioiTinh, 
-                                                              CSD.NamSinh1 AS NamSinh, 
-                                                              CSD.DiaChi1 AS DiaChi1,
-                                                              CSD.DiaChi2 AS DiaChi2
-                                              FROM ChuSuDung CSD
-                                                   INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
-                                               WHERE CSD.SoDinhDanh1 = {soDinhDanh} AND GCN.MaGCN = {giayChungNhan.MaGcn}
-                                              UNION
-                                              SELECT DISTINCT CSD.SoDinhDanh2 AS SoDinhDanh, 
-                                                              CSD.Ten2 AS HoVaTen, 
-                                                              CSD.GioiTinh2 AS GioiTinh, 
-                                                              CSD.NamSinh2 AS NamSinh, 
-                                                              CSD.DiaChi1 AS DiaChi1,
-                                                              CSD.DiaChi2 AS DiaChi2
-                                              FROM ChuSuDung CSD
-                                                   INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
-                                               WHERE CSD.SoDinhDanh2 = {soDinhDanh} AND GCN.MaGCN = {giayChungNhan.MaGcn}
-                                               ) AS CSD
-                                        """);
-                var chuSuDungData = await query.QueryFirstOrDefaultAsync<ChuSuDungData?>(cancellationToken: cancellationToken);
+                     SELECT TOP(1) SoDinhDanh, HoVaTen, GioiTinh, NamSinh, DiaChi1, DiaChi2
+                     FROM (SELECT DISTINCT CSD.SoDinhDanh1 AS SoDinhDanh, 
+                                           CSD.Ten1 AS HoVaTen,
+                                           CSD.GioiTinh1 AS GioiTinh, 
+                                           CSD.NamSinh1 AS NamSinh, 
+                                           CSD.DiaChi1 AS DiaChi1,
+                                           CSD.DiaChi2 AS DiaChi2
+                           FROM ChuSuDung CSD
+                                INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
+                            WHERE CSD.SoDinhDanh1 = {soDinhDanh} AND GCN.MaGCN = {giayChungNhan.MaGcn}
+                           UNION
+                           SELECT DISTINCT CSD.SoDinhDanh2 AS SoDinhDanh, 
+                                           CSD.Ten2 AS HoVaTen, 
+                                           CSD.GioiTinh2 AS GioiTinh, 
+                                           CSD.NamSinh2 AS NamSinh, 
+                                           CSD.DiaChi1 AS DiaChi1,
+                                           CSD.DiaChi2 AS DiaChi2
+                           FROM ChuSuDung CSD
+                                INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
+                            WHERE CSD.SoDinhDanh2 = {soDinhDanh} AND GCN.MaGCN = {giayChungNhan.MaGcn}
+                            ) AS CSD
+                     """);
+                var chuSuDungData =
+                    await query.QueryFirstOrDefaultAsync<dynamic?>(cancellationToken: cancellationToken);
                 if (chuSuDungData is null) continue;
                 return new ChuSuDung(
                     chuSuDungData.SoDinhDanh,
@@ -91,8 +91,8 @@ public sealed class ChuSuDungService(
 
         return null;
     }
-
-    private record ChuSuDungData(string SoDinhDanh, string HoVaTen, int GioiTinh, int NamSinh, string DiaChi1, string DiaChi2);
 }
 
 public record ChuSuDung(string SoDinhDanh, string HoVaTen, string GioiTinh, int NamSinh, string DiaChi);
+
+public record AuthChuSuDung(string SoDinhDanh, string HoVaTen);

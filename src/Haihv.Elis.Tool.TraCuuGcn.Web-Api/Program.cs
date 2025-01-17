@@ -1,4 +1,5 @@
 using System.Text;
+using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Authenticate;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Endpoints;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Extensions;
@@ -24,6 +25,13 @@ var redisConnectionString = builder.Configuration["Redis:ConnectionString"];
 #pragma warning disable EXTEXP0018
 builder.Services.AddHybridCaching(redisConnectionString);
 #pragma warning restore EXTEXP0018
+
+//Add Jwt
+builder.Services.AddSingleton(
+    _ => new TokenProvider(builder.Configuration["Jwt:SecretKey"]!,
+        builder.Configuration["Jwt:Issuer"]!,
+        builder.Configuration["Jwt:Audience"]!,
+        builder.Configuration.GetValue<int>("Jwt:ExpireMinutes")));
 
 //Add ConnectionElisData
 builder.Services.AddSingleton<IConnectionElisData, ConnectionElisData>();
