@@ -29,6 +29,7 @@ public static class ChuSuDungEndpoints
     private static async Task<IResult> PostAuthChuSuDungAsync(
         [FromBody] GiayChungNhan giayChungNhan,
         [FromQuery] string soDinhDanh,
+        [FromQuery] string hoVaTen,
         ILogger<Program> logger,
         IChuSuDungService chuSuDungService,
         TokenProvider tokenProvider)

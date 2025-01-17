@@ -3,6 +3,8 @@ using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Authenticate;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Endpoints;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Extensions;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -33,6 +35,22 @@ builder.Services.AddSingleton(
         builder.Configuration["Jwt:Audience"]!,
         builder.Configuration.GetValue<int>("Jwt:ExpireMinutes")));
 
+// Add service Authentication and Authorization for Identity Server
+builder.Services.AddAuthorization();
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.RequireHttpsMetadata = false;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            IssuerSigningKey =
+                new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["Jwt:SecretKey"]!)),
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            ClockSkew = TimeSpan.Zero,
+        };
+    });
+
 //Add ConnectionElisData
 builder.Services.AddSingleton<IConnectionElisData, ConnectionElisData>();
 
@@ -53,5 +71,9 @@ app.UseHttpsRedirection();
 
 app.MapGiayChungNhan();
 app.MapChuSuDung();
+
+// Authentication and Authorization
+app.UseAuthentication();
+app.UseAuthorization();
 
 app.Run();

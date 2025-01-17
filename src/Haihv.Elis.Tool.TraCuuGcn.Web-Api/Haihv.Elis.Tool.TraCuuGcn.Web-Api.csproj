@@ -13,6 +13,7 @@
         <PackageReference Include="Elastic.Serilog.Sinks" Version="8.12.3" />
         <PackageReference Include="InterpolatedSql.Dapper" Version="2.3.0"/>
         <PackageReference Include="LanguageExt.Core" Version="4.4.9"/>
+        <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="9.0.1"/>
         <PackageReference Include="Microsoft.AspNetCore.OpenApi" Version="9.0.1"/>
         <PackageReference Include="Microsoft.Data.SqlClient" Version="6.0.0"/>
         <PackageReference Include="Microsoft.Extensions.Caching.Hybrid" Version="9.1.0-preview.1.25064.3"/>
