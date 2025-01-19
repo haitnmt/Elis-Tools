@@ -4,11 +4,9 @@ using ILogger = Serilog.ILogger;
 namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 
 public class MucDichService(
-    IConnectionElisData connectionElisData,
+    string connectionString,
     ILogger logger)
 {
-    private readonly List<string> _connectionStrings = connectionElisData.ConnectionStrings;
-
     private record MucDichSuDung(
         string Ten,
         double DienTichRieng,
@@ -28,8 +26,7 @@ public class MucDichService(
         if (maGcn <= 0) return (string.Empty, string.Empty);
         try
         {
-            foreach (var connectionString in _connectionStrings)
-            {
+
                 await using var dbConnection = connectionString.GetConnection();
                 var query = dbConnection.SqlBuilder(
                     $"""
@@ -43,17 +40,14 @@ public class MucDichService(
                      """);
                 var mucDichSuDungs =
                     (await query.QueryAsync<MucDichSuDung>(cancellationToken: cancellationToken)).ToList();
-                if (mucDichSuDungs.Count == 0) continue;
-                return (GetLoaiDat(mucDichSuDungs), GetThoiHan(mucDichSuDungs));
-            }
+                return mucDichSuDungs.Count == 0 ? (string.Empty, string.Empty) : 
+                    (GetLoaiDat(mucDichSuDungs), GetThoiHan(mucDichSuDungs));
         }
         catch (Exception e)
         {
             logger.Error(e, "Lỗi khi lấy thông tin Mục đích sử dụng theo Mã GCN: {MaGcn}", maGcn);
             throw;
         }
-
-        return (string.Empty, string.Empty);
     }
 
     private static string GetThoiHan(List<MucDichSuDung> mucDichSuDungs)

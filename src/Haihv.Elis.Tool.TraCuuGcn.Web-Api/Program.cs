@@ -58,6 +58,8 @@ builder.Services.AddSingleton<IConnectionElisData, ConnectionElisData>();
 builder.Services.AddSingleton<IGiayChungNhanService, GiayChungNhanService>();
 //Add ChuSuDungService
 builder.Services.AddSingleton<IChuSuDungService, ChuSuDungService>();
+//Add AuthenticationService
+builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
 
 var app = builder.Build();
 
@@ -71,6 +73,7 @@ app.UseHttpsRedirection();
 
 app.MapGiayChungNhan();
 app.MapChuSuDung();
+app.MapAuthentication();
 
 // Authentication and Authorization
 app.UseAuthentication();

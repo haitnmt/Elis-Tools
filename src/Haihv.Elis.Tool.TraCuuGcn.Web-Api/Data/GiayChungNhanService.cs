@@ -1,4 +1,5 @@
-﻿using InterpolatedSql.Dapper;
+﻿using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Settings;
+using InterpolatedSql.Dapper;
 using LanguageExt;
 using LanguageExt.Common;
 using Microsoft.Extensions.Caching.Hybrid;
@@ -8,8 +9,10 @@ namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 
 public interface IGiayChungNhanService
 {
-    ValueTask<Result<GiayChungNhan>> GetBySerialAsync(string serial);
-    ValueTask<Result<ThuaDat>> GetThuaDatByGiayChungNhanAsync(GiayChungNhan giayChungNhan);
+    ValueTask<Result<GiayChungNhan>> GetBySerialAsync(string serial,
+        CancellationToken cancellationToken = default);
+    ValueTask<Result<ThuaDat>> GetThuaDatByGiayChungNhanAsync(GiayChungNhan giayChungNhan,
+        CancellationToken cancellationToken = default);
 }
 
 public sealed class GiayChungNhanService(
@@ -17,17 +20,17 @@ public sealed class GiayChungNhanService(
     ILogger logger,
     HybridCache hybridCache) : IGiayChungNhanService
 {
-    private readonly List<string> _connectionStrings = connectionElisData.ConnectionStrings;
-    private static string CacheKey(string serial) => $"GCN:{serial}";
-    private static string CacheKeyThuaDat(string serial) => $"ThuaDat:{serial}";
-
-    public async ValueTask<Result<GiayChungNhan>> GetBySerialAsync(string serial)
+    private readonly List<ConnectionElis> _connectionElis = connectionElisData.ConnectionElis;
+   
+    public async ValueTask<Result<GiayChungNhan>> GetBySerialAsync(string serial,
+        CancellationToken cancellationToken = default)
     {
-        var cacheKey = CacheKey(serial);
+        var cacheKey = CacheSettings.KeyGiayChungNhan(serial);
         try
         {
-            var giayChungNhan = await hybridCache.GetOrCreateAsync(cacheKey,
-                cancel => GetBySerialInDataBaseAsync(serial, cancel));
+            var giayChungNhan = await hybridCache.GetOrCreateAsync(cacheKey, 
+                cancel => GetBySerialInDataBaseAsync(serial, cancel), 
+                cancellationToken: cancellationToken);
             if (giayChungNhan is null)
                 return new Result<GiayChungNhan>(new ValueIsNullException("Không tìm thấy giấy chứng nhận!"));
             if (giayChungNhan.NgayKy < DateTime.Now.AddYears(-10) ||
@@ -45,13 +48,15 @@ public sealed class GiayChungNhanService(
         }
     }
 
-    public async ValueTask<Result<ThuaDat>> GetThuaDatByGiayChungNhanAsync(GiayChungNhan giayChungNhan)
+    public async ValueTask<Result<ThuaDat>> GetThuaDatByGiayChungNhanAsync(GiayChungNhan giayChungNhan,
+        CancellationToken cancellationToken = default)
     {
-        var cacheKey = CacheKeyThuaDat(giayChungNhan.Serial);
+        var cacheKey = CacheSettings.KeyThuaDat(giayChungNhan.Serial);
         try
         {
-            var thuaDat = await hybridCache.GetOrCreateAsync(cacheKey,
-                cancel => GetThuaDatInDataBaseByGiayChungNhanAsync(giayChungNhan, cancel));
+            var thuaDat = await hybridCache.GetOrCreateAsync(cacheKey, 
+                cancel => GetThuaDatInDataBaseByGiayChungNhanAsync(giayChungNhan, cancel), 
+                cancellationToken: cancellationToken);
             return thuaDat ?? new Result<ThuaDat>(new ValueIsNullException("Không tìm thấy thông tin thửa đất!"));
         }
         catch (Exception exception)
@@ -59,13 +64,13 @@ public sealed class GiayChungNhanService(
             return new Result<ThuaDat>(exception);
         }
     }
-
+    
     private async ValueTask<GiayChungNhan?> GetBySerialInDataBaseAsync(string serial,
         CancellationToken cancellationToken = default)
     {
         try
         {
-            foreach (var connectionString in _connectionStrings)
+            foreach (var (connectionName, _, connectionString) in _connectionElis)
             {
                 await using var dbConnection = connectionString.GetConnection();
                 var query = dbConnection.SqlBuilder(
@@ -85,7 +90,10 @@ public sealed class GiayChungNhanService(
                 var giayChungNhan =
                     await query.QueryFirstOrDefaultAsync<GiayChungNhan?>(cancellationToken: cancellationToken);
                 if (giayChungNhan is null) continue;
-
+                await hybridCache.SetAsync(
+                    CacheSettings.ConnectionName(giayChungNhan.Serial), 
+                    connectionName, 
+                    cancellationToken: cancellationToken);
                 return giayChungNhan;
             }
         }
@@ -106,11 +114,16 @@ public sealed class GiayChungNhanService(
             giayChungNhan.MaGcn == 0 ||
             string.IsNullOrWhiteSpace(giayChungNhan.Serial) ||
             string.IsNullOrWhiteSpace(giayChungNhan.SoVaoSo)) return null;
+        var connectionName = await hybridCache.GetOrCreateAsync(CacheSettings.ConnectionName(giayChungNhan.Serial),
+            _ => ValueTask.FromResult<string?>(null),
+            cancellationToken: cancellationToken);
+        if (string.IsNullOrWhiteSpace(connectionName)) return null;
+        var connectionString = connectionElisData.GetConnectionString(connectionName);
         try
         {
-            var mucDichService = new MucDichService(connectionElisData, logger);
-            var nguonGocService = new NguonGocService(connectionElisData, logger);
-            var thuaDatService = new ThuaDatService(connectionElisData, logger);
+            var mucDichService = new MucDichService(connectionString, logger);
+            var nguonGocService = new NguonGocService(connectionString, logger);
+            var thuaDatService = new ThuaDatService(connectionString, logger, hybridCache);
             var (loaiDat, thoiHan) = await mucDichService.GetMucDichSuDungAsync(giayChungNhan.MaGcn, cancellationToken);
             var nguonGoc = await nguonGocService.GetNguonGocSuDungAsync(giayChungNhan.MaGcn, cancellationToken);
             var thuaDatToBanDo = await thuaDatService.GetThuaDatToBanDoAsync(giayChungNhan.MaDangKy, cancellationToken);

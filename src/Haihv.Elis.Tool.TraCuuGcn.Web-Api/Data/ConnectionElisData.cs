@@ -1,4 +1,5 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Settings;
+using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
 using ILogger = Serilog.ILogger;
 
@@ -18,6 +19,13 @@ public interface IConnectionElisData
     /// Danh sách các chuỗi kết nối.
     /// </summary>
     List<string> ConnectionStrings { get; }
+    
+    /// <summary>
+    /// Lấy chuỗi kết nối từ tên kết nối.
+    /// </summary>
+    /// <param name="name">Tên kết nối.</param>
+    /// <returns>Chuỗi kết nối.</returns>
+    string GetConnectionString(string name);
 }
 
 /// <summary>
@@ -31,7 +39,7 @@ public sealed class ConnectionElisData(
     ILogger logger,
     IMemoryCache memoryCache) : IConnectionElisData
 {
-    private const string KeyCache = "ElisConnections";
+    
     private const string SectionName = "ElisSql";
     private const string SectionData = "Databases";
     private const string KeyName = "Name";
@@ -42,7 +50,7 @@ public sealed class ConnectionElisData(
     /// Danh sách các kết nối ELIS.
     /// </summary>
     public List<ConnectionElis> ConnectionElis =>
-        memoryCache.GetOrCreate(KeyCache, entry =>
+        memoryCache.GetOrCreate(CacheSettings.ElisConnections, entry =>
         {
             entry.AbsoluteExpirationRelativeToNow = TimeSpan.FromMinutes(5);
             return GetConnection();
@@ -89,6 +97,8 @@ public sealed class ConnectionElisData(
 
         return result;
     }
+    public string GetConnectionString(string name) 
+        => ConnectionElis.FirstOrDefault(x => x.Name == name)?.ConnectionString ?? string.Empty;
 }
 
 /// <summary>

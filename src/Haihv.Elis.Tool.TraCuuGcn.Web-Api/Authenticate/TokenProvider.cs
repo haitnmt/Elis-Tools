@@ -21,8 +21,8 @@ public sealed class TokenProvider(
         var claims = new List<Claim>
         {
             new(JwtRegisteredClaimNames.Jti, id),
-            new(JwtRegisteredClaimNames.Sub, chuSuDung.SoDinhDanh),
-            new(JwtRegisteredClaimNames.GivenName, chuSuDung.HoVaTen)
+            new("SoDinhDanh", chuSuDung.SoDinhDanh),
+            new("HoVaTen", chuSuDung.HoVaTen)
         };
 
         var tokenDescriptor = new SecurityTokenDescriptor
@@ -37,3 +37,13 @@ public sealed class TokenProvider(
         return (tokenHandler.CreateToken(tokenDescriptor), id);
     }
 }
+
+public static class TokenExtensions
+{
+    public static string? GetSoDinhDanh(this ClaimsPrincipal claimsPrincipal) =>
+        claimsPrincipal.FindFirst("SoDinhDanh")?.Value;
+}
+
+public record AuthChuSuDung(string SoDinhDanh, string HoVaTen);
+
+public record AccessToken(string Token, string TokenId);

@@ -1,4 +1,5 @@
-﻿using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
+﻿using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Authenticate;
+using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Endpoints;
@@ -26,9 +27,17 @@ public static class GiayChungNhanEndpoints
     }
 
     private static async Task<IResult> GetThuaDatByGiayChungNhan([FromBody] GiayChungNhan giayChungNhan,
+        HttpContext httpContext,
         ILogger<Program> logger,
+        IAuthenticationService authenticationService,
         IGiayChungNhanService giayChungNhanService)
     {
+        // Lấy thông tin người dùng theo token từ HttpClient
+        var user = httpContext.User;
+        if (!await authenticationService.CheckAuthenticationAsync(giayChungNhan, user))
+        {
+            return Results.Unauthorized();
+        }
         var result = await giayChungNhanService.GetThuaDatByGiayChungNhanAsync(giayChungNhan);
         return await Task.FromResult(result.Match(
             Results.Ok,
