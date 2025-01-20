@@ -5,17 +5,14 @@ using ILogger = Serilog.ILogger;
 
 namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 
-public class ThuaDatService(
-    string connectionString,
-    ILogger logger,
-    HybridCache hybridCache)
+public class ThuaDatService(string connectionString, ILogger logger, HybridCache hybridCache)
 {
     public record ThuaDatToBanDo(string SoTo, string SoThua, string DiaChi);
 
-    public async ValueTask<ThuaDatToBanDo?> GetThuaDatToBanDoAsync(long  maDangKy,
+    public async ValueTask<ThuaDatToBanDo?> GetThuaDatToBanDoAsync(long maDangKy,
         CancellationToken cancellationToken = default)
     {
-        if (maDangKy<= 0) return null;
+        if (maDangKy <= 0) return null;
         try
         {
             await using var dbConnection = connectionString.GetConnection();
@@ -36,13 +33,14 @@ public class ThuaDatService(
             var thuaDatToBanDo = thuaDatToBanDos.First();
             if (!int.TryParse(thuaDatToBanDo.maDvhc.ToString(), out int maDvhc)) return null;
             string diaChi = thuaDatToBanDo.DiaChi;
-            diaChi = $"{diaChi}, {await GetDiaChiByMaDvhcAsync(maDvhc, cancellationToken)}";
+            diaChi =
+                $"{(string.IsNullOrWhiteSpace(diaChi) ? "" : $"{diaChi}, ")}{await GetDiaChiByMaDvhcAsync(maDvhc, cancellationToken)}";
             string soThua = thuaDatToBanDo.SoThua.ToString();
             string toBanDo = thuaDatToBanDo.SoTo.ToString();
             return new ThuaDatToBanDo(
                 toBanDo.Trim(),
                 soThua.Trim(),
-                diaChi.Trim()
+                diaChi.Trim().VietHoaDauChuoi()
             );
         }
         catch (Exception e)
@@ -51,8 +49,8 @@ public class ThuaDatService(
             throw;
         }
     }
-    
-    public async ValueTask<string> GetDiaChiByMaDvhcAsync(int maDvhc, CancellationToken cancellationToken = default)
+
+    private async ValueTask<string> GetDiaChiByMaDvhcAsync(int maDvhc, CancellationToken cancellationToken = default)
     {
         if (maDvhc <= 0) return string.Empty;
         var cacheKey = CacheSettings.KeyDiaChiByMaDvhc(maDvhc);
@@ -69,8 +67,9 @@ public class ThuaDatService(
             return string.Empty;
         }
     }
-    
-    private async ValueTask<string> GetDiaChiByMaDvhcAsyncInDataAsync(int maDvhc, CancellationToken cancellationToken = default)
+
+    private async ValueTask<string> GetDiaChiByMaDvhcAsyncInDataAsync(int maDvhc,
+        CancellationToken cancellationToken = default)
     {
         if (maDvhc <= 0) return string.Empty;
         try
@@ -114,5 +113,11 @@ public static class ThuaDatExtension
             _ =>
                 $"{(isLower ? char.ToLower(words[0][0]) : char.ToUpper(words[0][0])) + words[0][1..]} {string.Join(' ', words.Skip(1))}"
         };
+    }
+
+    public static string VietHoaDauChuoi(this string input)
+    {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
+        return char.ToUpper(input[0]) + input[1..];
     }
 }

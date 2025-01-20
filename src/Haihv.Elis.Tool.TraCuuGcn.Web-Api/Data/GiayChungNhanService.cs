@@ -1,4 +1,5 @@
-﻿using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Settings;
+﻿using Haihv.Elis.Tool.TraCuuGcn.Record;
+using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Settings;
 using InterpolatedSql.Dapper;
 using LanguageExt;
 using LanguageExt.Common;
@@ -9,27 +10,46 @@ namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 
 public interface IGiayChungNhanService
 {
+    /// <summary>
+    /// Lấy thông tin Giấy chứng nhận theo số serial.
+    /// </summary>
+    /// <param name="serial">Số serial của Giấy chứng nhận.</param>
+    /// <param name="cancellationToken">Token hủy bỏ tác vụ không bắt buộc.</param>
+    /// <returns>Kết quả chứa thông tin Giấy chứng nhận hoặc lỗi nếu không tìm thấy.</returns>
     ValueTask<Result<GiayChungNhan>> GetBySerialAsync(string serial,
         CancellationToken cancellationToken = default);
-    ValueTask<Result<ThuaDat>> GetThuaDatByGiayChungNhanAsync(GiayChungNhan giayChungNhan,
-        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy thông tin Thửa đất theo Serial của Giấy chứng nhận.
+    /// </summary>
+    /// <param name="serial">Số serial của Giấy chứng nhận.</param>
+    /// <param name="cancellationToken">Token hủy bỏ tác vụ không bắt buộc.</param>
+    /// <returns>Kết quả chứa thông tin Thửa đất hoặc lỗi nếu không tìm thấy.</returns>
+    ValueTask<Result<ThuaDat>> GetThuaDatAsync(string serial, CancellationToken cancellationToken = default);
 }
 
 public sealed class GiayChungNhanService(
     IConnectionElisData connectionElisData,
     ILogger logger,
-    HybridCache hybridCache) : IGiayChungNhanService
+    HybridCache hybridCache) :
+    IGiayChungNhanService
 {
     private readonly List<ConnectionElis> _connectionElis = connectionElisData.ConnectionElis;
-   
+
+    /// <summary>
+    /// Lấy thông tin Giấy chứng nhận theo số serial.
+    /// </summary>
+    /// <param name="serial">Số serial của Giấy chứng nhận.</param>
+    /// <param name="cancellationToken">Token hủy bỏ tác vụ không bắt buộc.</param>
+    /// <returns>Kết quả chứa thông tin Giấy chứng nhận hoặc lỗi nếu không tìm thấy.</returns>
     public async ValueTask<Result<GiayChungNhan>> GetBySerialAsync(string serial,
         CancellationToken cancellationToken = default)
     {
         var cacheKey = CacheSettings.KeyGiayChungNhan(serial);
         try
         {
-            var giayChungNhan = await hybridCache.GetOrCreateAsync(cacheKey, 
-                cancel => GetBySerialInDataBaseAsync(serial, cancel), 
+            var giayChungNhan = await hybridCache.GetOrCreateAsync(cacheKey,
+                cancel => GetBySerialInDataBaseAsync(serial, cancel),
                 cancellationToken: cancellationToken);
             if (giayChungNhan is null)
                 return new Result<GiayChungNhan>(new ValueIsNullException("Không tìm thấy giấy chứng nhận!"));
@@ -48,14 +68,20 @@ public sealed class GiayChungNhanService(
         }
     }
 
-    public async ValueTask<Result<ThuaDat>> GetThuaDatByGiayChungNhanAsync(GiayChungNhan giayChungNhan,
+    /// <summary>
+    /// Lấy thông tin Thửa đất theo Serial của Giấy chứng nhận.
+    /// </summary>
+    /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
+    /// <param name="cancellationToken">Token hủy bỏ tác vụ không bắt buộc.</param>
+    /// <returns>Kết quả chứa thông tin Thửa đất hoặc lỗi nếu không tìm thấy.</returns>
+    public async ValueTask<Result<ThuaDat>> GetThuaDatAsync(string serial,
         CancellationToken cancellationToken = default)
     {
-        var cacheKey = CacheSettings.KeyThuaDat(giayChungNhan.Serial);
+        var cacheKey = CacheSettings.KeyThuaDat(serial);
         try
         {
-            var thuaDat = await hybridCache.GetOrCreateAsync(cacheKey, 
-                cancel => GetThuaDatInDataBaseByGiayChungNhanAsync(giayChungNhan, cancel), 
+            var thuaDat = await hybridCache.GetOrCreateAsync(cacheKey,
+                cancel => GetThuaDatInDatabaseAsync(serial, cancel),
                 cancellationToken: cancellationToken);
             return thuaDat ?? new Result<ThuaDat>(new ValueIsNullException("Không tìm thấy thông tin thửa đất!"));
         }
@@ -64,7 +90,7 @@ public sealed class GiayChungNhanService(
             return new Result<ThuaDat>(exception);
         }
     }
-    
+
     private async ValueTask<GiayChungNhan?> GetBySerialInDataBaseAsync(string serial,
         CancellationToken cancellationToken = default)
     {
@@ -85,14 +111,14 @@ public sealed class GiayChungNhanService(
                             NguoiKy, 
                             SoVaoSo
                      FROM GCNQSDD
-                     WHERE SoSerial = {serial}
+                     WHERE LOWER(SoSerial) = LOWER({serial})
                      """);
                 var giayChungNhan =
                     await query.QueryFirstOrDefaultAsync<GiayChungNhan?>(cancellationToken: cancellationToken);
                 if (giayChungNhan is null) continue;
                 await hybridCache.SetAsync(
-                    CacheSettings.ConnectionName(giayChungNhan.Serial), 
-                    connectionName, 
+                    CacheSettings.ConnectionName(giayChungNhan.Serial),
+                    connectionName,
                     cancellationToken: cancellationToken);
                 return giayChungNhan;
             }
@@ -106,7 +132,29 @@ public sealed class GiayChungNhanService(
         return null;
     }
 
-    private async ValueTask<ThuaDat?> GetThuaDatInDataBaseByGiayChungNhanAsync(
+    /// <summary>
+    /// Lấy thông tin Thửa đất theo Serial của Giấy chứng nhận từ cơ sở dữ liệu.
+    /// </summary>
+    /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
+    /// <param name="cancellationToken">Token hủy bỏ tác vụ không bắt buộc.</param>
+    /// <returns>Kết quả chứa thông tin Thửa đất hoặc lỗi nếu không tìm thấy.</returns>
+    private async ValueTask<ThuaDat?> GetThuaDatInDatabaseAsync(
+        string? serial, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(serial)) return null;
+        var giayChungNhanResult = await GetBySerialAsync(serial, cancellationToken);
+        return await giayChungNhanResult.Match(
+            giayChungNhan => GetThuaDatInDatabaseAsync(giayChungNhan, cancellationToken),
+            ex => throw ex);
+    }
+
+    /// <summary>
+    /// Lấy thông tin Thửa đất theo  Giấy chứng nhận từ cơ sở dữ liệu.
+    /// </summary>
+    /// <param name="giayChungNhan">Giấy chứng nhận.</param>
+    /// <param name="cancellationToken">Token hủy bỏ tác vụ không bắt buộc.</param>
+    /// <returns>Kết quả chứa thông tin Thửa đất hoặc lỗi nếu không tìm thấy.</returns>
+    private async ValueTask<ThuaDat?> GetThuaDatInDatabaseAsync(
         GiayChungNhan? giayChungNhan, CancellationToken cancellationToken = default)
     {
         if (giayChungNhan is null ||
@@ -121,10 +169,11 @@ public sealed class GiayChungNhanService(
         var connectionString = connectionElisData.GetConnectionString(connectionName);
         try
         {
-            var mucDichService = new MucDichService(connectionString, logger);
+            var mucDichService = new MucDichAndHinhThucService(connectionString, logger);
             var nguonGocService = new NguonGocService(connectionString, logger);
             var thuaDatService = new ThuaDatService(connectionString, logger, hybridCache);
-            var (loaiDat, thoiHan) = await mucDichService.GetMucDichSuDungAsync(giayChungNhan.MaGcn, cancellationToken);
+            var (loaiDat, thoiHan, hinhThuc) =
+                await mucDichService.GetMucDichSuDungAsync(giayChungNhan.MaGcn, cancellationToken);
             var nguonGoc = await nguonGocService.GetNguonGocSuDungAsync(giayChungNhan.MaGcn, cancellationToken);
             var thuaDatToBanDo = await thuaDatService.GetThuaDatToBanDoAsync(giayChungNhan.MaDangKy, cancellationToken);
             if (thuaDatToBanDo is null) return null;
@@ -135,7 +184,7 @@ public sealed class GiayChungNhanService(
                 $"{giayChungNhan.DienTichRieng + giayChungNhan.DienTichChung} m²",
                 loaiDat,
                 thoiHan,
-                "",
+                hinhThuc,
                 nguonGoc
             );
         }
@@ -146,36 +195,6 @@ public sealed class GiayChungNhanService(
         }
     }
 }
-
-public record GiayChungNhan(
-    long MaGcn,
-    long MaDangKy,
-    int MaHinhThucSh,
-    double DienTichRieng,
-    double DienTichChung,
-    string Serial,
-    DateTime NgayKy,
-    string NguoiKy,
-    string SoVaoSo
-);
-
-public record ThuaDat(
-    string ThuaDatSo,
-    string ToBanDo,
-    string DiaChi,
-    string DienTich,
-    string LoaiDat,
-    string ThoiHan,
-    string HinhThuc,
-    string NguonGoc
-);
-
-public record ThuaDatPublic(
-    string ThuaDatSo,
-    string ToBanDo,
-    string DiaChi,
-    string DienTich
-);
 
 public static class GiayChungNhanServiceExtensions
 {

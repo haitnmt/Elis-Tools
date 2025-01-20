@@ -1,5 +1,6 @@
 ﻿using System.Security.Claims;
 using System.Text;
+using Haihv.Elis.Tool.TraCuuGcn.Record;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 using Microsoft.IdentityModel.JsonWebTokens;
 using Microsoft.IdentityModel.Tokens;
@@ -12,7 +13,7 @@ public sealed class TokenProvider(
     string audience = "Jwt:Audience",
     int expiryMinutes = 60)
 {
-    public (string Token, string Id) GenerateToken(AuthChuSuDung chuSuDung)
+    public AccessToken GenerateToken(AuthChuSuDung chuSuDung)
     {
         var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secretKey));
         var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
@@ -34,7 +35,7 @@ public sealed class TokenProvider(
             SigningCredentials = credentials
         };
 
-        return (tokenHandler.CreateToken(tokenDescriptor), id);
+        return new AccessToken(tokenHandler.CreateToken(tokenDescriptor), id);
     }
 }
 
@@ -42,8 +43,7 @@ public static class TokenExtensions
 {
     public static string? GetSoDinhDanh(this ClaimsPrincipal claimsPrincipal) =>
         claimsPrincipal.FindFirst("SoDinhDanh")?.Value;
+
+    public static string? GetHoVaTen(this ClaimsPrincipal claimsPrincipal) =>
+        claimsPrincipal.FindFirst("HoVaTen")?.Value;
 }
-
-public record AuthChuSuDung(string SoDinhDanh, string HoVaTen);
-
-public record AccessToken(string Token, string TokenId);

@@ -36,4 +36,8 @@
         </Reference>
     </ItemGroup>
 
+    <ItemGroup>
+        <ProjectReference Include="..\Haihv.Elis.Tool.TraCuuGcn.Record\Haihv.Elis.Tool.TraCuuGcn.Record.csproj"/>
+    </ItemGroup>
+
 </Project>

@@ -3,9 +3,7 @@ using ILogger = Serilog.ILogger;
 
 namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 
-public class NguonGocService(
-    string connectionString,
-    ILogger logger)
+public class NguonGocService(string connectionString, ILogger logger)
 {
     private record NguonGocSuDung(
         string Ten,
