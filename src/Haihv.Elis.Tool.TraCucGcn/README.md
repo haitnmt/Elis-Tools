@@ -1,3 +1,4 @@
-# Công cụ chuyển đổi đơn vị hành chính
+# Hệ thống tra cứu Giấy chứng nhận theo QRCode
 
-Công cụ chuyển đổi đơn vị hành chính được phát triển nhằm hỗ trợ trong việc chuyển đổi dữ liệu các thửa đất trên cơ sở dữ liệu ELIS SQL, khi có các thay đổi về địa giới hành chính, bao gồm việc sáp nhập, chia tách, hoặc đổi tên đơn vị hành chính.
+## Mô tả
+Hệ thống tra cứu giấy chứng nhận theo mã QRCode giúp người dùng (Chủ sử dụng đất) có thể tra cứu thông tin của giấy chứng nhận một cách nhanh chóng và chính xác.

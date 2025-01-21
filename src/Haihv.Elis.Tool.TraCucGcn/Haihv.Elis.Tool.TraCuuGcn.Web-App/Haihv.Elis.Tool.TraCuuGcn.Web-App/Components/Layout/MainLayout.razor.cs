@@ -2,6 +2,6 @@
 
 public partial class MainLayout
 {
-    private const string UrlGitHub = "https://github.com/haitnmt";
+    private const string UrlGitHub = "https://github.com/haitnmt/Elis-Tools/";
 
 }
