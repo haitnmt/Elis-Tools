@@ -1,9 +1,10 @@
-﻿using Haihv.Elis.Tool.TraCuuGcn.Record;
+﻿using Haihv.Elis.Tool.TraCuuGcn.Models;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Settings;
 using InterpolatedSql.Dapper;
 using LanguageExt;
 using LanguageExt.Common;
 using Microsoft.Extensions.Caching.Hybrid;
+using Newtonsoft.Json;
 using ILogger = Serilog.ILogger;
 
 namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
@@ -18,6 +19,18 @@ public interface IChuSuDungService
     /// <param name="cancellationToken">Token hủy bỏ.</param>
     /// <returns>Kết quả chứa thông tin xác thực chủ sử dụng hoặc lỗi.</returns>
     ValueTask<Result<AuthChuSuDung>> GetAuthChuSuDungBySoDinhDanhAsync(string? serial = null, string? soDinhDanh = null,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Lấy thông tin chủ sử dụng và quan hệ chủ sử dụng.
+    /// </summary>
+    /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
+    /// <param name="soDinhDanh">Số định danh.</param>
+    /// <param name="cancellationToken">Token hủy bỏ.</param>
+    /// <returns>Kết quả chứa thông tin chủ sử dụng hoặc lỗi.</returns>
+    ValueTask<Result<ChuSuDungInfo?>> GetChuSuDungAsync(
+        string? serial = null,
+        string? soDinhDanh = null,
         CancellationToken cancellationToken = default);
 }
 
@@ -41,7 +54,7 @@ public sealed class ChuSuDungService(
     {
         if (string.IsNullOrWhiteSpace(soDinhDanh) || string.IsNullOrWhiteSpace(serial))
             return new Result<AuthChuSuDung>(new ValueIsNullException("Số định danh không hợp lệ!"));
-        var cacheKey = CacheSettings.KeyChuSuDung(soDinhDanh, serial);
+        var cacheKey = CacheSettings.KeyAuthentication(soDinhDanh, serial);
         try
         {
             var chuSuDung = await hybridCache.GetOrCreateAsync(cacheKey,
@@ -103,7 +116,7 @@ public sealed class ChuSuDungService(
             await using var dbConnection = connectionString.GetConnection();
             var query = dbConnection.SqlBuilder(
                 $"""
-                 SELECT TOP(1) SoDinhDanh, HoVaTen, GioiTinh, NamSinh, DiaChi1, DiaChi2
+                 SELECT TOP(1) SoDinhDanh, HoVaTen
                  FROM (SELECT DISTINCT CSD.SoDinhDanh1 AS SoDinhDanh, 
                                        CSD.Ten1 AS HoVaTen
                        FROM ChuSuDung CSD
@@ -135,8 +148,44 @@ public sealed class ChuSuDungService(
     #endregion
 
     #region Lấy thông tin chủ sử dụng
+    
+    /// <summary>
+    /// Lấy thông tin chủ sử dụng và quan hệ chủ sử dụng.
+    /// </summary>
+    /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
+    /// <param name="soDinhDanh">Số định danh.</param>
+    /// <param name="cancellationToken">Token hủy bỏ.</param>
+    /// <returns>Kết quả chứa thông tin chủ sử dụng hoặc lỗi.</returns>
+    public async ValueTask<Result<ChuSuDungInfo?>> GetChuSuDungAsync(
+        string? serial = null,
+        string? soDinhDanh = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(soDinhDanh) ||
+            string.IsNullOrWhiteSpace(serial))
+            return null;
+        var cacheKey = CacheSettings.KeyChuSuDung(soDinhDanh, serial);
+        var chuSuDung = await hybridCache.GetOrCreateAsync(cacheKey,
+            cancel => GetChuSuDungInDataAsync(serial, soDinhDanh, cancel),
+            cancellationToken: cancellationToken);
+        return chuSuDung ?? new Result<ChuSuDungInfo?>(new ValueIsNullException("Không tìm thấy chủ sử dụng!"));
+    }
 
-    private async ValueTask<(ChuSuDung? ChuSuDung, ChuSuDungQuanHe? ChuSuDungQuanHe)> GetChuSuDungInDataAsync(
+    private async ValueTask<ChuSuDungInfo?> GetChuSuDungInDataAsync(
+        string? serial = null,
+        string? soDinhDanh = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrWhiteSpace(soDinhDanh) ||
+            string.IsNullOrWhiteSpace(serial))
+            return null;
+        var giayChungNhanResult = await giayChungNhanService.GetBySerialAsync(serial, cancellationToken);
+        return await giayChungNhanResult.Match(
+            giayChungNhan => GetChuSuDungInDataAsync(giayChungNhan, soDinhDanh, cancellationToken),
+            ex => throw ex);
+    }
+    
+    private async ValueTask<ChuSuDungInfo?> GetChuSuDungInDataAsync(
         GiayChungNhan? giayChungNhan = null,
         string? soDinhDanh = null,
         CancellationToken cancellationToken = default)
@@ -144,14 +193,14 @@ public sealed class ChuSuDungService(
         if (string.IsNullOrWhiteSpace(soDinhDanh) ||
             giayChungNhan is null ||
             string.IsNullOrWhiteSpace(giayChungNhan.Serial))
-            return (null, null);
+            return null;
         try
         {
             var connectionName = await hybridCache.GetOrCreateAsync<string?>(
                 CacheSettings.ConnectionName(giayChungNhan.Serial),
                 _ => ValueTask.FromResult<string?>(null),
                 cancellationToken: cancellationToken);
-            if (string.IsNullOrWhiteSpace(connectionName)) return (null, null);
+            if (string.IsNullOrWhiteSpace(connectionName)) return null;
 
             var connectionString = connectionElisData.GetConnectionString(connectionName);
             await using var dbConnection = connectionString.GetConnection();
@@ -162,24 +211,28 @@ public sealed class ChuSuDungService(
                                  CSD.SoDinhDanh1 AS SoDinhDanh, 
                                  CSD.loaiSDD1 AS LoaiSdd,
                                  CSD.GioiTinh1 AS GioiTinh, 
-                                 CSD.MaQuocTich1 AS MaQuocTich,
                                  CSD.DiaChi1 AS DiaChi,
+                                 CSD.MaQuocTich1 AS MaQuocTich,
                                  CSD.Ten2 AS Ten2,
                                  CSD.SoDinhDanh2 AS SoDinhDanh2,
                                  CSD.loaiSDD2 AS LoaiSdd2,
                                  CSD.GioiTinh2 AS GioiTinh2,
-                                 CSD.MaQuocTich2 AS MaQuocTich2,
                                  CSD.QuanHe AS QuanHe,
-                                 CSD.DiaChi2 AS DiaChi2
+                                 CSD.DiaChi2 AS DiaChi2,
+                                 CSD.MaQuocTich2 AS MaQuocTich2
                                        
                        FROM ChuSuDung CSD
                             INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
-                        WHERE LOWER(CSD.SoDinhDanh1) = LOWER({soDinhDanh}) AND GCN.MaGCN = {giayChungNhan.MaGcn}
+                       WHERE GCN.MaGCN = {giayChungNhan.MaGcn} 
+                         AND (LOWER(CSD.SoDinhDanh1) = LOWER({soDinhDanh}) OR LOWER(CSD.SoDinhDanh2) = LOWER({soDinhDanh}))  
                  """);
             var chuSuDungData =
                 await query.QueryFirstOrDefaultAsync<ChuSuDungData?>(cancellationToken: cancellationToken);
-            if (chuSuDungData is null) return (null, null);
-            return (GetChuSuDung(chuSuDungData), null);
+            if (chuSuDungData is null) return null;
+            var chuSuDung = await GetChuSuDungAsync(chuSuDungData);
+            if (chuSuDung is null) return null;
+            var chuSuDungQuanHe = await GetChuSuDungQuanHeAsync(chuSuDungData);
+            return new ChuSuDungInfo(chuSuDung, chuSuDungQuanHe);
         }
         catch (Exception exception)
         {
@@ -190,20 +243,22 @@ public sealed class ChuSuDungService(
 
     private record ChuSuDungData(
         int MaDoiTuong,
-        string? Ten,
-        string? SoDinhDanh,
+        string Ten,
+        string SoDinhDanh,
         int LoaiSdd,
         int GioiTinh,
-        string? DiaChi,
-        string? Ten2,
-        string? SoDinhDanh2,
+        string DiaChi,
+        int MaQuocTich,
+        string Ten2,
+        string SoDinhDanh2,
         int LoaiSdd2,
         int GioiTinh2,
-        string? QuanHe,
-        string? DiaChi2
+        string QuanHe,
+        string DiaChi2,
+        int MaQuocTich2
     );
-
-    private static ChuSuDung? GetChuSuDung(ChuSuDungData chuSuDungData)
+    
+    private async Task<ChuSuDung?> GetChuSuDungAsync(ChuSuDungData chuSuDungData)
     {
         if (string.IsNullOrWhiteSpace(chuSuDungData.Ten)) return null;
         var ten = chuSuDungData.MaDoiTuong switch
@@ -231,14 +286,16 @@ public sealed class ChuSuDungService(
             },
             _ => chuSuDungData.SoDinhDanh
         };
+        var quocTich = await GetQuocTichAsync(chuSuDungData.MaQuocTich) ?? string.Empty;
         return new ChuSuDung(
             ten,
             giayTo,
-            chuSuDungData.DiaChi
+            chuSuDungData.DiaChi,
+            quocTich
         );
     }
 
-    private static ChuSuDungQuanHe? GetChuSuDungQuanHe(ChuSuDungData chuSuDungData)
+    private async Task<ChuSuDungQuanHe?> GetChuSuDungQuanHeAsync(ChuSuDungData chuSuDungData)
     {
         if (string.IsNullOrWhiteSpace(chuSuDungData.Ten2)) return null;
         var quanHe = chuSuDungData.QuanHe;
@@ -255,7 +312,7 @@ public sealed class ChuSuDungService(
             },
             _ => chuSuDungData.Ten2
         };
-        ten = quanHe is "chồng" or "vợ" ? $"và {quanHe}: {ten}" : $"{quanHe}: {ten}";
+        ten = quanHe is "chồng" or "vợ" ? $"Và {quanHe}: {ten}" : $"{quanHe}: {ten}";
         var giayTo = chuSuDungData.MaDoiTuong switch
         {
             16 => chuSuDungData.LoaiSdd2 switch
@@ -271,52 +328,61 @@ public sealed class ChuSuDungService(
             },
             _ => chuSuDungData.SoDinhDanh2
         };
+        var quoctich = await GetQuocTichAsync(chuSuDungData.MaQuocTich2) ?? string.Empty;
         return new ChuSuDungQuanHe(
             ten,
             giayTo,
-            chuSuDungData.DiaChi2 ?? chuSuDungData.DiaChi
+            string.IsNullOrWhiteSpace(chuSuDungData.DiaChi2) ? 
+                chuSuDungData.DiaChi : chuSuDungData.DiaChi2,
+            quoctich
         );
     }
 
-    private async Task<string?> GetQuocTichAsync(string connectionString, int maQuocTich,
+    private async ValueTask<string?> GetQuocTichAsync(int maQuocTich = 1,
         CancellationToken cancellationToken = default)
     {
-        if (maQuocTich <= 0) return null;
+        if (maQuocTich <= 1) return null;
         var cacheKey = CacheSettings.KeyQuocTich(maQuocTich);
         try
         {
             var quocTich = await hybridCache.GetOrCreateAsync(cacheKey,
-                cancel => GetQuocTichInDataAsync(connectionString, maQuocTich, cancel),
+                cancel => GetQuocTichInJsonAsync(null, maQuocTich, cancel),
                 cancellationToken: cancellationToken);
             return quocTich;
         }
         catch (Exception exception)
         {
-            logger.Error(exception, "Lỗi khi truy vấn dữ liệu Quốc tịch từ cơ sở dữ liệu, {MaQuocTich}", maQuocTich);
+            logger.Error(exception, "Lỗi khi truy vấn dữ liệu Quốc tịch, {MaQuocTich}", maQuocTich);
             return null;
         }
     }
 
-    private async ValueTask<string?> GetQuocTichInDataAsync(string connectionString, int maQuocTich,
+    private record QuocTich(int MaQuocTich, string TenQuocTich);
+
+    private async ValueTask<string?> GetQuocTichInJsonAsync(string? path = null, int maQuocTich = 1,
         CancellationToken cancellationToken = default)
     {
-        if (maQuocTich <= 0) return null;
-        try
+        switch (maQuocTich)
         {
-            await using var dbConnection = connectionString.GetConnection();
-            var query = dbConnection.SqlBuilder(
-                $"""
-                 SELECT TenQuocGia
-                 FROM QuocGia
-                 WHERE MaQuocGia = {maQuocTich}
-                 """);
-            var quocTich = await query.QueryFirstOrDefaultAsync<string?>(cancellationToken: cancellationToken);
-            return quocTich;
-        }
-        catch (Exception exception)
-        {
-            logger.Error(exception, "Lỗi khi truy vấn dữ liệu Quốc tịch từ cơ sở dữ liệu, {MaQuocTich}", maQuocTich);
-            return null;
+            case <= 1:
+                return null;
+            default:
+                path ??= "QuocTich.json";
+                try
+                {
+                    // Đọc nội dung file JSON
+                    var jsonContent = await File.ReadAllTextAsync(path, cancellationToken);
+                    // Deserialize JSON thành danh sách đối tượng
+                    var countries = JsonConvert.DeserializeObject<List<QuocTich>>(jsonContent);
+                    // Lấy tên quốc tịch theo mã quốc tịch
+                    var country = countries?.FirstOrDefault(c => c.MaQuocTich == maQuocTich);
+                    return country?.TenQuocTich;
+                }
+                catch (Exception exception)
+                {
+                    logger.Error(exception, "Lỗi khi truy vấn dữ liệu Quốc tịch, {MaQuocTich}", maQuocTich);
+                    return null;
+                }
         }
     }
 

@@ -1,4 +1,4 @@
-﻿namespace Haihv.Elis.Tool.TraCuuGcn.Record;
+﻿namespace Haihv.Elis.Tool.TraCuuGcn.Models;
 
 public record GiayChungNhan(
     long MaGcn,

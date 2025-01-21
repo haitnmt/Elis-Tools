@@ -1,4 +1,4 @@
-using Haihv.Elis.Tool.TraCuuGcn.Record;
+using Haihv.Elis.Tool.TraCuuGcn.Models;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Authenticate;
 using Microsoft.AspNetCore.Mvc;
 

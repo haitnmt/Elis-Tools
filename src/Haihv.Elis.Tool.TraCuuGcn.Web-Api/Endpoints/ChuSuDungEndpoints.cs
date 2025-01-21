@@ -1,4 +1,4 @@
-using Haihv.Elis.Tool.TraCuuGcn.Record;
+using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Authenticate;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +12,7 @@ public static class ChuSuDungEndpoints
     /// <param name="app">Ứng dụng web.</param>
     public static void MapChuSuDung(this WebApplication app)
     {
-        app.MapGet("/elis/csd", GetChuSuDungBySoDinhDanh)
+        app.MapGet("/elis/csd", GetChuSuDung)
             .WithName("GetChuSuDung")
             .RequireAuthorization();
     }
@@ -21,17 +21,19 @@ public static class ChuSuDungEndpoints
     /// Lấy thông tin chủ sử dụng theo số định danh.
     /// </summary>
     /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
-    /// <param name="soDinhDanh">Số định danh.</param>
+    /// <param name="httpContext">Ngữ cảnh HTTP hiện tại.</param>
     /// <param name="logger">Logger.</param>
     /// <param name="chuSuDungService">Dịch vụ chủ sử dụng.</param>
     /// <returns>Kết quả truy vấn chủ sử dụng.</returns>
-    private static async Task<IResult> GetChuSuDungBySoDinhDanh(
+    private static async Task<IResult> GetChuSuDung(
         [FromQuery] string serial,
-        [FromQuery] string soDinhDanh,
+        HttpContext httpContext,
         ILogger<Program> logger,
         IChuSuDungService chuSuDungService)
     {
-        var result = await chuSuDungService.GetAuthChuSuDungBySoDinhDanhAsync(serial, soDinhDanh);
+        // Lấy thông tin người dùng theo token từ HttpClient
+        var user = httpContext.User;
+        var result = await chuSuDungService.GetChuSuDungAsync(serial, user.GetSoDinhDanh());
         return await Task.FromResult(result.Match(
             Results.Ok,
             ex => Results.BadRequest(ex.Message)));

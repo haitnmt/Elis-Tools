@@ -1,4 +1,4 @@
-﻿using Haihv.Elis.Tool.TraCuuGcn.Record;
+﻿using Haihv.Elis.Tool.TraCuuGcn.Models;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Settings;
 using InterpolatedSql.Dapper;
 using LanguageExt;
@@ -53,7 +53,7 @@ public sealed class GiayChungNhanService(
                 cancellationToken: cancellationToken);
             if (giayChungNhan is null)
                 return new Result<GiayChungNhan>(new ValueIsNullException("Không tìm thấy giấy chứng nhận!"));
-            if (giayChungNhan.NgayKy < DateTime.Now.AddYears(-10) ||
+            if (giayChungNhan.NgayKy < DateTime.Now.AddYears(-100) ||
                 giayChungNhan.NgayKy > DateTime.Now ||
                 string.IsNullOrWhiteSpace(giayChungNhan.SoVaoSo))
             {
@@ -107,7 +107,10 @@ public sealed class GiayChungNhanService(
                             DienTichRieng,
                             DienTichChung,
                             SoSerial AS Serial, 
-                            NgayKy, 
+                            CASE WHEN NgayKy < '1990-01-01' 
+                                THEN NgayVaoSo 
+                                ELSE NgayKy 
+                            END AS NgayKy, 
                             NguoiKy, 
                             SoVaoSo
                      FROM GCNQSDD

@@ -9,7 +9,7 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TraCuuGCN", "TraCuuGCN", "{
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Web-Api", "Haihv.Elis.Tool.TraCuuGcn.Web-Api\Haihv.Elis.Tool.TraCuuGcn.Web-Api.csproj", "{4811DA0F-ACA7-4EF4-81AF-5078044C6492}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Record", "Haihv.Elis.Tool.TraCuuGcn.Record\Haihv.Elis.Tool.TraCuuGcn.Record.csproj", "{0777E306-71A9-4AA3-8604-F8FFCFCA35DB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Models", "Haihv.Elis.Tool.TraCuuGcn.Models\Haihv.Elis.Tool.TraCuuGcn.Models.csproj", "{0777E306-71A9-4AA3-8604-F8FFCFCA35DB}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

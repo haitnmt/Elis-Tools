@@ -1,7 +1,7 @@
 using System.Globalization;
 using System.Security.Claims;
 using System.Text;
-using Haihv.Elis.Tool.TraCuuGcn.Record;
+using Haihv.Elis.Tool.TraCuuGcn.Models;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Settings;
 using LanguageExt;
