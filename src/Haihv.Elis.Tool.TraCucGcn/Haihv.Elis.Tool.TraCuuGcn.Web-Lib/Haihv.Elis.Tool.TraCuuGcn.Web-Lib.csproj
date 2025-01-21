@@ -17,4 +17,8 @@
         <PackageReference Include="MudBlazor" Version="8.0.0" />
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Haihv.Elis.Tool.TraCuuGcn.Models\Haihv.Elis.Tool.TraCuuGcn.Models.csproj" />
+    </ItemGroup>
+
 </Project>
