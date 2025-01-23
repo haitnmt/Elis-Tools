@@ -4,21 +4,24 @@
         <TargetFramework>net9.0</TargetFramework>
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
-        <RootNamespace>Haihv.Elis.Tool.TraCuuGcn.Web_Lib</RootNamespace>
+        <AssemblyVersion>1.0.9154.4</AssemblyVersion>
+        <FileVersion>1.0.9154.4</FileVersion>
     </PropertyGroup>
 
 
     <ItemGroup>
-        <SupportedPlatform Include="browser"/>
+        <SupportedPlatform Include="browser" />
     </ItemGroup>
 
     <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.1"/>
+        <PackageReference Include="Microsoft.AspNetCore.Components.Web" Version="9.0.1" />
         <PackageReference Include="MudBlazor" Version="8.0.0" />
     </ItemGroup>
 
     <ItemGroup>
-      <ProjectReference Include="..\Haihv.Elis.Tool.TraCuuGcn.Models\Haihv.Elis.Tool.TraCuuGcn.Models.csproj" />
+      <Content Update="wwwroot\barcodeScanner.js">
+        <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+      </Content>
     </ItemGroup>
 
 </Project>

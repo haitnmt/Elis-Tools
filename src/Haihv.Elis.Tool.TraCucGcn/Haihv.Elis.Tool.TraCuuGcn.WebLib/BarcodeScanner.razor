@@ -1,0 +1,14 @@
+﻿@page "/barcode-scanner"
+
+<h3>Barcode Scanner</h3>
+<MudButton Disabled="_isScanning" OnClick="StartScanning">Start</MudButton>
+<MudButton OnClick="ResetScanning">ResetScanning</MudButton>
+<video id="video" width="600" height="400" style="border: 1px solid gray"></video>
+@if (!string.IsNullOrEmpty(_errorMessage))
+{
+    <MudAlert Severity="Severity.Error">@_errorMessage</MudAlert>
+}
+@if(!string.IsNullOrEmpty(_scanResult))
+{
+    <MudAlert Severity="Severity.Success">@_scanResult</MudAlert>
+}
