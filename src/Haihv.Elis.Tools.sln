@@ -7,18 +7,18 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.ChuyenDvhc"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "TraCuuGCN", "TraCuuGCN", "{4D31FEAC-61F4-4EC9-A2BC-A4729205F02E}"
 	ProjectSection(SolutionItems) = preProject
-		Haihv.Elis.Tool.TraCucGcn\README.md = Haihv.Elis.Tool.TraCucGcn\README.md
+		Haihv.Elis.Tool.TraCuuGcn\BuildAndPushImageToRegistryApp.ps1 = Haihv.Elis.Tool.TraCuuGcn\BuildAndPushImageToRegistryApp.ps1
 	EndProjectSection
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Models", "Haihv.Elis.Tool.TraCucGcn\Haihv.Elis.Tool.TraCuuGcn.Models\Haihv.Elis.Tool.TraCuuGcn.Models.csproj", "{83001984-C4A4-452A-B639-AB040085B75E}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Models", "Haihv.Elis.Tool.TraCuuGcn\Haihv.Elis.Tool.TraCuuGcn.Models\Haihv.Elis.Tool.TraCuuGcn.Models.csproj", "{83001984-C4A4-452A-B639-AB040085B75E}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Web-Api", "Haihv.Elis.Tool.TraCucGcn\Haihv.Elis.Tool.TraCuuGcn.Web-Api\Haihv.Elis.Tool.TraCuuGcn.Web-Api.csproj", "{99369BA0-6A87-4E19-BC5C-F3CDB975BE4F}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Web-Api", "Haihv.Elis.Tool.TraCuuGcn\Haihv.Elis.Tool.TraCuuGcn.Web-Api\Haihv.Elis.Tool.TraCuuGcn.Web-Api.csproj", "{99369BA0-6A87-4E19-BC5C-F3CDB975BE4F}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Web-Lib", "Haihv.Elis.Tool.TraCucGcn\Haihv.Elis.Tool.TraCuuGcn.Web-Lib\Haihv.Elis.Tool.TraCuuGcn.Web-Lib.csproj", "{1422FCB2-B470-464A-AFBB-34E7E6615F38}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Web-App.Client", "Haihv.Elis.Tool.TraCuuGcn\Haihv.Elis.Tool.TraCuuGcn.Web-App\Haihv.Elis.Tool.TraCuuGcn.Web-App.Client\Haihv.Elis.Tool.TraCuuGcn.Web-App.Client.csproj", "{57D7D235-2B5D-45A3-BDC0-C15F96EFC8FB}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Web-App.Client", "Haihv.Elis.Tool.TraCucGcn\Haihv.Elis.Tool.TraCuuGcn.Web-App\Haihv.Elis.Tool.TraCuuGcn.Web-App.Client\Haihv.Elis.Tool.TraCuuGcn.Web-App.Client.csproj", "{57D7D235-2B5D-45A3-BDC0-C15F96EFC8FB}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Web-App", "Haihv.Elis.Tool.TraCuuGcn\Haihv.Elis.Tool.TraCuuGcn.Web-App\Haihv.Elis.Tool.TraCuuGcn.Web-App\Haihv.Elis.Tool.TraCuuGcn.Web-App.csproj", "{40357639-973F-452E-917B-145281449C43}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.Web-App", "Haihv.Elis.Tool.TraCucGcn\Haihv.Elis.Tool.TraCuuGcn.Web-App\Haihv.Elis.Tool.TraCuuGcn.Web-App\Haihv.Elis.Tool.TraCuuGcn.Web-App.csproj", "{40357639-973F-452E-917B-145281449C43}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Haihv.Elis.Tool.TraCuuGcn.WebLib", "Haihv.Elis.Tool.TraCuuGcn\Haihv.Elis.Tool.TraCuuGcn.WebLib\Haihv.Elis.Tool.TraCuuGcn.WebLib.csproj", "{3DC880A8-4DE1-4DF7-8A47-A2EFC1DEC339}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -38,10 +38,6 @@ Global
 		{99369BA0-6A87-4E19-BC5C-F3CDB975BE4F}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{99369BA0-6A87-4E19-BC5C-F3CDB975BE4F}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{99369BA0-6A87-4E19-BC5C-F3CDB975BE4F}.Release|Any CPU.Build.0 = Release|Any CPU
-		{1422FCB2-B470-464A-AFBB-34E7E6615F38}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{1422FCB2-B470-464A-AFBB-34E7E6615F38}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{1422FCB2-B470-464A-AFBB-34E7E6615F38}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{1422FCB2-B470-464A-AFBB-34E7E6615F38}.Release|Any CPU.Build.0 = Release|Any CPU
 		{57D7D235-2B5D-45A3-BDC0-C15F96EFC8FB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
 		{57D7D235-2B5D-45A3-BDC0-C15F96EFC8FB}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57D7D235-2B5D-45A3-BDC0-C15F96EFC8FB}.Release|Any CPU.ActiveCfg = Release|Any CPU
@@ -50,6 +46,10 @@ Global
 		{40357639-973F-452E-917B-145281449C43}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{40357639-973F-452E-917B-145281449C43}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{40357639-973F-452E-917B-145281449C43}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3DC880A8-4DE1-4DF7-8A47-A2EFC1DEC339}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3DC880A8-4DE1-4DF7-8A47-A2EFC1DEC339}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3DC880A8-4DE1-4DF7-8A47-A2EFC1DEC339}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3DC880A8-4DE1-4DF7-8A47-A2EFC1DEC339}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -57,8 +57,8 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{83001984-C4A4-452A-B639-AB040085B75E} = {4D31FEAC-61F4-4EC9-A2BC-A4729205F02E}
 		{99369BA0-6A87-4E19-BC5C-F3CDB975BE4F} = {4D31FEAC-61F4-4EC9-A2BC-A4729205F02E}
-		{1422FCB2-B470-464A-AFBB-34E7E6615F38} = {4D31FEAC-61F4-4EC9-A2BC-A4729205F02E}
 		{57D7D235-2B5D-45A3-BDC0-C15F96EFC8FB} = {4D31FEAC-61F4-4EC9-A2BC-A4729205F02E}
 		{40357639-973F-452E-917B-145281449C43} = {4D31FEAC-61F4-4EC9-A2BC-A4729205F02E}
+		{3DC880A8-4DE1-4DF7-8A47-A2EFC1DEC339} = {4D31FEAC-61F4-4EC9-A2BC-A4729205F02E}
 	EndGlobalSection
 EndGlobal

@@ -9,7 +9,7 @@ ARG BUILD_CONFIGURATION=Release
 WORKDIR /src
 COPY ["Haihv.Elis.Tool.TraCuuGcn.Web-App/Haihv.Elis.Tool.TraCuuGcn.Web-App/Haihv.Elis.Tool.TraCuuGcn.Web-App.csproj", "Haihv.Elis.Tool.TraCuuGcn.Web-App/Haihv.Elis.Tool.TraCuuGcn.Web-App/"]
 COPY ["Haihv.Elis.Tool.TraCuuGcn.Web-App/Haihv.Elis.Tool.TraCuuGcn.Web-App.Client/Haihv.Elis.Tool.TraCuuGcn.Web-App.Client.csproj", "Haihv.Elis.Tool.TraCuuGcn.Web-App/Haihv.Elis.Tool.TraCuuGcn.Web-App.Client/"]
-COPY ["Haihv.Elis.Tool.TraCuuGcn.Web-Lib/Haihv.Elis.Tool.TraCuuGcn.Web-Lib.csproj", "Haihv.Elis.Tool.TraCuuGcn.Web-Lib/"]
+COPY ["Haihv.Elis.Tool.TraCuuGcn.WebLib/Haihv.Elis.Tool.TraCuuGcn.WebLib.csproj", "Haihv.Elis.Tool.TraCuuGcn.WebLib/"]
 COPY ["Haihv.Elis.Tool.TraCuuGcn.Models/Haihv.Elis.Tool.TraCuuGcn.Models.csproj", "Haihv.Elis.Tool.TraCuuGcn.Models/"]
 RUN dotnet restore "./Haihv.Elis.Tool.TraCuuGcn.Web-App/Haihv.Elis.Tool.TraCuuGcn.Web-App/Haihv.Elis.Tool.TraCuuGcn.Web-App.csproj"
 COPY . .
