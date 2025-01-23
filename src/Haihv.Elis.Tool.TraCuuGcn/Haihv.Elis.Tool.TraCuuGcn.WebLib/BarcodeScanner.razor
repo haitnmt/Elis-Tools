@@ -1,0 +1,44 @@
+﻿@using Microsoft.JSInterop
+@inject IJSRuntime JsRuntime
+
+<h3>Barcode Scanner</h3>
+
+<video id="video" width="300" height="200"></video>
+<button @onclick="StartScanning">Start Scanning</button>
+<button @onclick="ResetScanner">Reset Scanner</button>
+<div id="result"></div>
+
+<script src="@UrlXing"></script>
+<script src="_content/Haihv.Elis.Tool.TraCuuGcn.WebLib/barcodeScanner.js"></script>
+
+@code {
+    private const string UrlXing = "https://unpkg.com/@zxing/library@latest";
+    private IJSObjectReference? _codeReader;
+    private string? _selectedDeviceId;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (firstRender)
+        {
+            var result = await JsRuntime.InvokeAsync<dynamic?>("initializeCodeReader");
+            if (result == null)
+            {
+                return;
+            }
+
+            _codeReader = result.codeReader;
+            _selectedDeviceId = result.selectedDeviceId;
+        }
+    }
+
+    private async Task StartScanning()
+    {
+        await JsRuntime.InvokeVoidAsync("startScanning", _codeReader, _selectedDeviceId);
+    }
+
+    private async Task ResetScanner()
+    {
+        await JsRuntime.InvokeVoidAsync("resetScanner", _codeReader);
+    }
+
+}

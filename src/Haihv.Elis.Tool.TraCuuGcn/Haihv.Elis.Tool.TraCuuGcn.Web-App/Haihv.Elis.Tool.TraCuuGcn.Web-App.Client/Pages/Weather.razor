@@ -1,7 +1,5 @@
 ﻿@page "/scanner"
+@using Haihv.Elis.Tool.TraCuuGcn.WebLib
 @rendermode InteractiveWebAssembly
 
-<BlazorBarcodeScanner.ZXing.JS.BarcodeReader />
-
-<script src="_content/BlazorBarcodeScanner.ZXing.JS/zxingjs.index.min.js"></script>
-<script src="_content/BlazorBarcodeScanner.ZXing.JS/BlazorBarcodeScanner.js"></script>
+<BarcodeScanner/>
