@@ -2,7 +2,7 @@
 using System.Text;
 using System.Text.Json;
 
-namespace Haihv.Elis.Tool.ChuyenDvhc.Extensions;
+namespace Haihv.Tool.Extensions.String;
 
 /// <summary>
 /// Lớp mở rộng để tính toán băm.
@@ -16,6 +16,7 @@ public static class ComputeHashExtensions
     /// <returns>Chuỗi băm dưới dạng hex.</returns>
     private static string ComputeHash(this string input)
     {
+        if (string.IsNullOrWhiteSpace(input)) return string.Empty;
         var inputBytes = Encoding.UTF8.GetBytes(input);
         var hashBytes = SHA256.HashData(inputBytes);
         return Convert.ToHexStringLower(hashBytes);
@@ -27,7 +28,7 @@ public static class ComputeHashExtensions
     /// <typeparam name="T">Kiểu của đối tượng đầu vào.</typeparam>
     /// <param name="input">Đối tượng đầu vào.</param>
     /// <returns>Chuỗi băm dưới dạng hex hoặc null nếu đầu vào là null.</returns>
-    private static string? ComputeHash<T>(this T? input)
+    public static string? ComputeHash<T>(this T? input)
     {
         if (input == null) return null;
         if (input is string stringInput)

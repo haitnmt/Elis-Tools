@@ -1,44 +1,49 @@
-﻿@using Microsoft.JSInterop
-@inject IJSRuntime JsRuntime
+﻿@rendermode InteractiveWebAssembly
 
-<h3>Barcode Scanner</h3>
+@if(!_hasCamera)
+{
+    <MudAlert Severity="Severity.Error">Không tìm thấy thiết bị camera</MudAlert>
+}
+else
+{
+    <BarcodeReader
+        Title=""
+        ShowStop="false" 
+        StartCameraAutomatically="true"
+        ShowStart="false"
+        ShowReset="false"
+        ShowToggleTorch = "false"
+        ShowVideoDeviceList="false"
+        FullWidthVideo="true"
+        OnBarcodeReceived ="OnBarcodeReceivedAsync"
+        VideoInputDevicesChanged="OnVideoInputDevicesChanged"
+        ShowResult="false"
+    />
+}
+<MudText Typo="Typo.body2">@_result</MudText>
 
-<video id="video" width="300" height="200"></video>
-<button @onclick="StartScanning">Start Scanning</button>
-<button @onclick="ResetScanner">Reset Scanner</button>
-<div id="result"></div>
-
-<script src="@UrlXing"></script>
-<script src="_content/Haihv.Elis.Tool.TraCuuGcn.WebLib/barcodeScanner.js"></script>
-
-@code {
-    private const string UrlXing = "https://unpkg.com/@zxing/library@latest";
-    private IJSObjectReference? _codeReader;
-    private string? _selectedDeviceId;
-
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+@code
+{
+    [Parameter] public string? Result { get; set; }
+    [Parameter] public EventCallback<string> ResultChanged { get; set; }
+    [Parameter] public bool NoCamera { get; set; }
+    [Parameter] public EventCallback<bool> NoCameraChanged { get; set; }
+    private string? _result;
+    private bool _hasCamera = true;
+    
+    private async Task OnBarcodeReceivedAsync(BarcodeReceivedEventArgs barcodeReader)
     {
-        if (firstRender)
-        {
-            var result = await JsRuntime.InvokeAsync<dynamic?>("initializeCodeReader");
-            if (result == null)
-            {
-                return;
-            }
-
-            _codeReader = result.codeReader;
-            _selectedDeviceId = result.selectedDeviceId;
-        }
+        _result = barcodeReader.BarcodeText;
+        Result = _result;
+        await ResultChanged.InvokeAsync(_result);
+        StateHasChanged();
     }
-
-    private async Task StartScanning()
+    private async Task OnVideoInputDevicesChanged(IEnumerable<VideoInputDevice>? devices)
     {
-        await JsRuntime.InvokeVoidAsync("startScanning", _codeReader, _selectedDeviceId);
+        // Kiểm tra xem có thiết bị camera nào không
+        _hasCamera = devices?.Any() == true;
+        NoCamera = !_hasCamera;
+        await NoCameraChanged.InvokeAsync(!_hasCamera);
+        StateHasChanged(); // Cập nhật giao diện người dùng
     }
-
-    private async Task ResetScanner()
-    {
-        await JsRuntime.InvokeVoidAsync("resetScanner", _codeReader);
-    }
-
 }
