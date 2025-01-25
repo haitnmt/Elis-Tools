@@ -1,5 +1,34 @@
-﻿<h3>TraCuuGcn</h3>
-
+﻿@if (!_showQrInfo)
+{
+    <BarcodeScanner @bind-NoCamera="@_noCamera" ResultChanged="OnBarcodeReceivedAsync" ShowNoCamera="false" />
+    @if (_noCamera)
+    {
+        <MudTextField Label="Nhập thông tin mã Qr" @bind-Value="_maQr" />
+        <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="ShowQrInfo">Tra cứu</MudButton>
+    }
+}
+else
+{
+    <ThongTinMaQr MaQr="@_maQr" />
+    <MudButton Variant="Variant.Filled" Color="Color.Primary" OnClick="() => _showQrInfo = false">Quay lại</MudButton>
+}
 @code {
-    
+    private bool _noCamera;
+    private bool _showQrInfo;
+    private string? _maQr;
+
+    private void ShowQrInfo()
+    {
+        _showQrInfo = true;
+        StateHasChanged();
+    }
+
+    private void OnBarcodeReceivedAsync(string obj)
+    {
+        if (string.IsNullOrWhiteSpace(obj)) return;
+        _maQr = obj;
+        _showQrInfo = true;
+        StateHasChanged();
+    }
+
 }

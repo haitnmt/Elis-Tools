@@ -5,6 +5,8 @@ public static class CacheSettings
     public const string ElisConnections = "ElisConnections";
     public static string ConnectionName(string serial) => $"ConnectionName:{serial.ChuanHoa()}";
     public static string KeyGiayChungNhan(string serial) => $"GCN:{serial.ChuanHoa()}";
+    public static string KeyMaQr(string? hashQr) => $"Qr:{hashQr ?? "null"}";
+    public static string KeyDonViInGcn(string maDonVi) => $"DonVi:{maDonVi.ChuanHoa()}";
     public static string KeyThuaDat(string serial) => $"ThuaDat:{serial.ChuanHoa()}";
     public static string KeyDiaChiByMaDvhc(int maDvhc) => $"DVHC:{maDvhc}";
 

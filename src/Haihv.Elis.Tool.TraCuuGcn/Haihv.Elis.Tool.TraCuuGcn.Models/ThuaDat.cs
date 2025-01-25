@@ -10,10 +10,3 @@ public record ThuaDat(
     string HinhThuc,
     string NguonGoc
 );
-
-public record ThuaDatPublic(
-    string ThuaDatSo,
-    string ToBanDo,
-    string DiaChi,
-    string DienTich
-);

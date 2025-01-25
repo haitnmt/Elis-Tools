@@ -89,4 +89,8 @@
       </Resource>
     </ItemGroup>
 
+    <ItemGroup>
+      <ProjectReference Include="..\Haihv.Tool.Extensions\Haihv.Tool.Extensions.csproj" />
+    </ItemGroup>
+
 </Project>

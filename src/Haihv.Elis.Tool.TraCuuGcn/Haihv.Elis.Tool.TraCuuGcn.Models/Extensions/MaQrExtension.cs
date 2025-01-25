@@ -1,4 +1,4 @@
-﻿namespace Haihv.Elis.Tool.TraCuuGcn.Models;
+﻿namespace Haihv.Elis.Tool.TraCuuGcn.Models.Extensions;
 
 public static class MaQrExtension
 {
@@ -7,32 +7,33 @@ public static class MaQrExtension
         var qrParts = maQr.Split('|');
         if (qrParts.Length != 8)
         {
-            throw new ArgumentException("Invalid QR code format");
+            throw new ArgumentException("Mã QR không hợp lệ");
         }
 
         // Khởi tạo ThoiGianKhoiTao
-        if (!DateTime.TryParse(qrParts[0], out var thoiGianKhoiTao))
+        if (!DateTime.TryParseExact(qrParts[0], "dd-MM-yyyy-HH-mm-ss", null, System.Globalization.DateTimeStyles.None,
+                out var thoiGianKhoiTao))
         {
-            throw new ArgumentException("Invalid ThoiGianKhoiTao format");
+            throw new ArgumentException("Mã QR không hợp lệ");
         }
+        
+        // Khởi tạo các thuộc tính khác
+        var maDonVi = qrParts[1];
+        var tenPhanMem = qrParts[2];
+        var maHoSoTthc = qrParts[3];
+        var serialNumber = qrParts[4];
+        var maGcn = qrParts[5];
 
         // Khởi tạo ThoiGianChinhSua
-        if (!DateTime.TryParse(qrParts[1], out var thoiGianChinhSua))
+        if (!DateTime.TryParseExact(qrParts[6], "dd-MM-yyyy-HH-mm-ss", null, System.Globalization.DateTimeStyles.None,
+                out var thoiGianChinhSua))
         {
-            throw new ArgumentException("Invalid ThoiGianChinhSua format");
+            throw new ArgumentException("Mã QR không hợp lệ");
         }
-
-        // Khởi tạo các thuộc tính khác
-        var maDonVi = qrParts[2];
-        var tenPhanMem = qrParts[3];
-        var maHoSoTthc = qrParts[4];
-        var serialNumber = qrParts[5];
-        var maGcn = qrParts[6];
-
         // Khởi tạo SecurityCode
         if (!int.TryParse(qrParts[7], out var securityCode))
         {
-            throw new ArgumentException("Invalid SecurityCode format");
+            throw new ArgumentException("Mã QR không hợp lệ");
         }
 
         return new MaQrInfo

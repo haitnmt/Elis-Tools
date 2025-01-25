@@ -1,25 +1,25 @@
-﻿@rendermode InteractiveWebAssembly
+﻿@switch (_hasCamera)
+{
+    case false when ShowNoCamera:
+        <MudAlert Severity="Severity.Error">Không tìm thấy thiết bị camera</MudAlert>
+        break;
+    case true:
+        <BarcodeReader
+            Title=""
+            ShowStop="false" 
+            StartCameraAutomatically="true"
+            ShowStart="false"
+            ShowReset="false"
+            ShowToggleTorch = "false"
+            ShowVideoDeviceList="false"
+            FullWidthVideo="true"
+            OnBarcodeReceived ="OnBarcodeReceivedAsync"
+            VideoInputDevicesChanged="OnVideoInputDevicesChanged"
+            ShowResult="false"
+        />
+        break;
+}
 
-@if(!_hasCamera)
-{
-    <MudAlert Severity="Severity.Error">Không tìm thấy thiết bị camera</MudAlert>
-}
-else
-{
-    <BarcodeReader
-        Title=""
-        ShowStop="false" 
-        StartCameraAutomatically="true"
-        ShowStart="false"
-        ShowReset="false"
-        ShowToggleTorch = "false"
-        ShowVideoDeviceList="false"
-        FullWidthVideo="true"
-        OnBarcodeReceived ="OnBarcodeReceivedAsync"
-        VideoInputDevicesChanged="OnVideoInputDevicesChanged"
-        ShowResult="false"
-    />
-}
 <MudText Typo="Typo.body2">@_result</MudText>
 
 @code
@@ -28,6 +28,7 @@ else
     [Parameter] public EventCallback<string> ResultChanged { get; set; }
     [Parameter] public bool NoCamera { get; set; }
     [Parameter] public EventCallback<bool> NoCameraChanged { get; set; }
+    [Parameter] public bool ShowNoCamera { get; set; } = true;
     private string? _result;
     private bool _hasCamera = true;
     
@@ -35,7 +36,7 @@ else
     {
         _result = barcodeReader.BarcodeText;
         Result = _result;
-        await ResultChanged.InvokeAsync(_result);
+        await ResultChanged.InvokeAsync(Result);
         StateHasChanged();
     }
     private async Task OnVideoInputDevicesChanged(IEnumerable<VideoInputDevice>? devices)

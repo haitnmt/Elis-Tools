@@ -1,3 +1,122 @@
 ﻿{
+  "Kestrel": {
 
+    "EndpointDefaults": {
+
+      "Protocols": "Http1"
+
+    },
+
+    "Endpoints": {
+
+      "Http": {
+
+        "Url": "http://0.0.0.0:8089"
+
+      }
+
+    }
+
+  },
+  "Serilog": {
+    "Using": [
+      "Serilog.Sinks.Console"
+    ],
+    "MinimumLevel": {
+      "Default": "Information",
+      "Override": {
+        "Microsoft": "Information",
+        "System": "Information",
+        "Microsoft.AspNetCore": "Warning",
+        "Microsoft.AspNetCore.Hosting.Diagnostics": "Warning",
+        "Microsoft.AspNetCore.Routing": "Warning",
+        "Microsoft.AspNetCore.Mvc": "Warning"
+      }
+    },
+    "WriteTo": [
+      //      {
+      //        "Name": "File",
+      //        "Args": {
+      //          "path": "Logs/log-.txt",
+      //          "rollingInterval": "Day",
+      //          "outputTemplate": "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj} {NewLine}{Exception}"
+      //        }
+      //      },
+      {
+        "Name": "Console",
+        "Args": {
+          "outputTemplate": "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {Message:lj} {NewLine}{Exception}"
+        }
+      }
+    ],
+    "Enrich": [
+      "FromLogContext",
+      "WithMachineName",
+      "WithEnvironmentName"
+    ]
+  },
+  "Elasticsearch": {
+    "Uris": [
+      "https://192.168.9.51:9200",
+      "https://192.168.9.53:9200"
+    ],
+    "Token": "QnVhTlRwTUJKRmFkUTdzelRwcTA6NnE1SjhPOWtTSHFPSkZmRXh1MEo1QQ==",
+    "Namespace": "Elis-TraCuuGcn"
+  },
+  "Redis": {
+    "ConnectionString": "redis:6379"
+  },
+  "Jwt": {
+    "SecretKey": "4Lpa4YJR827uiEvmbCzX9oBL6JD5k2GCy69y",
+    "Issuer": "https://tracuugcn.vpdkbacninh.vn",
+    "Audience": "https://tracuugcn.vpdkbacninh.vn",
+    "ExpireMinutes": 60
+  },
+  "ElisSql": {
+    "Databases": [
+      {
+        "Name": "elistiendu",
+        "MaDvhc": "1260",
+        "ConnectionString": "Server=10.86.9.3;Database=elistiendu;User Id=apielis-tiendu;Password=mtpMZkmcXUWQ6rr$8HMkpT$#T7;TrustServerCertificate=True;"
+      },
+      {
+        "Name": "elistuson",
+        "MaDvhc": "1261",
+        "ConnectionString": "Server=10.86.9.3;Database=elistuson;User Id=apielis-tuson;Password=q3%eDD*q#sC&XfkWv32#Wu&iRV;TrustServerCertificate=True;"
+      },
+      {
+        "Name": "elisthuanthanh",
+        "MaDvhc": "1262",
+        "ConnectionString": "Server=10.86.9.3;Database=elisthuanthanh;User Id=apielis-thuanthanh;Password=@gxxQ!%psVLUYg!u@gGedw3yn9;TrustServerCertificate=True;"
+      },
+      {
+        "Name": "elisluongtai",
+        "MaDvhc": "1264",
+        "ConnectionString": "Server=10.86.9.3;Database=elisluongtai;User Id=apielis-luongtai;Password=8*FcDJ8!z886y5zUnP$&9Zi4Ly;TrustServerCertificate=True;"
+      },
+      {
+        "Name": "elisgiabinh",
+        "MaDvhc": "1263",
+        "ConnectionString": "Server=10.86.9.3;Database=elisgiabinh;User Id=apielis-giabinh;Password=!UNd7%3huJFzWZ48BQs82opZ$w;TrustServerCertificate=True;"
+      },
+      {
+        "Name": "elisquevo",
+        "MaDvhc": "1259",
+        "ConnectionString": "Server=10.86.9.3;Database=elisquevo;User Id=apielis-quevo;Password=jP5d*sVTrCmXYc!7@Q&v236vh%;TrustServerCertificate=True;"
+      },
+      {
+        "Name": "elisyenphong",
+        "MaDvhc": "1258",
+        "ConnectionString": "Server=10.86.9.3;Database=elisyenphong;User Id=apielis-yenphong;Password=APrY6MNe4j*obygRzWM4%9#MLT;TrustServerCertificate=True;"
+      },
+      {
+        "Name": "elisbacninh",
+        "MaDvhc": "1256",
+        "ConnectionString": "Server=10.86.9.3;Database=elisbacninh;User Id=apielis-bacninh;Password=3^Lcd4pz&hQ#LsD769CwLy*NMQ;TrustServerCertificate=True;"
+      }
+    ]
+  },
+  "AllowedHosts": "*",
+  "FrontendUrl": ["https://tracuugcn.vpdkbacninh.vn/"],
+  "BackendUrl": "https://api-tracuugcn.vpdkbacninh.vn"
 }

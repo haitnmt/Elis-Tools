@@ -54,12 +54,30 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
 //Add ConnectionElisData
 builder.Services.AddSingleton<IConnectionElisData, ConnectionElisData>();
 
+//Add GcnQrService
+builder.Services.AddSingleton<IGcnQrService, GcnQrService>();
 //Add GiayChungNhanService
 builder.Services.AddSingleton<IGiayChungNhanService, GiayChungNhanService>();
 //Add ChuSuDungService
 builder.Services.AddSingleton<IChuSuDungService, ChuSuDungService>();
 //Add AuthenticationService
 builder.Services.AddSingleton<IAuthenticationService, AuthenticationService>();
+
+//Configure CORS
+var frontendUrls = builder.Configuration.GetSection("FrontendUrl").Get<string[]>();
+if (frontendUrls is null || frontendUrls.Length == 0)
+{
+    frontendUrls = ["*"];
+}
+builder.Services.AddCors(options =>
+{
+    options.AddDefaultPolicy(corsPolicyBuilder =>
+    {
+        corsPolicyBuilder.WithOrigins(frontendUrls)
+            .AllowAnyHeader()
+            .AllowAnyMethod();
+    });
+});
 
 var app = builder.Build();
 
@@ -71,8 +89,12 @@ if (app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
+//Use Cors
+app.UseCors();
+
 app.MapGiayChungNhan();
 app.MapChuSuDung();
+app.MapGcnQr();
 app.MapAuthentication();
 
 // Authentication and Authorization
