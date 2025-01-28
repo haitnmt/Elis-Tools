@@ -10,7 +10,7 @@ public static class ChuSuDungEndpoints
     /// Định nghĩa endpoint để lấy thông tin chủ sử dụng.
     /// </summary>
     /// <param name="app">Ứng dụng web.</param>
-    public static void MapChuSuDung(this WebApplication app)
+    public static void MapChuSuDungEndpoints(this WebApplication app)
     {
         app.MapGet("/elis/csd", GetChuSuDung)
             .WithName("GetChuSuDung")
@@ -20,20 +20,20 @@ public static class ChuSuDungEndpoints
     /// <summary>
     /// Lấy thông tin chủ sử dụng theo số định danh.
     /// </summary>
-    /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
+    /// <param name="maGcn">Mã GCN của Giấy chứng nhận.</param>
     /// <param name="httpContext">Ngữ cảnh HTTP hiện tại.</param>
     /// <param name="logger">Logger.</param>
     /// <param name="chuSuDungService">Dịch vụ chủ sử dụng.</param>
     /// <returns>Kết quả truy vấn chủ sử dụng.</returns>
     private static async Task<IResult> GetChuSuDung(
-        [FromQuery] string serial,
+        [FromQuery] long maGcn,
         HttpContext httpContext,
         ILogger<Program> logger,
         IChuSuDungService chuSuDungService)
     {
         // Lấy thông tin người dùng theo token từ HttpClient
         var user = httpContext.User;
-        var result = await chuSuDungService.GetChuSuDungAsync(serial, user.GetSoDinhDanh());
+        var result = await chuSuDungService.GetResultAsync(maGcn, user.GetSoDinhDanh());
         return await Task.FromResult(result.Match(
             Results.Ok,
             ex => Results.BadRequest(ex.Message)));

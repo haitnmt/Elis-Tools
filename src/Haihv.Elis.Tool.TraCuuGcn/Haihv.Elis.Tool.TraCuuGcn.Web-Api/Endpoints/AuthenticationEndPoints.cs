@@ -10,7 +10,7 @@ public static class AuthenticationEndPoints
     /// Định nghĩa endpoint cho xác thực chủ sử dụng.
     /// </summary>
     /// <param name="app">Ứng dụng web để cấu hình endpoint.</param>
-    public static void MapAuthentication(this WebApplication app)
+    public static void MapAuthenticationEndpoints(this WebApplication app)
     {
         app.MapPost("/elis/auth", PostAuthChuSuDungAsync)
             .WithName("PostAuthChuSuDungAsync");

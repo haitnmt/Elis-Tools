@@ -3,63 +3,38 @@ using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Settings;
 using InterpolatedSql.Dapper;
 using LanguageExt;
 using LanguageExt.Common;
-using Microsoft.Extensions.Caching.Hybrid;
 using Newtonsoft.Json;
+using ZiggyCreatures.Caching.Fusion;
 using ILogger = Serilog.ILogger;
 
 namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
-
-public interface IChuSuDungService
-{
-    /// <summary>
-    /// Lấy thông tin chủ sử dụng theo số định danh.
-    /// </summary>
-    /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
-    /// <param name="soDinhDanh">Số định danh.</param>
-    /// <param name="cancellationToken">Token hủy bỏ.</param>
-    /// <returns>Kết quả chứa thông tin xác thực chủ sử dụng hoặc lỗi.</returns>
-    ValueTask<Result<AuthChuSuDung>> GetAuthChuSuDungBySoDinhDanhAsync(string? serial = null, string? soDinhDanh = null,
-        CancellationToken cancellationToken = default);
-
-    /// <summary>
-    /// Lấy thông tin chủ sử dụng và quan hệ chủ sử dụng.
-    /// </summary>
-    /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
-    /// <param name="soDinhDanh">Số định danh.</param>
-    /// <param name="cancellationToken">Token hủy bỏ.</param>
-    /// <returns>Kết quả chứa thông tin chủ sử dụng hoặc lỗi.</returns>
-    ValueTask<Result<ChuSuDungInfo?>> GetChuSuDungAsync(
-        string? serial = null,
-        string? soDinhDanh = null,
-        CancellationToken cancellationToken = default);
-}
 
 public sealed class ChuSuDungService(
     IGiayChungNhanService giayChungNhanService,
     IConnectionElisData connectionElisData,
     ILogger logger,
-    HybridCache hybridCache) : IChuSuDungService
+    IFusionCache fusionCache) : IChuSuDungService
 {
     #region Xác thực chủ sử dụng
 
     /// <summary>
     /// Lấy thông tin chủ sử dụng theo số định danh.
     /// </summary>
-    /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
+    /// <param name="maGcn">Mã GCN của Giấy chứng nhận.</param>
     /// <param name="soDinhDanh">Số định danh.</param>
     /// <param name="cancellationToken">Token hủy bỏ.</param>
     /// <returns>Kết quả chứa thông tin chủ sử dụng hoặc lỗi.</returns>
-    public async ValueTask<Result<AuthChuSuDung>> GetAuthChuSuDungBySoDinhDanhAsync(string? serial = null,
+    public async ValueTask<Result<AuthChuSuDung>> GetResultAuthChuSuDungAsync(long maGcn = 0,
         string? soDinhDanh = null, CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(soDinhDanh) || string.IsNullOrWhiteSpace(serial))
+        if (string.IsNullOrWhiteSpace(soDinhDanh) ||  maGcn <= 0)
             return new Result<AuthChuSuDung>(new ValueIsNullException("Số định danh không hợp lệ!"));
-        var cacheKey = CacheSettings.KeyAuthentication(soDinhDanh, serial);
+        var cacheKey = CacheSettings.KeyAuthentication(soDinhDanh, maGcn);
         try
         {
-            var chuSuDung = await hybridCache.GetOrCreateAsync(cacheKey,
-                cancel => GetAuthChuSuDungInDataAsync(serial, soDinhDanh, cancel),
-                cancellationToken: cancellationToken);
+            var chuSuDung = await fusionCache.GetOrSet(cacheKey,
+                cancel => GetAuthChuSuDungInDataAsync(maGcn, soDinhDanh, cancel),
+                token: cancellationToken);
             return chuSuDung ?? new Result<AuthChuSuDung>(new ValueIsNullException("Không tìm thấy chủ sử dụng!"));
         }
         catch (Exception exception)
@@ -72,18 +47,18 @@ public sealed class ChuSuDungService(
     /// <summary>
     /// Lấy thông tin chủ sử dụng từ cơ sở dữ liệu theo số định danh và Serial.
     /// </summary>
-    /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
+    /// <param name="maGcn">Mã GCN của Giấy chứng nhận.</param>
     /// <param name="soDinhDanh">Số định danh.</param>
     /// <param name="cancellationToken">Token hủy bỏ.</param>
     /// <returns>Thông tin chủ sử dụng hoặc null nếu không tìm thấy.</returns>
     private async ValueTask<AuthChuSuDung?> GetAuthChuSuDungInDataAsync(
-        string? serial = null,
+        long maGcn = 0,
         string? soDinhDanh = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(soDinhDanh) || string.IsNullOrWhiteSpace(serial))
+        if (string.IsNullOrWhiteSpace(soDinhDanh) || maGcn <= 0)
             return null;
-        var giayChungNhanResult = await giayChungNhanService.GetBySerialAsync(serial, cancellationToken);
+        var giayChungNhanResult = await giayChungNhanService.GetResultAsync(maGcn: maGcn, cancellationToken: cancellationToken);
         return await giayChungNhanResult.Match(
             giayChungNhan => GetAuthChuSuDungInDataAsync(giayChungNhan, soDinhDanh, cancellationToken),
             ex => throw ex);
@@ -103,46 +78,45 @@ public sealed class ChuSuDungService(
     {
         if (string.IsNullOrWhiteSpace(soDinhDanh) ||
             giayChungNhan is null ||
-            string.IsNullOrWhiteSpace(giayChungNhan.Serial))
+            giayChungNhan.MaGcn <= 0)
             return null;
         try
         {
-            var connectionName = await hybridCache.GetOrCreateAsync<string?>(
-                CacheSettings.ConnectionName(giayChungNhan.Serial),
-                _ => ValueTask.FromResult<string?>(null),
-                cancellationToken: cancellationToken);
-            if (string.IsNullOrWhiteSpace(connectionName)) return null;
-            var connectionString = connectionElisData.GetConnectionString(connectionName);
-            await using var dbConnection = connectionString.GetConnection();
-            var query = dbConnection.SqlBuilder(
-                $"""
-                 SELECT TOP(1) SoDinhDanh, HoVaTen
-                 FROM (SELECT DISTINCT CSD.SoDinhDanh1 AS SoDinhDanh, 
-                                       CSD.Ten1 AS HoVaTen
-                       FROM ChuSuDung CSD
-                            INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
-                        WHERE LOWER(CSD.SoDinhDanh1) = LOWER({soDinhDanh}) AND GCN.MaGCN = {giayChungNhan.MaGcn}
-                       UNION
-                       SELECT DISTINCT CSD.SoDinhDanh2 AS SoDinhDanh, 
-                                       CSD.Ten2 AS HoVaTen
-                       FROM ChuSuDung CSD
-                            INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
-                        WHERE LOWER(CSD.SoDinhDanh2) = LOWER({soDinhDanh}) AND GCN.MaGCN = {giayChungNhan.MaGcn}
-                        ) AS CSD
-                 """);
-            var chuSuDungData =
-                await query.QueryFirstOrDefaultAsync<dynamic?>(cancellationToken: cancellationToken);
-            if (chuSuDungData is null) return null;
-            return new AuthChuSuDung(
-                giayChungNhan.Serial,
-                chuSuDungData.SoDinhDanh,
-                chuSuDungData.HoVaTen);
+            var connectionElis = await connectionElisData.GetConnectionElis(giayChungNhan.MaGcn);
+            foreach (var connection in connectionElis)
+            {
+                await using var dbConnection = connection.ConnectionString.GetConnection();
+                var query = dbConnection.SqlBuilder(
+                    $"""
+                     SELECT TOP(1) SoDinhDanh, HoVaTen
+                     FROM (SELECT DISTINCT CSD.SoDinhDanh1 AS SoDinhDanh, 
+                                           CSD.Ten1 AS HoVaTen
+                           FROM ChuSuDung CSD
+                                INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
+                            WHERE LOWER(CSD.SoDinhDanh1) = LOWER({soDinhDanh}) AND GCN.MaGCN = {giayChungNhan.MaGcn}
+                           UNION
+                           SELECT DISTINCT CSD.SoDinhDanh2 AS SoDinhDanh, 
+                                           CSD.Ten2 AS HoVaTen
+                           FROM ChuSuDung CSD
+                                INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
+                            WHERE LOWER(CSD.SoDinhDanh2) = LOWER({soDinhDanh}) AND GCN.MaGCN = {giayChungNhan.MaGcn}
+                            ) AS CSD
+                     """);
+                var chuSuDungData =
+                    await query.QueryFirstOrDefaultAsync<dynamic?>(cancellationToken: cancellationToken);
+                if (chuSuDungData is null) continue;
+                return new AuthChuSuDung(
+                    giayChungNhan.MaGcn,
+                    chuSuDungData.SoDinhDanh,
+                    chuSuDungData.HoVaTen);
+            }
         }
         catch (Exception exception)
         {
             logger.Error(exception, "Lỗi khi truy vấn dữ liệu chủ sử dụng từ cơ sở dữ liệu, {SoDDinhDanh}", soDinhDanh);
             throw;
         }
+        return null;
     }
 
     #endregion
@@ -152,34 +126,33 @@ public sealed class ChuSuDungService(
     /// <summary>
     /// Lấy thông tin chủ sử dụng và quan hệ chủ sử dụng.
     /// </summary>
-    /// <param name="serial">Serial (Số phát hành) của Giấy chứng nhận.</param>
+    /// <param name="maGcn">Mã GCN của Giấy chứng nhận.</param> 
     /// <param name="soDinhDanh">Số định danh.</param>
     /// <param name="cancellationToken">Token hủy bỏ.</param>
     /// <returns>Kết quả chứa thông tin chủ sử dụng hoặc lỗi.</returns>
-    public async ValueTask<Result<ChuSuDungInfo?>> GetChuSuDungAsync(
-        string? serial = null,
+    public async ValueTask<Result<ChuSuDungInfo?>> GetResultAsync(
+        long maGcn = 0,
         string? soDinhDanh = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(soDinhDanh) ||
-            string.IsNullOrWhiteSpace(serial))
+        if (string.IsNullOrWhiteSpace(soDinhDanh) || maGcn <= 0)
             return null;
-        var cacheKey = CacheSettings.KeyChuSuDung(soDinhDanh, serial);
-        var chuSuDung = await hybridCache.GetOrCreateAsync(cacheKey,
-            cancel => GetChuSuDungInDataAsync(serial, soDinhDanh, cancel),
-            cancellationToken: cancellationToken);
+        var cacheKey = CacheSettings.KeyChuSuDung(soDinhDanh, maGcn);
+        var chuSuDung = await fusionCache.GetOrSet(cacheKey,
+            cancel => GetChuSuDungInDataAsync(maGcn, soDinhDanh, cancel),
+            token: cancellationToken);
         return chuSuDung ?? new Result<ChuSuDungInfo?>(new ValueIsNullException("Không tìm thấy chủ sử dụng!"));
     }
 
     private async ValueTask<ChuSuDungInfo?> GetChuSuDungInDataAsync(
-        string? serial = null,
+        long? maGcn = null,
         string? soDinhDanh = null,
         CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrWhiteSpace(soDinhDanh) ||
-            string.IsNullOrWhiteSpace(serial))
+            maGcn is null || maGcn <= 0)
             return null;
-        var giayChungNhanResult = await giayChungNhanService.GetBySerialAsync(serial, cancellationToken);
+        var giayChungNhanResult = await giayChungNhanService.GetResultAsync(maGcn: maGcn.Value, cancellationToken: cancellationToken);
         return await giayChungNhanResult.Match(
             giayChungNhan => GetChuSuDungInDataAsync(giayChungNhan, soDinhDanh, cancellationToken),
             ex => throw ex);
@@ -192,53 +165,51 @@ public sealed class ChuSuDungService(
     {
         if (string.IsNullOrWhiteSpace(soDinhDanh) ||
             giayChungNhan is null ||
-            string.IsNullOrWhiteSpace(giayChungNhan.Serial))
+            giayChungNhan.MaGcn <= 0)
             return null;
         try
         {
-            var connectionName = await hybridCache.GetOrCreateAsync<string?>(
-                CacheSettings.ConnectionName(giayChungNhan.Serial),
-                _ => ValueTask.FromResult<string?>(null),
-                cancellationToken: cancellationToken);
-            if (string.IsNullOrWhiteSpace(connectionName)) return null;
-
-            var connectionString = connectionElisData.GetConnectionString(connectionName);
-            await using var dbConnection = connectionString.GetConnection();
-            var query = dbConnection.SqlBuilder(
-                $"""
-                 SELECT DISTINCT CSD.MaDoiTuong AS MaDoiTuong,
-                                 CSD.Ten1 AS Ten, 
-                                 CSD.SoDinhDanh1 AS SoDinhDanh, 
-                                 CSD.loaiSDD1 AS LoaiSdd,
-                                 CSD.GioiTinh1 AS GioiTinh, 
-                                 CSD.DiaChi1 AS DiaChi,
-                                 CSD.MaQuocTich1 AS MaQuocTich,
-                                 CSD.Ten2 AS Ten2,
-                                 CSD.SoDinhDanh2 AS SoDinhDanh2,
-                                 CSD.loaiSDD2 AS LoaiSdd2,
-                                 CSD.GioiTinh2 AS GioiTinh2,
-                                 CSD.QuanHe AS QuanHe,
-                                 CSD.DiaChi2 AS DiaChi2,
-                                 CSD.MaQuocTich2 AS MaQuocTich2
-                                       
-                       FROM ChuSuDung CSD
-                            INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
-                       WHERE GCN.MaGCN = {giayChungNhan.MaGcn} 
-                         AND (LOWER(CSD.SoDinhDanh1) = LOWER({soDinhDanh}) OR LOWER(CSD.SoDinhDanh2) = LOWER({soDinhDanh}))  
-                 """);
-            var chuSuDungData =
-                await query.QueryFirstOrDefaultAsync<ChuSuDungData?>(cancellationToken: cancellationToken);
-            if (chuSuDungData is null) return null;
-            var chuSuDung = await GetChuSuDungAsync(chuSuDungData);
-            if (chuSuDung is null) return null;
-            var chuSuDungQuanHe = await GetChuSuDungQuanHeAsync(chuSuDungData);
-            return new ChuSuDungInfo(chuSuDung, chuSuDungQuanHe);
+            var connectionElis = await connectionElisData.GetConnectionElis(giayChungNhan.MaGcn);
+            foreach (var connection in connectionElis)
+            {
+                await using var dbConnection = connection.ConnectionString.GetConnection();
+                var query = dbConnection.SqlBuilder(
+                    $"""
+                     SELECT DISTINCT CSD.MaDoiTuong AS MaDoiTuong,
+                                     CSD.Ten1 AS Ten, 
+                                     CSD.SoDinhDanh1 AS SoDinhDanh, 
+                                     CSD.loaiSDD1 AS LoaiSdd,
+                                     CSD.GioiTinh1 AS GioiTinh, 
+                                     CSD.DiaChi1 AS DiaChi,
+                                     CSD.MaQuocTich1 AS MaQuocTich,
+                                     CSD.Ten2 AS Ten2,
+                                     CSD.SoDinhDanh2 AS SoDinhDanh2,
+                                     CSD.loaiSDD2 AS LoaiSdd2,
+                                     CSD.GioiTinh2 AS GioiTinh2,
+                                     CSD.QuanHe AS QuanHe,
+                                     CSD.DiaChi2 AS DiaChi2,
+                                     CSD.MaQuocTich2 AS MaQuocTich2
+                                           
+                           FROM ChuSuDung CSD
+                                INNER JOIN GCNQSDD GCN ON CSD.MaChuSuDung = GCN.MaChuSuDung
+                           WHERE GCN.MaGCN = {giayChungNhan.MaGcn} 
+                             AND (LOWER(CSD.SoDinhDanh1) = LOWER({soDinhDanh}) OR LOWER(CSD.SoDinhDanh2) = LOWER({soDinhDanh}))  
+                     """);
+                var chuSuDungData =
+                    await query.QueryFirstOrDefaultAsync<ChuSuDungData?>(cancellationToken: cancellationToken);
+                if (chuSuDungData is null) return null;
+                var chuSuDung = await GetChuSuDungAsync(chuSuDungData);
+                if (chuSuDung is null) return null;
+                var chuSuDungQuanHe = await GetChuSuDungQuanHeAsync(chuSuDungData);
+                return new ChuSuDungInfo(chuSuDung, chuSuDungQuanHe);
+            }
         }
         catch (Exception exception)
         {
             logger.Error(exception, "Lỗi khi truy vấn dữ liệu chủ sử dụng từ cơ sở dữ liệu, {SoDDinhDanh}", soDinhDanh);
             throw;
         }
+        return null;
     }
 
     private record ChuSuDungData(
@@ -345,9 +316,9 @@ public sealed class ChuSuDungService(
         var cacheKey = CacheSettings.KeyQuocTich(maQuocTich);
         try
         {
-            var quocTich = await hybridCache.GetOrCreateAsync(cacheKey,
+            var quocTich = await fusionCache.GetOrSet(cacheKey,
                 cancel => GetQuocTichInJsonAsync(null, maQuocTich, cancel),
-                cancellationToken: cancellationToken);
+                token: cancellationToken);
             return quocTich;
         }
         catch (Exception exception)

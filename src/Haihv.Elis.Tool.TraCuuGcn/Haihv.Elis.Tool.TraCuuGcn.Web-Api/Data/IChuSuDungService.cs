@@ -12,7 +12,7 @@ public interface IChuSuDungService
     /// <param name="soDinhDanh">Số định danh.</param>
     /// <param name="cancellationToken">Token hủy bỏ.</param>
     /// <returns>Kết quả chứa thông tin xác thực chủ sử dụng hoặc lỗi.</returns>
-    ValueTask<Result<AuthChuSuDung>> GetAuthChuSuDungBySoDinhDanhAsync(long maGcn = 0, string? soDinhDanh = null,
+    ValueTask<Result<AuthChuSuDung>> GetResultAuthChuSuDungAsync(long maGcn = 0, string? soDinhDanh = null,
         CancellationToken cancellationToken = default);
 
     /// <summary>
@@ -22,7 +22,7 @@ public interface IChuSuDungService
     /// <param name="soDinhDanh">Số định danh.</param>
     /// <param name="cancellationToken">Token hủy bỏ.</param>
     /// <returns>Kết quả chứa thông tin chủ sử dụng hoặc lỗi.</returns>
-    ValueTask<Result<ChuSuDungInfo?>> GetChuSuDungAsync(
+    ValueTask<Result<ChuSuDungInfo?>> GetResultAsync(
         long maGcn = 0,
         string? soDinhDanh = null,
         CancellationToken cancellationToken = default);

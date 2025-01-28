@@ -1,6 +1,7 @@
 ﻿using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Settings;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Caching.Memory;
+using ZiggyCreatures.Caching.Fusion;
 using ILogger = Serilog.ILogger;
 
 namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
@@ -26,6 +27,18 @@ public interface IConnectionElisData
     /// <param name="name">Tên kết nối.</param>
     /// <returns>Chuỗi kết nối.</returns>
     string GetConnectionString(string name);
+    /// <summary>
+    /// Lấy chuỗi kết nối từ tên kết nối.
+    /// </summary>
+    /// <param name="maGcn">Mã GCN.</param>
+    /// <returns>Chuỗi kết nối.</returns>
+    ValueTask<string?> GetConnectionString(long maGcn);
+    /// <summary>
+    /// Lấy danh sách chuỗi kết nối dựa trên mã GCN.
+    /// </summary>
+    /// <param name="maGcn"></param>
+    /// <returns>Danh sách chuỗi kết nối.</returns>
+    ValueTask<List<ConnectionElis>> GetConnectionElis(long maGcn);
 }
 
 /// <summary>
@@ -37,7 +50,8 @@ public interface IConnectionElisData
 public sealed class ConnectionElisData(
     IConfiguration configuration,
     ILogger logger,
-    IMemoryCache memoryCache) : IConnectionElisData
+    IMemoryCache memoryCache,
+    IFusionCache fusionCache) : IConnectionElisData
 {
     
     private const string SectionName = "ElisSql";
@@ -60,7 +74,7 @@ public sealed class ConnectionElisData(
     /// Danh sách các chuỗi kết nối.
     /// </summary>
     public List<string> ConnectionStrings => ConnectionElis.Select(x => x.ConnectionString).ToList();
-
+    
     /// <summary>
     /// Lấy danh sách các kết nối từ cấu hình.
     /// </summary>
@@ -96,6 +110,22 @@ public sealed class ConnectionElisData(
         }
 
         return result;
+    }
+
+    public async ValueTask<string?> GetConnectionString(long maGcn)
+    {
+        if (maGcn <= 0) return null;
+        var connectionName = await fusionCache.GetOrDefaultAsync<string>(
+            CacheSettings.ConnectionName(maGcn));
+        return string.IsNullOrWhiteSpace(connectionName) ? null : GetConnectionString(connectionName);
+    }
+
+    public async ValueTask<List<ConnectionElis>> GetConnectionElis(long maGcn)
+    {
+        if (maGcn <= 0) return ConnectionElis;
+        var connectionName = await fusionCache.GetOrDefaultAsync<string>(
+            CacheSettings.ConnectionName(maGcn));
+        return string.IsNullOrWhiteSpace(connectionName) ? ConnectionElis : ConnectionElis.Where(x => x.Name == connectionName).ToList();
     }
     public string GetConnectionString(string name) 
         => ConnectionElis.FirstOrDefault(x => x.Name == name)?.ConnectionString ?? string.Empty;

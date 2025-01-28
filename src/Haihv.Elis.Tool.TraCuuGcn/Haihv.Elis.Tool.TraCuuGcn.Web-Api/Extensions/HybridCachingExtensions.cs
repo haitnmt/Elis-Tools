@@ -1,33 +1,38 @@
-﻿using System.Diagnostics.CodeAnalysis;
-using Microsoft.Extensions.Caching.Distributed;
-using Microsoft.Extensions.Caching.Hybrid;
+﻿using Microsoft.Extensions.Caching.StackExchangeRedis;
+using ZiggyCreatures.Caching.Fusion;
+using ZiggyCreatures.Caching.Fusion.Serialization.SystemTextJson;
 
 namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Extensions;
 
 public static class HybridCachingExtensions
 {
-    [Experimental("EXTEXP0018")]
-    public static void AddHybridCaching(this IServiceCollection services, string? redisConnectionString = null)
+    public static void AddCache(this IServiceCollection services, string? redisConnectionString = null)
     {
-        // Thêm Redis Cache
+        //Add MemoryCache
+        services.AddMemoryCache();
+        var fusionOptions = services.AddFusionCache()
+            .WithDefaultEntryOptions(options =>
+            {
+                options.DistributedCacheDuration = TimeSpan.FromDays(1);
+                options.Duration = TimeSpan.FromMinutes(5);
+                options.Duration = TimeSpan.FromMinutes(5);
+                options.IsFailSafeEnabled = true;
+                options.FailSafeThrottleDuration = TimeSpan.FromSeconds(15);
+                options.FailSafeThrottleDuration = TimeSpan.FromDays(1);
+            })
+            .WithSerializer(new FusionCacheSystemTextJsonSerializer());
         if (!string.IsNullOrWhiteSpace(redisConnectionString))
         {
-            services.AddStackExchangeRedisCache(options =>
-            {
-                options.Configuration = redisConnectionString;
-                options.InstanceName = "TraCuuGcn:";
-            });
+            fusionOptions.WithDistributedCache(
+                new RedisCache(
+                    new RedisCacheOptions
+                    {
+                        Configuration = redisConnectionString,
+                        InstanceName = "TraCuuGcn"
+                    }
+                ));
         }
-
-        services.AddHybridCache(options =>
-        {
-            options.MaximumPayloadBytes = 1024 * 1024;
-            options.MaximumKeyLength = 1024;
-            options.DefaultEntryOptions = new HybridCacheEntryOptions
-            {
-                Expiration = TimeSpan.FromDays(1),
-                LocalCacheExpiration = TimeSpan.FromMinutes(30)
-            };
-        });
+        
+        fusionOptions.AsHybridCache();
     }
 }

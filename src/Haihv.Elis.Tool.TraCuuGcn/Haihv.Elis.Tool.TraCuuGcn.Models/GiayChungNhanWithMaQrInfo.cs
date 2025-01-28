@@ -1,6 +1,3 @@
 namespace Haihv.Elis.Tool.TraCuuGcn.Models;
 
-public class GiayChungNhanWithMaQrInfo
-{
-    
-}
+public record GiayChungNhanWithMaQrInfo(GiayChungNhan? GiayChungNhan, MaQrInfo? MaQrInfo);

@@ -6,14 +6,21 @@ using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Settings;
 using LanguageExt;
 using LanguageExt.Common;
-using Microsoft.Extensions.Caching.Hybrid;
+using ZiggyCreatures.Caching.Fusion;
 using ILogger = Serilog.ILogger;
 
 namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Authenticate;
 
 public interface IAuthenticationService
 {
-    ValueTask<bool> CheckAuthenticationAsync(string serial, ClaimsPrincipal? claimsPrincipal,
+    /// <summary>
+    /// Kiểm tra xác thực.
+    /// </summary>
+    /// <param name="maGcn">Mã GCN.</param>
+    /// <param name="claimsPrincipal">Thông tin xác thực của người dùng.</param>
+    /// <param name="cancellationToken">Token hủy bỏ.</param>
+    /// <returns>Trả về true nếu xác thực thành công, ngược lại trả về false.</returns>
+    ValueTask<bool> CheckAuthenticationAsync(long maGcn = 0, ClaimsPrincipal? claimsPrincipal = null,
         CancellationToken cancellationToken = default);
 
     ValueTask<Result<AccessToken>> AuthChuSuDungAsync(AuthChuSuDung? authChuSuDung);
@@ -22,21 +29,27 @@ public interface IAuthenticationService
 public sealed class AuthenticationService(
     IChuSuDungService chuSuDungService,
     ILogger logger,
-    HybridCache hybridCache,
+    IFusionCache fusionCache,
     TokenProvider tokenProvider) : IAuthenticationService
 {
-    public async ValueTask<bool> CheckAuthenticationAsync(string serial, ClaimsPrincipal? claimsPrincipal,
+    /// <summary>
+    /// Kiểm tra xác thực.
+    /// </summary>
+    /// <param name="maGcn">Mã GCN.</param>
+    /// <param name="claimsPrincipal">Thông tin xác thực của người dùng.</param>
+    /// <param name="cancellationToken">Token hủy bỏ.</param>
+    /// <returns>Trả về true nếu xác thực thành công, ngược lại trả về false.</returns>
+    public async ValueTask<bool> CheckAuthenticationAsync(long maGcn = 0, ClaimsPrincipal? claimsPrincipal = null,
         CancellationToken cancellationToken = default)
     {
-        if (string.IsNullOrWhiteSpace(serial) || claimsPrincipal is null) return false;
+        if (claimsPrincipal is null || maGcn <= 0) return false;
         var soDinhDanh = claimsPrincipal.GetSoDinhDanh();
         if (string.IsNullOrWhiteSpace(soDinhDanh)) return false;
-        var chuSuDung = await hybridCache.GetOrCreateAsync<string?>(CacheSettings.KeyAuthentication(soDinhDanh, serial),
-            _ => ValueTask.FromResult<string?>(null),
-            cancellationToken: cancellationToken);
+        var chuSuDung = await fusionCache.GetOrDefaultAsync<string>(CacheSettings.KeyAuthentication(soDinhDanh, maGcn),
+            token: cancellationToken);
         if (chuSuDung is not null) return true;
         var chuSuDungResult =
-            await chuSuDungService.GetAuthChuSuDungBySoDinhDanhAsync(serial, soDinhDanh, cancellationToken);
+            await chuSuDungService.GetResultAuthChuSuDungAsync(maGcn, soDinhDanh, cancellationToken);
         return chuSuDungResult.Match(
             csd =>
             {
@@ -61,18 +74,17 @@ public sealed class AuthenticationService(
         if (authChuSuDung is null)
             return new Result<AccessToken>(new ValueIsNullException("Thông tin xác thực không hợp lệ!"));
         var soDinhDanh = authChuSuDung.SoDinhDanh;
-        var serial = authChuSuDung.Serial;
+        var maGcn = authChuSuDung.MaGcn;
         var hoTen = authChuSuDung.HoVaTen;
-        if (string.IsNullOrWhiteSpace(soDinhDanh) || string.IsNullOrWhiteSpace(serial) ||
+        if (string.IsNullOrWhiteSpace(soDinhDanh) || maGcn <= 0 ||
             string.IsNullOrWhiteSpace(hoTen))
             return new Result<AccessToken>(new ValueIsNullException("Thông tin xác thực không hợp lệ!"));
-        var chuSuDung = await chuSuDungService.GetAuthChuSuDungBySoDinhDanhAsync(serial, soDinhDanh);
+        var chuSuDung = await chuSuDungService.GetResultAuthChuSuDungAsync(maGcn, soDinhDanh);
         return chuSuDung.Match(
             csd =>
             {
                 if (!CompareVietnameseStrings(csd.HoVaTen, hoTen))
                     return new Result<AccessToken>(new ValueIsNullException("Thông tin xác thực không hợp lệ!"));
-                authChuSuDung = csd with { Serial = serial };
                 var accessToken = tokenProvider.GenerateToken(authChuSuDung);
                 return new Result<AccessToken>(accessToken);
             },

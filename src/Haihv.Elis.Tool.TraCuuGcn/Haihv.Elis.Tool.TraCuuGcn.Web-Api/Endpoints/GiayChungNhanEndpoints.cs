@@ -1,6 +1,7 @@
 ﻿using Haihv.Elis.Tool.TraCuuGcn.Models;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Authenticate;
 using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
+using Haihv.Elis.Tool.TraCuuGcn.Web_Api.Extensions;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Endpoints;
@@ -11,7 +12,7 @@ public static class GiayChungNhanEndpoints
     /// Định nghĩa các endpoint cho Giấy Chứng Nhận.
     /// </summary>
     /// <param name="app">Ứng dụng web.</param>
-    public static void MapGiayChungNhan(this WebApplication app)
+    public static void MapGiayChungNhanEndpoints(this WebApplication app)
     {
         app.MapGet("/elis/gcn", GetGiayChungNhanBySerial)
             .WithName("GetGiayChungNhan");
@@ -34,7 +35,7 @@ public static class GiayChungNhanEndpoints
     private static async Task<IResult> GetGiayChungNhanBySerial([FromQuery] string serial, ILogger<Program> logger,
         IGiayChungNhanService giayChungNhanService)
     {
-        var result = await giayChungNhanService.GetBySerialAsync(serial);
+        var result = await giayChungNhanService.GetResultAsync(serial);
         return await Task.FromResult(result.Match(
             Results.Ok,
             ex => Results.BadRequest(ex.Message)));
@@ -43,26 +44,26 @@ public static class GiayChungNhanEndpoints
     /// <summary>
     /// Lấy thông tin Thửa Đất theo Giấy Chứng Nhận.
     /// </summary>
-    /// <param name="serial">Số serial của Giấy Chứng Nhận.</param>
+    /// <param name="maGcn">Mã GCN của Giấy Chứng Nhận.</param>
     /// <param name="httpContext">Ngữ cảnh HTTP hiện tại.</param>
     /// <param name="logger">Logger để ghi log.</param>
     /// <param name="authenticationService">Dịch vụ xác thực.</param>
-    /// <param name="giayChungNhanService">Dịch vụ Giấy Chứng Nhận.</param>
+    /// <param name="thuaDatService">Dịch vụ Giấy Chứng Nhận.</param>
     /// <returns>Kết quả truy vấn Thửa Đất.</returns>
-    private static async Task<IResult> GetThuaDatByGiayChungNhan([FromQuery] string serial,
+    private static async Task<IResult> GetThuaDatByGiayChungNhan([FromQuery] long maGcn,
         HttpContext httpContext,
         ILogger<Program> logger,
         IAuthenticationService authenticationService,
-        IGiayChungNhanService giayChungNhanService)
+        IThuaDatService thuaDatService)
     {
         // Lấy thông tin người dùng theo token từ HttpClient
         var user = httpContext.User;
-        if (!await authenticationService.CheckAuthenticationAsync(serial, user))
+        if (!await authenticationService.CheckAuthenticationAsync(maGcn, user))
         {
             return Results.Unauthorized();
         }
 
-        var result = await giayChungNhanService.GetThuaDatAsync(serial);
+        var result = await thuaDatService.GetResultAsync(maGcn);
         return await Task.FromResult(result.Match(
             Results.Ok,
             ex => Results.BadRequest(ex.Message)));
@@ -71,15 +72,15 @@ public static class GiayChungNhanEndpoints
     /// <summary>
     /// Lấy thông tin Thửa Đất công khai theo Giấy Chứng Nhận.
     /// </summary>
-    /// <param name="serial">Số serial của Giấy Chứng Nhận.</param>
+    /// <param name="maGcn">Số serial của Giấy Chứng Nhận.</param>
     /// <param name="logger">Logger để ghi log.</param>
-    /// <param name="giayChungNhanService">Dịch vụ Giấy Chứng Nhận.</param>
+    /// <param name="thuaDatService">Dịch vụ Giấy Chứng Nhận.</param>
     /// <returns>Kết quả truy vấn Thửa Đất công khai.</returns>
-    private static async Task<IResult> GetThuaDatPublicBySerialAsync([FromQuery] string serial,
+    private static async Task<IResult> GetThuaDatPublicBySerialAsync([FromQuery] long maGcn,
         ILogger<Program> logger,
-        IGiayChungNhanService giayChungNhanService)
+        IThuaDatService thuaDatService)
     {
-        var result = await giayChungNhanService.GetThuaDatAsync(serial);
+        var result = await thuaDatService.GetResultAsync(maGcn);
         return await Task.FromResult(result.Match(
             thuaDat => Results.Ok(thuaDat.ConvertToThuaDatPublic()),
             ex => Results.BadRequest(ex.Message)));

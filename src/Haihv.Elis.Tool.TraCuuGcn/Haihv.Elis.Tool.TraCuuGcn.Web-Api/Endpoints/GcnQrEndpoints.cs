@@ -5,7 +5,7 @@ namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Endpoints;
 
 public static class GcnQrEndpoints
 {
-    public static void MapGcnQr(this WebApplication app)
+    public static void MapGcnQrEndpoints(this WebApplication app)
     {
         app.MapGet("/elis/qr-info", GetQrInfoAsync)
             .WithName("GetQrInfoAsync");
@@ -14,7 +14,7 @@ public static class GcnQrEndpoints
     private static async Task<IResult> GetQrInfoAsync([FromQuery] string maQr, ILogger<Program> logger,
         IGcnQrService gcnQrService)
     {
-        var result = await gcnQrService.GetAsync(maQr);
+        var result = await gcnQrService.GetResultAsync(maQr);
         return await Task.FromResult(result.Match(
             Results.Ok,
             ex => Results.BadRequest(ex.Message)));

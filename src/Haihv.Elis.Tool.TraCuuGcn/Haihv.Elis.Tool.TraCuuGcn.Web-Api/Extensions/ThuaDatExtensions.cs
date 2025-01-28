@@ -1,6 +1,6 @@
 using Haihv.Elis.Tool.TraCuuGcn.Models;
 
-namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Data;
+namespace Haihv.Elis.Tool.TraCuuGcn.Web_Api.Extensions;
 
 public static class ThuaDatExtensions
 {
